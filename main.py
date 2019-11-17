@@ -3,12 +3,10 @@ from dataset import get_train_dataset
 from tensorflow.python.client import device_lib
 
 
-def main():
-    train_x, train_y = get_train_dataset()
-    print("train_x is   ", train_x*10000)
-    print("train_y is   ", train_y)
-    print("Hello world")
-    print("DEVICES")
-    print(device_lib.list_local_devices())
+mnist = tf.keras.datasets.mnist
 
-main()
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+print(x_train.shape)
+print(y_train.shape)
+print(x_test.shape)
