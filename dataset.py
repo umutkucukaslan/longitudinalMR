@@ -1,5 +1,25 @@
+import numpy as np
+import configparser
+import os
+import glob
 
 
-def get_train_dataset():
-    train_x, train_y = ([1, 2, 3, 4], [10, 20, 50, 80])
-    return (train_x, train_y)
+class Dataset:
+    def __init__(self):
+        config = configparser.ConfigParser()
+        config.read("./config.ini")
+        self.dataset_path = config['Dataset'].get('dataset_path')
+        self.images_dir = os.path.join(self.dataset_path, 'VOC2012/JPEGImages')
+        self.annotations_dir = os.path.join(self.dataset_path, 'VOC2012/Annotations')
+
+        self.random_select_images = config['Dataset'].getboolean('random_select_images')
+        self.num_train_images = config['Dataset'].getint('num_train_images')
+        self.num_val_images = config['Dataset'].getint('num_val_images')
+
+        image_file_paths = glob.glob(self.images_dir + '/*.jpg')
+        print(len(image_file_paths))
+
+
+
+
+d = Dataset()
