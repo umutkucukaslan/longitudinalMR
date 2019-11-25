@@ -21,5 +21,5 @@ class Dataset:
 
 
 
-
-d = Dataset()
+if __name__ == "__main__":
+    d = Dataset()
