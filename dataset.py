@@ -2,6 +2,7 @@ import numpy as np
 import configparser
 import os
 import glob
+import tensorflow as tf
 
 
 class Dataset:
