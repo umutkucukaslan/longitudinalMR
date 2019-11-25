@@ -1,12 +1,13 @@
-# PMSD Project
-Deep Generative Model for Patient Specific Longitudinal Analysis
 
-# Requirements
+#Deep Generative Model for Patient Specific Longitudinal Analysis
+My PMSD project
+
+## Requirements
 * Tensorflow 2.0
 
-# How to Run
+## How to Run
 * Open a Google Colab notebook. 
-* Download and extract PASCAL VOC dataset.
+* Download and extract PASCAL VOC dataset. (Replace with actual dataset later)
 ```
 ! curl -O http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar  
 print("Dataset downloaded.")
