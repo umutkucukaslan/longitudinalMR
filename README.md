@@ -7,7 +7,7 @@ Deep Generative Model for Patient Specific Longitudinal Analysis
 # How to Run
 * Open a Google Colab notebook. 
 * Download and extract PASCAL VOC dataset. (Run in a code cell)
-```python
+```
 ! curl -O http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar  
 print("Dataset downloaded.")
 ! tar -xf VOCtrainval_11-May-2012.tar
@@ -16,13 +16,13 @@ print("Dataset extracted.")
 print("'.tar' file removed.")
 ```
 * Clone this repository inside `/content` folder. (Run in a code cell)
-```python
-!cd /content && git clone https://github.com/umutkucukaslan/pmsd-project.git
+```
+! cd /content && git clone https://github.com/umutkucukaslan/pmsd-project.git
 ```
 * Run the module main
-```python
-!cd /content/pmsd-project && git pull -q
+```
+! cd /content/pmsd-project && git pull -q
 print('Pulled recent changes from the repository.')
 print('Running module main...')
-!cd /content/pmsd-project && python3 -m main
+! cd /content/pmsd-project && python3 -m main
 ```
