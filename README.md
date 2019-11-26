@@ -17,6 +17,11 @@ print("Dataset extracted.")
 ! rm VOCtrainval_11-May-2012.tar
 print("'.tar' file removed.")
 ```
+* To mount Google Drive
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+```
 * Clone this repository inside `/content` folder.
 ```
 ! cd /content && git clone https://github.com/umutkucukaslan/pmsd-project.git
