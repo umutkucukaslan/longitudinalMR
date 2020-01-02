@@ -159,4 +159,4 @@ def find_upper_tangent_line_to_head_in_3d_mri(img=None, img_path=None, axis=0):
             elif axis == 2:
                 image[:, i] = 255
 
-            return (i, image, threshold)
+            return i, image, threshold
