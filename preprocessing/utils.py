@@ -1,11 +1,8 @@
-import time
+import copy
 
 import cv2
 import nibabel as nib
 import numpy as np
-from dipy.viz import regtools
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
-from dipy.data.fetcher import fetch_syn_data, read_syn_data
 from dipy.align.imaffine import (transform_centers_of_mass,
                                  AffineMap,
                                  MutualInformationMetric,
@@ -13,7 +10,6 @@ from dipy.align.imaffine import (transform_centers_of_mass,
 from dipy.align.transforms import (TranslationTransform3D,
                                    RigidTransform3D,
                                    AffineTransform3D)
-
 
 
 def rigid_body_registration(static_image_path, moving_image_path, output_path=None):
@@ -80,6 +76,7 @@ def rigid_body_registration(static_image_path, moving_image_path, output_path=No
 def find_upper_tangent_line_to_head_in_3d_mri(img=None, img_path=None, axis=0):
     """
     This function finds slice index touching head at given axis. You should input either img or img_path.
+
     :param img: nibabel.Nifti1Image object - what nibabel.load returns for .nii images
     :param img_path: path of image file
     :param axis: Axis you want to find the index of touching slice
@@ -116,8 +113,6 @@ def find_upper_tangent_line_to_head_in_3d_mri(img=None, img_path=None, axis=0):
 
     # Threshold for foreground/background
     threshold = img_data.flatten().mean()
-
-    print(threshold)
 
     # Image shape
     img_data_shape = img_data.shape
@@ -160,3 +155,73 @@ def find_upper_tangent_line_to_head_in_3d_mri(img=None, img_path=None, axis=0):
                 image[:, i] = 255
 
             return i, image, threshold
+
+
+def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, show_results=False):
+    """
+    Slices the 3D MRI volume in the given range and returns list of slices.
+
+    :param img: MRI image object (nibabel.Nifti1Image -  what nibabel.load() returns)
+    :param start_offset: Offset of first slice from the slice touching upper part of the head
+    :param stop_offset: Offset of last slice from the slice touching upper part of the head
+    :param step: Sampling interval
+    :param show_results: If true, shows the slices as it extracts.
+    :return: processed_slices: list of slices
+             summary_image: summary image that shows first and last slice in a saggittal image
+             slicing_pattern_image: summary image that shows all slice positions in a sagittal image
+    """
+
+    # Index of slice that touches upper part of the head
+    head_start, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(img=img, axis=0)
+
+    # Show range of slicing in a sagittal image
+    summary_image = np.stack((summary_image, summary_image, summary_image), axis=2)
+    summary_image = np.asarray(summary_image, dtype=np.uint8)
+    summary_image[head_start+start_offset, :, 0] = 255
+    summary_image[head_start+stop_offset, :, 0] = 255
+
+    # Image to show slice positions
+    slicing_pattern_image = copy.copy(summary_image)
+
+    # Image data array
+    img_data = img.get_fdata()
+
+    # Stopping position for slicing
+    slice_index_stop = min(head_start + stop_offset, img_data.shape[0])
+
+    # Calculate mean and std intensity values in the region of interest (sliced region) to specify brightness range
+    roi = img_data[head_start + start_offset : slice_index_stop, :, :]
+
+    # Do not include empty areas in mean and std calculation
+    threshold_adapted_mean = 20
+    nice_points = np.asarray([x for x in roi.flatten() if x > threshold_adapted_mean])
+    adapted_mean = nice_points.mean()
+    adapted_std = np.std(nice_points)
+
+    # Clip intensity values beyond this
+    max_clipping_value = adapted_mean + 1.8 * adapted_std
+
+    processed_slices = []
+    for index in range(head_start + start_offset, slice_index_stop, step):
+        slice = img_data[index, :, :]
+
+        # Clip intensity values beyond the range [0, max_clipping_value]
+        processed_slice = np.clip(slice, 0, max_clipping_value)
+
+        # Compress intensities in [0, 1] range
+        processed_slice = np.asarray(processed_slice / max_clipping_value)
+        processed_slices.append(processed_slice)
+
+        # Show this slice position in the sagittal image
+        slicing_pattern_image[index, :, 1] += 100
+
+        if show_results:
+            cv2.imshow('Slicing pattern', slicing_pattern_image)
+            cv2.imshow('Processed slice', np.asarray(processed_slice * 255, dtype=np.uint8))
+            saturation_image = np.asarray(processed_slice * 255, dtype=np.uint8)
+            saturation_image[saturation_image < 254] = 0
+            cv2.imshow('Saturated parts due to clipping', saturation_image)
+            cv2.waitKey()
+
+    return processed_slices, summary_image, slicing_pattern_image
+
