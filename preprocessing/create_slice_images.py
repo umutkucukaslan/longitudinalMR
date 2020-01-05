@@ -42,6 +42,8 @@ Set the following parameters
     - step_size: Sampling interval in terms of index
     - use_registered_image: If true, slices registered image, otherwise original image
     - saved_image_data_type: 'uint8' or 'uint16'
+    - show_results: If true, shows each slices after extraction
+    - shape_after_padding: If true and slice is smaller than given shape, pads the slice image with zero
     
 PS: get_axial_cortex_slices function also performs intensity correction for slices using mean and standard deviation
 of intensities in the region of interest.
