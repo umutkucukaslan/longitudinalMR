@@ -157,7 +157,7 @@ def find_upper_tangent_line_to_head_in_3d_mri(img=None, img_path=None, axis=0):
             return i, image, threshold
 
 
-def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, show_results=False):
+def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, shape_after_padding=None, show_results=False):
     """
     Slices the 3D MRI volume in the given range and returns list of slices.
 
@@ -165,6 +165,8 @@ def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, show_
     :param start_offset: Offset of first slice from the slice touching upper part of the head
     :param stop_offset: Offset of last slice from the slice touching upper part of the head
     :param step: Sampling interval
+    :param shape_after_padding: (height, width) If not None and shape of slice is smaller than this tuple,
+                                pad zeros to make it this shape
     :param show_results: If true, shows the slices as it extracts.
     :return: processed_slices: list of slices
              summary_image: summary image that shows first and last slice in a saggittal image
@@ -181,7 +183,7 @@ def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, show_
     summary_image[head_start+stop_offset, :, 0] = 255
 
     # Image to show slice positions
-    slicing_pattern_image = copy.copy(summary_image)
+    slicing_pattern_image = copy.copy(summary_image.astype(np.float))
 
     # Image data array
     img_data = img.get_fdata()
@@ -208,6 +210,14 @@ def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, show_
         # Clip intensity values beyond the range [0, max_clipping_value]
         processed_slice = np.clip(slice, 0, max_clipping_value)
 
+        # Pad with zeros if the shape of the slice is smaller than desired
+        if shape_after_padding is not None:
+            desired_height, desired_width = shape_after_padding
+            pad_height = max(0, desired_height - processed_slice.shape[0])
+            pad_width = max(0, desired_width - processed_slice.shape[1])
+            processed_slice = np.pad(processed_slice, [(int(pad_height/2), pad_height - int(pad_height/2)),
+                                                       (int(pad_width/2), pad_width - int(pad_width/2))])
+
         # Compress intensities in [0, 1] range
         processed_slice = np.asarray(processed_slice / max_clipping_value)
         processed_slices.append(processed_slice)
@@ -222,6 +232,8 @@ def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, show_
             saturation_image[saturation_image < 254] = 0
             cv2.imshow('Saturated parts due to clipping', saturation_image)
             cv2.waitKey()
+
+    slicing_pattern_image = np.clip(slicing_pattern_image, 0, 255).astype(np.uint8)
 
     return processed_slices, summary_image, slicing_pattern_image
 
