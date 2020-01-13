@@ -1,6 +1,9 @@
 import os
 import glob
+import sys
+
 import numpy as np
+import pandas as pd
 import imageio
 import nibabel as nib
 import logging
@@ -36,6 +39,7 @@ logger.info('merhaba')
 Create slice images from .nii files using a given range for slice index.
 Set the following parameters
     - dataset_dir
+    - dataset_info_pth: csv file that has Subject and Group columns as, for example, '136_S_1227' and 'MCI'
     - target_dir
     - start_offset: First slice index relative to index of slice that touches top part of the head
     - stop_offset: Last slice index relative to index of slice that touches top part of the head
@@ -51,6 +55,7 @@ of intensities in the region of interest.
 
 # Set the following parameters
 dataset_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/data'
+dataset_info_pth = '/Users/umutkucukaslan/Desktop/pmsd/dataset/ADNI1_Complete_2Yr_3T_11_25_2019.csv'
 target_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/processed_data'
 start_offset = 30
 stop_offset = 100
@@ -59,6 +64,12 @@ use_registered_image = True
 saved_image_data_type = "uint8"
 show_results = False
 shape_after_padding = (256, 170)
+
+# Condition of patients
+dataset_info = pd.read_csv(dataset_info_pth)
+patient_condition = dict()
+for item in dataset_info[["Subject", "Group"]].drop_duplicates("Subject").values:
+    patient_condition[item[0]] = item[1]
 
 # Patient folder paths
 patients = sorted(glob.glob(os.path.join(dataset_dir, '*')))
@@ -94,7 +105,7 @@ for patient in patients:
 
     # Create new patient dir if not exists
     patient_name = os.path.basename(patient)
-    target_patient_dir = os.path.join(target_dir, patient_name)
+    target_patient_dir = os.path.join(os.path.join(target_dir, patient_condition[patient_name]), patient_name)
     if not os.path.isdir(target_patient_dir):
         os.makedirs(target_patient_dir)
 
