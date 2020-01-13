@@ -41,7 +41,6 @@ def show_batch(image_batch):
         ax = plt.subplot(5, 5, n + 1)
         plt.imshow(np.squeeze(image_batch[n]), cmap='gray')
         plt.axis('off')
-    plt.show()
 
 
 train_ds, val_ds, test_ds = get_autoencoder_dataset()
