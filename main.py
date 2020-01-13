@@ -36,12 +36,12 @@ tf.enable_eager_execution()
 
 
 def show_batch(image_batch):
-    plt.figure(figsize=(30, 30))
+    plt.figure(figsize=(10, 10))
     for n in range(25):
         ax = plt.subplot(5, 5, n + 1)
         plt.imshow(np.squeeze(image_batch[n]), cmap='gray')
         plt.axis('off')
-
+    plt.show()
 
 train_ds, val_ds, test_ds = get_autoencoder_dataset()
 logger.info('Dataset for autoencoder created.')
