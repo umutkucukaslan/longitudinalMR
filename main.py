@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 
-from dataset import get_autoencoder_dataset_from_splitted_folders, get_fake_autoencoder_dataset
+from dataset import get_autoencoder_dataset_from_splitted_folders
 from model.autoencoder import build_encoder, build_decoder
 from setup_logging import logger
 
