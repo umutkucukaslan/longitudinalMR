@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import configparser
 import os
@@ -6,15 +8,18 @@ import tensorflow as tf
 import random
 import matplotlib.pyplot as plt
 
+from setup_logging import logger
 
-def prepare_for_training(ds, cache=True, shuffle_buffer_size=1000, batch_size=32):
+
+def prepare_for_training(ds, cache=True, shuffle_buffer_size=1000, batch_size=32, repeat=True):
     if cache:
         if isinstance(cache, str):
             ds = ds.cache(cache)
         else:
             ds = ds.cache()
     ds = ds.shuffle(buffer_size=shuffle_buffer_size)
-    ds = ds.repeat()
+    if repeat:
+        ds = ds.repeat()
     ds = ds.batch(batch_size=batch_size)
     ds = ds.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     return ds
@@ -25,6 +30,9 @@ def get_autoencoder_dataset():
     This function creates tf.data.Dataset objects for training, validation and test using slices.
     :return: train_ds, val_ds, test_ds
     """
+
+    logger.info("Preparing the dataset...")
+
     config = configparser.ConfigParser()
     config.read("./config.ini")
     dataset_path = config['Dataset'].get('dataset_path')
@@ -40,6 +48,7 @@ def get_autoencoder_dataset():
     ad_images = glob.glob(os.path.join(dataset_path, 'AD/*/*/slice_*.png'))
     random.shuffle(ad_images)
 
+    logger.info('There are {} images (CN: {}, MCI: {}, AD: {}) in the dataset.'.format ((len(cn_images)+len(mci_images)+len(ad_images)), len(cn_images), len(mci_images), len(ad_images)))
     train = []
     val = []
     test = []
@@ -61,9 +70,12 @@ def get_autoencoder_dataset():
     train, val, test = distribute_images(images=ad_images, val_split_rate=val_split_rate,
                                          test_split_rate=test_split_rate, train=train, val=val, test=test)
 
+    logger.info('Images divided in train ({}), val ({}) and test ({}) categories.'.format(len(train), len(val), len(test)))
+
     train_list_ds = tf.data.Dataset.from_tensor_slices(train)
     val_list_ds = tf.data.Dataset.from_tensor_slices(val)
     test_list_ds = tf.data.Dataset.from_tensor_slices(test)
+    logger.info('List datasets were created')
 
     def decode_png_img(img, num_channel=1):
         img = tf.io.decode_png(img, channels=num_channel)
@@ -78,17 +90,51 @@ def get_autoencoder_dataset():
     labeled_train_ds = train_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     labeled_val_ds = val_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     labeled_test_ds = test_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    logger.info('Labelled processed datasets were created.')
 
-    train_ds = prepare_for_training(labeled_train_ds, cache=False, shuffle_buffer_size=10000, batch_size=batch_size)
-    val_ds = prepare_for_training(labeled_val_ds, cache=False, shuffle_buffer_size=10000, batch_size=batch_size)
+    train_ds = prepare_for_training(labeled_train_ds, cache=False, shuffle_buffer_size=1000, batch_size=batch_size)
+    val_ds = labeled_val_ds.batch(batch_size=batch_size)
     test_ds = labeled_test_ds.batch(batch_size=batch_size)
+    logger.info('train_ds, val_ds and test_ds are ready.')
 
     return train_ds, val_ds, test_ds
+
+
+def get_fake_autoencoder_dataset(n_samples=100, shape=(256, 256, 1), batch_size=32, repeat=True, interval=(0, 1)):
+    train = np.random.rand(n_samples, shape[0], shape[1], shape[2]) * (interval[1] - interval[0]) - interval[0]
+    ds = tf.data.Dataset.from_tensor_slices((train, train))
+    if repeat:
+        ds = ds.repeat().batch(batch_size=batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    else:
+        ds = ds.batch(batch_size=batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    return ds
 
 
 if __name__ == "__main__":
 
     tf.enable_eager_execution()
+
+    import time
+    default_timeit_steps = 1000
+
+    config = configparser.ConfigParser()
+    config.read("./config.ini")
+    BATCH_SIZE = config['Dataset'].getint('batch_size')
+
+    def timeit(ds, steps=default_timeit_steps):
+        start = time.time()
+        it = iter(ds)
+        for i in range(steps):
+            batch = next(it)
+            if i % 10 == 0:
+                print('.', end='')
+        print()
+        end = time.time()
+
+        duration = end - start
+        print("{} batches: {} s".format(steps, duration))
+        print("{:0.5f} Images/s".format(BATCH_SIZE * steps / duration))
+
 
     def show_batch(image_batch):
         plt.figure(figsize=(30, 30))
@@ -99,7 +145,10 @@ if __name__ == "__main__":
         plt.show()
 
     train_ds, val_ds, test_ds = get_autoencoder_dataset()
-    image_batch, label_batch = next(iter(train_ds))
+
+    # timeit(train_ds)
+
+    image_batch, label_batch = next(iter(val_ds))
     show_batch(image_batch=image_batch)
     show_batch(image_batch=label_batch)
 
