@@ -35,7 +35,10 @@ def get_autoencoder_dataset():
 
     config = configparser.ConfigParser()
     config.read("./config.ini")
-    dataset_path = config['Dataset'].get('dataset_path')
+    if config['Environment'].get('running_machine') == 'colab':
+        dataset_path = config['Dataset'].get('dataset_path_colab')
+    else:
+        dataset_path = config['Dataset'].get('dataset_path_computer')
     val_split_rate = config['Dataset'].getfloat('val_split_rate')
     test_split_rate = config['Dataset'].getfloat('test_split_rate')
     batch_size = config['Dataset'].getint('batch_size')
@@ -92,7 +95,8 @@ def get_autoencoder_dataset():
     labeled_test_ds = test_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     logger.info('Labelled processed datasets were created.')
 
-    train_ds = prepare_for_training(labeled_train_ds, cache=False, shuffle_buffer_size=1000, batch_size=batch_size)
+    train_ds = prepare_for_training(labeled_train_ds, cache=False, shuffle_buffer_size=1000, batch_size=batch_size,
+                                    repeat=False)
     val_ds = labeled_val_ds.batch(batch_size=batch_size)
     test_ds = labeled_test_ds.batch(batch_size=batch_size)
     logger.info('train_ds, val_ds and test_ds are ready.')
