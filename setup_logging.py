@@ -1,5 +1,6 @@
 import configparser
 import logging
+import os
 
 config = configparser.ConfigParser()
 config.read("./config.ini")
@@ -7,6 +8,9 @@ if config['Environment'].get('running_machine') == 'colab':
     log_file_path = config['Logging'].get('log_file_path_colab')
 else:
     log_file_path = config['Logging'].get('log_file_path_computer')
+
+if not os.path.isdir(os.path.dirname(log_file_path)):
+    os.makedirs(os.path.dirname(log_file_path))
 
 logging.root.setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)

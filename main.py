@@ -31,6 +31,10 @@ if config['Environment'].get('running_machine') == 'colab':
     model_dir = config['Train'].get('model_dir_colab')
 else:
     model_dir = config['Train'].get('model_dir_computer')
+
+if not os.path.isdir(model_dir):
+    os.makedirs(model_dir)
+
 summary_interval = config['Train'].getint('summary_interval')
 save_interval = config['Train'].getint('save_interval')
 learning_rate = config['Train'].getfloat('lr')
