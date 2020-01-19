@@ -1,4 +1,5 @@
 import configparser
+import glob
 import os
 import sys
 
@@ -35,10 +36,6 @@ save_interval = config['Train'].getint('save_interval')
 learning_rate = config['Train'].getfloat('lr')
 num_training_epochs = config['Train'].getint('training_epochs')
 
-# train_ds = get_fake_autoencoder_dataset(100, input_shape, batch_size=batch_size, repeat=False, interval=(0, 1))
-# val_ds = get_fake_autoencoder_dataset(100, input_shape, batch_size=batch_size, repeat=False, interval=(0, 1))
-
-
 encoder = build_encoder(input_shape=input_shape, output_shape=latent_size, filters=filters, kernel_size=kernel_size,
                         pool_size=pool_size, batch_normalization=batch_normalization, activation=tf.nn.leaky_relu,
                         name='my_encoder')
@@ -61,24 +58,38 @@ auto_encoder.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_r
 
 
 class SavingCallback(tf.keras.callbacks.Callback):
-    def __init__(self, save_interval, encoder, decoder, model_dir):
+    def __init__(self, save_interval, encoder, decoder, model_dir, max_to_keep=5):
         super(SavingCallback, self).__init__()
         self.save_interval = save_interval
         self.encoder = encoder
         self.decoder = decoder
         self.model_dir = model_dir
+        self.max_to_keep = max_to_keep
+        self.best_val_loss = 1e12
 
-    # def on_batch_end(self, batch, logs=None):
-    #     if (batch // self.save_interval) * self.save_interval == batch:
-    #         self.encoder.save(os.path.join(self.model_dir, f'encoder_{batch}'))
-    #         self.decoder.save(os.path.join(self.model_dir, f'decoder_{batch}'))
-    #         self.model.save(os.path.join(self.model_dir, f'auto_encoder_{batch}'))
+    def delete_oldest_if_necessary(self):
+        encoders = sorted(glob.glob(os.path.join(self.model_dir, 'encoder-*')))
+        if len(encoders) >= self.max_to_keep:
+            os.remove(encoders[0])
+        decoders = sorted(glob.glob(os.path.join(self.model_dir, 'decoder-*')))
+        if len(decoders) >= self.max_to_keep:
+            os.remove(decoders[0])
+        auto_encoders = sorted(glob.glob(os.path.join(self.model_dir, 'auto_encoder-*')))
+        if len(auto_encoders) >= self.max_to_keep:
+            os.remove(auto_encoders[0])
 
     def on_epoch_end(self, epoch, logs=None):
+        if self.best_val_loss > logs['val_loss']:
+            self.best_val_loss = logs['val_loss']
+            self.encoder.save(os.path.join(self.model_dir, 'encoder_best'))
+            self.decoder.save(os.path.join(self.model_dir, 'decoder_best'))
+            self.model.save(os.path.join(self.model_dir, 'auto_encoder_best'))
+
         if (epoch // self.save_interval) * self.save_interval == epoch:
-            self.encoder.save(os.path.join(self.model_dir, 'encoder-{:5d}'.format(epoch)))
-            self.decoder.save(os.path.join(self.model_dir, 'decoder-{:5d}'.format(epoch)))
-            self.model.save(os.path.join(self.model_dir, 'auto_encoder-{:5d}', epoch))
+            self.delete_oldest_if_necessary()
+            self.encoder.save(os.path.join(self.model_dir, 'encoder-{0:05d}'.format(epoch)))
+            self.decoder.save(os.path.join(self.model_dir, 'decoder-{0:05d}'.format(epoch)))
+            self.model.save(os.path.join(self.model_dir, 'auto_encoder-{0:05d}'.format(epoch)))
 
 
 callbacks=[tf.keras.callbacks.TensorBoard(log_dir=model_dir, update_freq=summary_interval),
@@ -86,4 +97,4 @@ callbacks=[tf.keras.callbacks.TensorBoard(log_dir=model_dir, update_freq=summary
 
 auto_encoder.fit(train_ds, epochs=num_training_epochs, verbose=1, validation_data=val_ds, callbacks=callbacks)
 
-
+print('Congrats. Training done!')

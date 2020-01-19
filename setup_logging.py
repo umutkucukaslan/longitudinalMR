@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # Create handlers
 c_handler = logging.StreamHandler()
-f_handler = logging.FileHandler(config['Logging'].get('log_file_pth'))
+f_handler = logging.FileHandler(log_file_path)
 c_handler.setLevel(logging.DEBUG)
 f_handler.setLevel(logging.DEBUG)
 
