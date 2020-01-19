@@ -6,20 +6,19 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 
-from dataset import get_autoencoder_dataset, get_fake_autoencoder_dataset
+from dataset import get_autoencoder_dataset_from_splitted_folders, get_fake_autoencoder_dataset
 from model.autoencoder import build_encoder, build_decoder
 from setup_logging import logger
 
 
 tf.enable_eager_execution()
 
-train_ds, val_ds, test_ds = get_autoencoder_dataset()
+train_ds, val_ds, test_ds = get_autoencoder_dataset_from_splitted_folders()
 
 
 # Parameters
 config = configparser.ConfigParser()
 config.read('./config.ini')
-
 batch_size = config['Dataset'].getint('batch_size')
 input_shape = (256, 256, 1)
 latent_size = 1024
@@ -30,7 +29,7 @@ batch_normalization = True
 if config['Environment'].get('running_machine') == 'colab':
     model_dir = config['Train'].get('model_dir_colab')
 else:
-    model_dir = config['Train'].get('model_dir_colab')
+    model_dir = config['Train'].get('model_dir_computer')
 summary_interval = config['Train'].getint('summary_interval')
 save_interval = config['Train'].getint('save_interval')
 learning_rate = config['Train'].getfloat('lr')
@@ -69,11 +68,17 @@ class SavingCallback(tf.keras.callbacks.Callback):
         self.decoder = decoder
         self.model_dir = model_dir
 
+    # def on_batch_end(self, batch, logs=None):
+    #     if (batch // self.save_interval) * self.save_interval == batch:
+    #         self.encoder.save(os.path.join(self.model_dir, f'encoder_{batch}'))
+    #         self.decoder.save(os.path.join(self.model_dir, f'decoder_{batch}'))
+    #         self.model.save(os.path.join(self.model_dir, f'auto_encoder_{batch}'))
+
     def on_epoch_end(self, epoch, logs=None):
         if (epoch // self.save_interval) * self.save_interval == epoch:
-            self.encoder.save(os.path.join(self.model_dir, 'encoder_{epoch}'))
-            self.decoder.save(os.path.join(self.model_dir, 'decoder_{epoch}'))
-            self.model.save(os.path.join(self.model_dir, 'auto_encoder_{epoch}'))
+            self.encoder.save(os.path.join(self.model_dir, 'encoder-{:5d}'.format(epoch)))
+            self.decoder.save(os.path.join(self.model_dir, 'decoder-{:5d}'.format(epoch)))
+            self.model.save(os.path.join(self.model_dir, 'auto_encoder-{:5d}', epoch))
 
 
 callbacks=[tf.keras.callbacks.TensorBoard(log_dir=model_dir, update_freq=summary_interval),

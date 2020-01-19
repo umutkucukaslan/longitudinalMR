@@ -28,6 +28,7 @@ def prepare_for_training(ds, cache=True, shuffle_buffer_size=1000, batch_size=32
 def get_autoencoder_dataset():
     """
     This function creates tf.data.Dataset objects for training, validation and test using slices.
+    This shuffles all the data on its own.
     :return: train_ds, val_ds, test_ds
     """
 
@@ -79,6 +80,57 @@ def get_autoencoder_dataset():
     val_list_ds = tf.data.Dataset.from_tensor_slices(val)
     test_list_ds = tf.data.Dataset.from_tensor_slices(test)
     logger.info('List datasets were created')
+
+    def decode_png_img(img, num_channel=1):
+        img = tf.io.decode_png(img, channels=num_channel)
+        img = tf.image.convert_image_dtype(img, tf.float32)
+        return img
+
+    def process_path(file_path):
+        img = tf.io.read_file(file_path)
+        img = decode_png_img(img)
+        return img, img
+
+    labeled_train_ds = train_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    labeled_val_ds = val_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    labeled_test_ds = test_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    logger.info('Labelled processed datasets were created.')
+
+    train_ds = prepare_for_training(labeled_train_ds, cache=False, shuffle_buffer_size=1000, batch_size=batch_size,
+                                    repeat=False)
+    val_ds = labeled_val_ds.batch(batch_size=batch_size)
+    test_ds = labeled_test_ds.batch(batch_size=batch_size)
+    logger.info('train_ds, val_ds and test_ds are ready.')
+
+    return train_ds, val_ds, test_ds
+
+
+def get_autoencoder_dataset_from_splitted_folders():
+    """
+    This function creates tf.data.Dataset objects for training, validation and test from already splitted folders.
+
+    :return: train_ds, val_ds, test_ds
+    """
+
+    logger.info("Preparing the dataset...")
+
+    config = configparser.ConfigParser()
+    config.read("./config.ini")
+    if config['Environment'].get('running_machine') == 'colab':
+        dataset_path = config['Dataset'].get('dataset_path_colab')
+    else:
+        dataset_path = config['Dataset'].get('dataset_path_computer')
+    batch_size = config['Dataset'].getint('batch_size')
+
+    train = glob.glob(os.path.join(dataset_path, '*/train/*/*/slice_*.png'))
+    val = glob.glob(os.path.join(dataset_path, '*/val/*/*/slice_*.png'))
+    test = glob.glob(os.path.join(dataset_path, '*/test/*/*/slice_*.png'))
+
+    logger.info('Images found in train ({}), val ({}) and test ({}) categories.'.format(len(train), len(val), len(test)))
+
+    train_list_ds = tf.data.Dataset.from_tensor_slices(train)
+    val_list_ds = tf.data.Dataset.from_tensor_slices(val)
+    test_list_ds = tf.data.Dataset.from_tensor_slices(test)
 
     def decode_png_img(img, num_channel=1):
         img = tf.io.decode_png(img, channels=num_channel)
