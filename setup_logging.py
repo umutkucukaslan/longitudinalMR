@@ -7,8 +7,6 @@ if config['Environment'].get('running_machine') == 'colab':
     log_file_path = config['Logging'].get('log_file_path_colab')
 else:
     log_file_path = config['Logging'].get('log_file_path_computer')
-print(log_file_path)
-print(config['Environment'].get('running_machine'))
 
 logging.root.setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
