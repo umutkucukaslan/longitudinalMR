@@ -63,14 +63,15 @@ class LogCallback(tf.keras.callbacks.Callback):
 
 
 class TrainingImageSavingCallback(tf.keras.callbacks.Callback):
-    def __init__(self, inference_image_ds, save_dir):
+    def __init__(self, inference_image_ds, save_dir, grid_size=5):
         super(TrainingImageSavingCallback, self).__init__()
         self.image_ds = inference_image_ds
         self.save_dir = save_dir
+        self.grid_size = grid_size
 
     def on_epoch_end(self, epoch, logs=None):
         res = self.model.predict(self.image_ds)
-        img = show_image_batch(res, grid_size=5)
+        img = show_image_batch(res, grid_size=self.grid_size)
         img = np.asarray(img * 255.0, dtype=np.uint8)
         encoded_img = tf.io.encode_jpeg(img)
         file_path = os.path.join(self.save_dir, 'epoch_{0:05d}.jpg'.format(epoch))
