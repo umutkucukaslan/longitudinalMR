@@ -58,7 +58,7 @@ def get_config_parameters():
     config.read('./config.ini')
 
     running_machine = config['Environment'].get('running_machine')
-    if running_machine is 'colab':
+    if running_machine == 'colab':
         dataset_path = config['Dataset'].get('dataset_path_colab')
         model_dir = config['Train'].get('model_dir_colab')
     else:
