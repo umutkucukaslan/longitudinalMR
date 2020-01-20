@@ -148,13 +148,12 @@ def get_autoencoder_dataset_from_splitted_folders():
     labeled_train_ds = train_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     labeled_val_ds = val_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     labeled_test_ds = test_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    logger.info('Labelled processed datasets were created.')
 
     train_ds = prepare_for_training(labeled_train_ds, cache=False, shuffle_buffer_size=1000, batch_size=batch_size,
                                     repeat=False)
     val_ds = labeled_val_ds.batch(batch_size=batch_size)
     test_ds = labeled_test_ds.batch(batch_size=batch_size)
-    logger.info('train_ds, val_ds and test_ds are ready.')
+    logger.info('Datasets (train_ds, val_ds and test_ds) are ready.')
 
     return train_ds, val_ds, test_ds
 
