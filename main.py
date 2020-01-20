@@ -116,7 +116,7 @@ class LogCallback(tf.keras.callbacks.Callback):
         self.logger = get_logger(log_file_path, 'training_logger')
 
     def on_epoch_end(self, epoch, logs=None):
-        msg = 'Epoch: {:d}  '.format(epoch)
+        msg = 'Epoch: {0:05d}  '.format(epoch)
         for k in logs:
             msg += '{}: {:.4f}  '.format(k, logs[k])
         self.logger.info(msg)
