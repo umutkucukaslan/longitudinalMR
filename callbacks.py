@@ -9,7 +9,7 @@ from utils import show_image_batch
 
 
 class SavingCallback(tf.keras.callbacks.Callback):
-    def __init__(self, m_save_interval, m_encoder, m_decoder, m_model_dir, max_to_keep=5):
+    def __init__(self, m_save_interval, m_encoder, m_decoder, m_model_dir, max_to_keep=2):
         super(SavingCallback, self).__init__()
         self.save_interval = m_save_interval
         self.encoder = m_encoder
