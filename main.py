@@ -47,9 +47,11 @@ auto_encoder.summary()
 auto_encoder.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=params.lr),
                      loss=tf.keras.losses.MeanSquaredError(), metrics=[tf.keras.metrics.MeanSquaredError()])
 
-
+print('model dir:')
+print(params.model_dir)
 callbacks=[tf.keras.callbacks.TensorBoard(log_dir=params.model_dir, update_freq=params.summary_interval),
-           SavingCallback(m_save_interval=params.save_checkpoint_interval, m_encoder=encoder, m_decoder=decoder, m_model_dir=params.model_dir),
+           SavingCallback(m_save_interval=params.save_checkpoint_interval, m_encoder=encoder, m_decoder=decoder,
+                          m_model_dir=params.model_dir),
            LogCallback(log_file_path=os.path.join(params.model_dir, 'train_logs.log')),
            TrainingImageSavingCallback(inference_image_ds=train_ds.take(1), save_dir=training_progress_images_dir)]
 
