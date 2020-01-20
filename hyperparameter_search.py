@@ -15,7 +15,7 @@ tf.enable_eager_execution()
 
 
 batch_sizes = [32, 64, 128]
-latent_sizes = [128, 256, 512, 1024]
+latent_sizes = [1024, 512, 256, 128]
 filterss = [(128, 256, 512, 512),
             (64, 128, 256, 512),
             (32, 64, 128, 256, 512),
