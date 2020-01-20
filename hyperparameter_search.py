@@ -14,7 +14,7 @@ from utils import get_config_parameters
 tf.enable_eager_execution()
 
 
-batch_sizes = [512, 256, 128, 64, 32]
+batch_sizes = [32, 64, 128]
 latent_sizes = [128, 256, 512, 1024]
 filterss = [(128, 256, 512, 512),
             (64, 128, 256, 512),
