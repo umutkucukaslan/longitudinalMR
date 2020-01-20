@@ -14,7 +14,7 @@ from utils import get_config_parameters
 tf.enable_eager_execution()
 
 
-batch_sizes = [128, 64, 256]
+batch_sizes = [128, 256]
 latent_sizes = [128, 256, 512, 1024]
 filterss = [(128, 256, 512, 512),
             (64, 128, 256, 512),
@@ -103,8 +103,12 @@ for batch_size in batch_sizes:
                                                      save_dir=training_progress_images_dir),
                          best_val_loss_callback]
 
-            auto_encoder.fit(train_ds, epochs=params.n_training_epochs, verbose=1, validation_data=val_ds,
-                             callbacks=callbacks)
+            try:
+                auto_encoder.fit(train_ds, epochs=params.n_training_epochs, verbose=1, validation_data=val_ds,
+                                 callbacks=callbacks)
+            except:
+                print('RESOURCE EXHAUSTED! continuing')
+                continue
 
             print('Congrats. Training done!')
 
