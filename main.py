@@ -130,7 +130,7 @@ class ImageResultsCallback(tf.keras.callbacks.Callback):
 
     def show_image_batch(self, image_batch):
         image_batch = np.clip(image_batch, 0, 1)
-        n_images = image_batch.shape[0]
+        n_images = max(image_batch.shape[0], 25)
         h, w, c = image_batch.shape[1], image_batch.shape[2], image_batch.shape[3]
         n_rows = n_cols = int(np.sqrt(n_images))
         im = np.zeros((n_rows * h, n_cols * w, 1))
