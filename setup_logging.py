@@ -30,3 +30,14 @@ f_handler.setFormatter(f_format)
 # Add handlers to the logger
 logger.addHandler(c_handler)
 logger.addHandler(f_handler)
+
+
+def get_logger(file_path, name):
+    logging.root.setLevel(logging.DEBUG)
+    _logger = logging.getLogger(name)
+    f_handler = logging.FileHandler(file_path)
+    f_handler.setLevel(logging.DEBUG)
+    f_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    f_handler.setFormatter(f_format)
+    _logger.addHandler(f_handler)
+    return _logger

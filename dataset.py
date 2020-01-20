@@ -123,8 +123,11 @@ def get_autoencoder_dataset_from_splitted_folders():
     batch_size = config['Dataset'].getint('batch_size')
 
     train = glob.glob(os.path.join(dataset_path, '*/train/*/*/slice_*.png'))
+    random.shuffle(train)
     val = glob.glob(os.path.join(dataset_path, '*/val/*/*/slice_*.png'))
+    random.shuffle(val)
     test = glob.glob(os.path.join(dataset_path, '*/test/*/*/slice_*.png'))
+    random.shuffle(test)
 
     logger.info('Images found in train ({}), val ({}) and test ({}) categories.'.format(len(train), len(val), len(test)))
 
