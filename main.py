@@ -155,6 +155,6 @@ callbacks=[tf.keras.callbacks.TensorBoard(log_dir=model_dir, update_freq=summary
            LogCallback(log_file_path=log_file_path),
            ImageResultsCallback(inference_image_ds=train_ds.take(1), save_dir=training_images_dir)]
 
-auto_encoder.fit(train_ds.take(16), epochs=20, verbose=1, validation_data=val_ds.take(2), callbacks=callbacks)
+auto_encoder.fit(train_ds, epochs=num_training_epochs, verbose=1, validation_data=val_ds, callbacks=callbacks)
 
 print('Congrats. Training done!')
