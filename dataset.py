@@ -105,7 +105,7 @@ def get_autoencoder_dataset():
     return train_ds, val_ds, test_ds
 
 
-def get_autoencoder_dataset_from_splitted_folders():
+def get_autoencoder_dataset_from_splitted_folders(params):
     """
     This function creates tf.data.Dataset objects for training, validation and test from already splitted folders.
 
@@ -114,13 +114,8 @@ def get_autoencoder_dataset_from_splitted_folders():
 
     logger.info("Preparing the dataset...")
 
-    config = configparser.ConfigParser()
-    config.read("./config.ini")
-    if config['Environment'].get('running_machine') == 'colab':
-        dataset_path = config['Dataset'].get('dataset_path_colab')
-    else:
-        dataset_path = config['Dataset'].get('dataset_path_computer')
-    batch_size = config['Dataset'].getint('batch_size')
+    dataset_path = params.dataset_path
+    batch_size = params.batch_size
 
     train = glob.glob(os.path.join(dataset_path, '*/train/*/*/slice_*.png'))
     random.shuffle(train)

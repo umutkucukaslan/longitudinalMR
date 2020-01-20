@@ -50,10 +50,11 @@ class SavingCallback(tf.keras.callbacks.Callback):
 
 
 class LogCallback(tf.keras.callbacks.Callback):
-    def __init__(self, log_file_path):
+    def __init__(self, log_file_path, logger):
         super(LogCallback, self).__init__()
         self.log_file_path = log_file_path
-        self.logger = get_logger(log_file_path, 'training_logger')
+        self.logger = logger
+        # self.logger = get_logger(log_file_path, 'training_logger')
 
     def on_epoch_end(self, epoch, logs=None):
         msg = 'Epoch: {0:05d}  '.format(epoch)
@@ -76,3 +77,17 @@ class TrainingImageSavingCallback(tf.keras.callbacks.Callback):
         encoded_img = tf.io.encode_jpeg(img)
         file_path = os.path.join(self.save_dir, 'epoch_{0:05d}.jpg'.format(epoch))
         tf.io.write_file(file_path, encoded_img)
+
+
+class BestValLossCallback(tf.keras.callbacks.Callback):
+    def __init__(self):
+        super(BestValLossCallback, self).__init__()
+        self.best_val_loss = np.Inf
+        self.val_loss = np.Inf
+        self.loss = np.Inf
+
+    def on_epoch_end(self, epoch, logs=None):
+        if logs['val_loss'] < self.best_val_loss:
+            self.best_val_loss = logs['val_loss']
+        self.loss = logs['loss']
+        self.val_loss = logs['val_loss']
