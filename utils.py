@@ -80,7 +80,7 @@ def get_config_parameters():
     pool_size = ast.literal_eval(config['Model'].get('pool_size'))
     batch_normalization = config['Model'].getboolean('batch_normalization')
 
-    training_summary_csv = config['Logging'].getboolean('training_summary_csv')
+    training_summary_csv = config['Logging'].get('training_summary_csv')
 
     return Parameters(running_machine,
                       dataset_path,
