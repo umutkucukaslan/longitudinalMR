@@ -17,7 +17,7 @@ def build_encoder(input_shape=(128, 128, 3), output_shape=128, filters=(32, 64, 
         if batch_normalization:
             x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Flatten()(x)
-    outputs = tf.keras.layers.Dense(output_shape, activation=activation)(x)
+    outputs = tf.keras.layers.Dense(output_shape, activation=None)(x)
 
     return tf.keras.Model(inputs=inputs, outputs=outputs, name=name)
 
