@@ -50,11 +50,9 @@ class SavingCallback(tf.keras.callbacks.Callback):
 
 
 class LogCallback(tf.keras.callbacks.Callback):
-    def __init__(self, log_file_path, logger):
+    def __init__(self, logger):
         super(LogCallback, self).__init__()
-        self.log_file_path = log_file_path
         self.logger = logger
-        # self.logger = get_logger(log_file_path, 'training_logger')
 
     def on_epoch_end(self, epoch, logs=None):
         msg = 'Epoch: {0:05d}  '.format(epoch)
