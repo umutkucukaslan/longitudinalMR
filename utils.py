@@ -1,5 +1,6 @@
 import configparser
 import ast
+
 import numpy as np
 
 
@@ -34,8 +35,10 @@ class Parameters:
                  filters,
                  kernel_size,
                  pool_size,
-                 batch_normalization
+                 batch_normalization,
+                 training_summary_csv
                  ):
+        self.training_summary_csv = training_summary_csv
         self.input_shape = input_shape
         self.latent_size = latent_size
         self.filters = filters
@@ -53,7 +56,6 @@ class Parameters:
 
 
 def get_config_parameters():
-
     config = configparser.ConfigParser()
     config.read('./config.ini')
 
@@ -78,6 +80,20 @@ def get_config_parameters():
     pool_size = ast.literal_eval(config['Model'].get('pool_size'))
     batch_normalization = config['Model'].getboolean('batch_normalization')
 
-    return Parameters(running_machine, dataset_path, batch_size, model_dir, n_training_epochs, summary_interval,
-                      save_checkpoint_interval, lr, input_shape, latent_size, filters, kernel_size, pool_size,
-                      batch_normalization)
+    training_summary_csv = config['Logging'].getboolean('training_summary_csv')
+
+    return Parameters(running_machine,
+                      dataset_path,
+                      batch_size,
+                      model_dir,
+                      n_training_epochs,
+                      summary_interval,
+                      save_checkpoint_interval,
+                      lr,
+                      input_shape,
+                      latent_size,
+                      filters,
+                      kernel_size,
+                      pool_size,
+                      batch_normalization,
+                      training_summary_csv)
