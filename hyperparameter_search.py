@@ -98,7 +98,7 @@ for batch_size in batch_sizes:
                          SavingCallback(m_save_interval=params.save_checkpoint_interval, m_encoder=encoder,
                                         m_decoder=decoder,
                                         m_model_dir=params.model_dir),
-                         LogCallback(log_file_path=None, logger=logger_t),
+                         LogCallback(logger=logger_t),
                          TrainingImageSavingCallback(inference_image_ds=val_ds.take(1),
                                                      save_dir=training_progress_images_dir),
                          best_val_loss_callback]
