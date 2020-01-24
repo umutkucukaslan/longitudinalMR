@@ -30,6 +30,7 @@ class Parameters:
                  summary_interval,
                  save_checkpoint_interval,
                  lr,
+                 model_name_prefix,
                  input_shape,
                  latent_size,
                  filters,
@@ -38,6 +39,7 @@ class Parameters:
                  batch_normalization,
                  training_summary_csv
                  ):
+        self.model_name_prefix = model_name_prefix
         self.training_summary_csv = training_summary_csv
         self.input_shape = input_shape
         self.latent_size = latent_size
@@ -72,6 +74,7 @@ def get_config_parameters():
     summary_interval = config['Train'].getint('summary_interval')
     save_checkpoint_interval = config['Train'].getint('save_checkpoint_interval')
     lr = config['Train'].getfloat('lr')
+    model_name_prefix = config['Train'].get('model_name_prefix')
 
     input_shape = ast.literal_eval(config['Model'].get('input_shape'))
     latent_size = config['Model'].getint('latent_size')
@@ -90,6 +93,7 @@ def get_config_parameters():
                       summary_interval,
                       save_checkpoint_interval,
                       lr,
+                      model_name_prefix,
                       input_shape,
                       latent_size,
                       filters,
