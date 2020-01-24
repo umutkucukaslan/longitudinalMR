@@ -21,7 +21,7 @@ if not os.path.isdir(hyperparam_dir):
 
 
 # identifier for experiment
-model_name = f'hyperp_B{params.batch_size}_L{params.latent_size}_F'
+model_name = f'02_23__B{params.batch_size}_L{params.latent_size}_F'
 for filter in params.filters:
     model_name += '_' + str(filter)
 
