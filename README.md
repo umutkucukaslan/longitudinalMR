@@ -4,7 +4,7 @@
 My PMSD project
 
 ## Requirements
-* Tensorflow 2.0
+* Tensorflow 1.15
 
 ## How to Run
 * Open a Google Colab notebook. 

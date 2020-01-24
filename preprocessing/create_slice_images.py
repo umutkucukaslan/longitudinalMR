@@ -56,14 +56,14 @@ of intensities in the region of interest.
 # Set the following parameters
 dataset_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/data'
 dataset_info_pth = '/Users/umutkucukaslan/Desktop/pmsd/dataset/ADNI1_Complete_2Yr_3T_11_25_2019.csv'
-target_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/processed_data'
+target_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/processed_data_256x256'
 start_offset = 30
 stop_offset = 100
 step_size = 1
 use_registered_image = True
 saved_image_data_type = "uint8"
 show_results = False
-shape_after_padding = (256, 170)
+shape_after_padding = (256, 256)
 
 # Condition of patients
 dataset_info = pd.read_csv(dataset_info_pth)
