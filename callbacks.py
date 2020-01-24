@@ -1,6 +1,8 @@
 
 import os
 import glob
+
+import cv2
 import numpy as np
 import tensorflow as tf
 
@@ -72,9 +74,10 @@ class TrainingImageSavingCallback(tf.keras.callbacks.Callback):
         res = self.model.predict(self.image_ds)
         img = show_image_batch(res, grid_size=self.grid_size)
         img = np.asarray(img * 255.0, dtype=np.uint8)
-        encoded_img = tf.io.encode_jpeg(img)
         file_path = os.path.join(self.save_dir, 'epoch_{0:05d}.jpg'.format(epoch))
-        tf.io.write_file(file_path, encoded_img)
+        cv2.imwrite(file_path, img)
+        # encoded_img = tf.io.encode_jpeg(img)
+        # tf.io.write_file(file_path, encoded_img)
 
 
 class BestValLossCallback(tf.keras.callbacks.Callback):
