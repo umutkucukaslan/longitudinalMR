@@ -7,7 +7,8 @@ import pandas as pd
 
 from callbacks import SavingCallback, LogCallback, TrainingImageSavingCallback, BestValLossCallback
 from dataset import get_autoencoder_dataset_from_splitted_folders
-from model.autoencoder import build_encoder, build_decoder
+from model.autoencoder import build_encoder, build_decoder, build_encoder_with_lrelu_activation, \
+    build_decoder_with_lrelu_activation
 from setup_logging import get_logger
 from utils import get_config_parameters
 
@@ -27,8 +28,6 @@ for filter in params.filters:
 
 model_name += f'_K{params.kernel_size}'
 
-model_name += '_encoder_without_last_activation'
-
 
 # TRAINING
 
@@ -44,16 +43,28 @@ if not os.path.isdir(training_progress_images_dir):
 
 train_ds, val_ds, test_ds = get_autoencoder_dataset_from_splitted_folders(params=params)
 
-encoder = build_encoder(input_shape=params.input_shape, output_shape=params.latent_size,
-                        filters=params.filters, kernel_size=params.kernel_size,
-                        pool_size=params.pool_size, batch_normalization=params.batch_normalization,
-                        activation=tf.keras.activations.relu,
-                        name='my_encoder')
-decoder = build_decoder(input_shape=params.latent_size, output_shape=params.input_shape,
-                        filters=tuple(reversed(list(params.filters))),
-                        kernel_size=params.kernel_size, batch_normalization=params.batch_normalization,
-                        activation=tf.keras.activations.relu,
-                        name='my_decoder')
+if params.lrelu:
+    encoder = build_encoder_with_lrelu_activation(input_shape=params.input_shape, output_shape=params.latent_size,
+                                                  filters=params.filters, kernel_size=params.kernel_size,
+                                                  pool_size=params.pool_size,
+                                                  batch_normalization=params.batch_normalization,
+                                                  name='my_encoder')
+    decoder = build_decoder_with_lrelu_activation(input_shape=params.latent_size, output_shape=params.input_shape,
+                                                  filters=tuple(reversed(list(params.filters))),
+                                                  kernel_size=params.kernel_size,
+                                                  batch_normalization=params.batch_normalization,
+                                                  name='my_decoder')
+else:
+    encoder = build_encoder(input_shape=params.input_shape, output_shape=params.latent_size,
+                            filters=params.filters, kernel_size=params.kernel_size,
+                            pool_size=params.pool_size, batch_normalization=params.batch_normalization,
+                            activation=tf.keras.activations.relu,
+                            name='my_encoder')
+    decoder = build_decoder(input_shape=params.latent_size, output_shape=params.input_shape,
+                            filters=tuple(reversed(list(params.filters))),
+                            kernel_size=params.kernel_size, batch_normalization=params.batch_normalization,
+                            activation=tf.keras.activations.relu,
+                            name='my_decoder')
 
 logger_t = get_logger(os.path.join(params.model_dir, 'train_logs.log'), model_name)
 

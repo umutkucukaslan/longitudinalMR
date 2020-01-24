@@ -1,7 +1,10 @@
 import configparser
 import ast
+import glob
+import os
 
 import numpy as np
+import tensorflow as tf
 
 
 def show_image_batch(image_batch, grid_size=5):
@@ -31,6 +34,7 @@ class Parameters:
                  save_checkpoint_interval,
                  lr,
                  model_name_prefix,
+                 lrelu,
                  input_shape,
                  latent_size,
                  filters,
@@ -39,6 +43,7 @@ class Parameters:
                  batch_normalization,
                  training_summary_csv
                  ):
+        self.lrelu = lrelu
         self.model_name_prefix = model_name_prefix
         self.training_summary_csv = training_summary_csv
         self.input_shape = input_shape
@@ -75,6 +80,7 @@ def get_config_parameters():
     save_checkpoint_interval = config['Train'].getint('save_checkpoint_interval')
     lr = config['Train'].getfloat('lr')
     model_name_prefix = config['Train'].get('model_name_prefix')
+    lrelu = config['Train'].getboolean('lrelu')
 
     input_shape = ast.literal_eval(config['Model'].get('input_shape'))
     latent_size = config['Model'].getint('latent_size')
@@ -94,6 +100,7 @@ def get_config_parameters():
                       save_checkpoint_interval,
                       lr,
                       model_name_prefix,
+                      lrelu,
                       input_shape,
                       latent_size,
                       filters,
@@ -101,3 +108,19 @@ def get_config_parameters():
                       pool_size,
                       batch_normalization,
                       training_summary_csv)
+
+
+def get_detector(model_dir):
+
+    encoder_path = glob.glob(os.path.join(model_dir, 'encoder*.h5'))
+    decoder_path = glob.glob(os.path.join(model_dir, 'decoder*.h5'))
+    autoencoder_path = glob.glob(os.path.join(model_dir, 'auto_encoder*.h5'))
+
+    encoder = tf.keras.models.load_model('encoder_path')
+    decoder = tf.keras.models.load_model('decoder_path')
+    autoencoder = tf.keras.models.load_model('autoencoder_path')
+
+    print(encoder)
+    print(decoder)
+    print(autoencoder)
+
