@@ -30,7 +30,7 @@ model_name += f'_K{params.kernel_size}'
 
 
 # TRAINING
-
+print('STARTING TRAINING FOR ', model_name)
 # overwrite model dir
 params.model_dir = os.path.join(hyperparam_dir, model_name)
 
