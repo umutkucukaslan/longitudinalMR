@@ -1,10 +1,11 @@
 
 # Deep Generative Model for Patient Specific Longitudinal Analysis
 
-My PMSD project
+Codes for my thesis
 
 ## Requirements
-* Tensorflow 1.15
+* Tensorflow 2
+* nibabel
 
 ## How to Run
 * Open a Google Colab notebook. 
