@@ -155,7 +155,7 @@ def fit(train_ds, epochs, test_ds):
             if (n + 1) % 1000 == 0:
                 print()
 
-            input_image = tf.reshape(input_image, [INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL])
+            input_image = tf.reshape(input_image, [BATCH_SIZE, INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL])
 
             train_step(input_image, target_image, step)
             step += 1
