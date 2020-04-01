@@ -39,12 +39,21 @@ def preprocess_dataset(example):
     image, label = example['image'], example['label']
     image = tf.dtypes.cast(image, tf.float32)
     image = image / 256.0
+    return image, image
+
+
+def preprocess_dataset2(example):
+    image, label = example['image'], example['label']
+    image = tf.dtypes.cast(image, tf.float32)
+    image = image / 256.0
     image = tf.expand_dims(image, axis=0)
     return image, image
 
 
 ds_train = ds_train.map(preprocess_dataset)
-ds_test = ds_test.map(preprocess_dataset)
+ds_train = ds_train.batch(BATCH_SIZE)
+
+ds_test = ds_test.map(preprocess_dataset2)
 
 # dataset example
 print(ds_train.take(1))
@@ -137,7 +146,6 @@ def generate_images(model, test_input, path=None, show=True):
 
 def fit(train_ds, epochs, test_ds):
 
-    train_ds = train_ds.batch(BATCH_SIZE)
     test_ds = test_ds.make_one_shot_iterator()
     step = 0
     for epoch in range(epochs):
@@ -154,8 +162,6 @@ def fit(train_ds, epochs, test_ds):
                 print('.', end='')
             if (n + 1) % 1000 == 0:
                 print()
-
-            input_image = tf.reshape(input_image, [BATCH_SIZE, INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL])
 
             train_step(input_image, target_image, step)
             step += 1
