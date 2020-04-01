@@ -149,9 +149,11 @@ def fit(train_ds, epochs, test_ds):
                         show=False)
 
         for n, (input_image, target_image) in train_ds.enumerate():
-            print('.', end='')
-            if (n+1) % 100 == 0:
-                print(n)
+            if (n + 1) % 100 == 0:
+                print('.', end='')
+            if (n + 1) % 1000 == 0:
+                print()
+
             train_step(input_image, target_image, step)
             step += 1
         print('epoch %d ended' % epoch)
