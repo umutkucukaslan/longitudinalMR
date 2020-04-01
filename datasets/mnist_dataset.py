@@ -29,7 +29,6 @@ def get_mnist_dataset(use_colab=False):
 
 
 if __name__ == '__main__':
-    print('main module scripts')
     ds_train, ds_test = get_mnist_dataset(use_colab=False)
 
     for example in ds_train.take(1):
