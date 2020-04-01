@@ -169,5 +169,5 @@ def fit(train_ds, epochs, test_ds):
         print('epoch %d ended' % epoch)
 
 
-fit(ds_train.take(40000), 120, ds_test.take(300))
+fit(ds_train, 120, ds_test.take(300))
 
