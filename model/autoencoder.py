@@ -1,5 +1,4 @@
 import sys
-from setup_logging import logger
 import tensorflow as tf
 
 
@@ -29,7 +28,7 @@ def build_decoder(input_shape=128, output_shape=(128, 128, 3), filters=(128, 64,
     x_init, y_init = output_shape[0] // 2**n_upsamplings, output_shape[1] // 2**n_upsamplings
 
     if x_init * 2**n_upsamplings != output_shape[0] or y_init * 2**n_upsamplings != output_shape[1]:
-        logger.error("Output image dimensions should be divisible by 2^len(filters). Please set a suitable output_shape")
+        print("Output image dimensions should be divisible by 2^len(filters). Please set a suitable output_shape")
         sys.exit()
 
     inputs = tf.keras.Input(shape=input_shape)

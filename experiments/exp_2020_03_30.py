@@ -26,8 +26,9 @@ if USE_COLAB:
 else:
     SUMMARY_FILE_DIR = '/Users/umutkucukaslan/Desktop/thesis/testsummaryfile'
 
-if os.path.isdir(SUMMARY_FILE_DIR):
+if not os.path.isdir(SUMMARY_FILE_DIR):
     os.makedirs(SUMMARY_FILE_DIR)
+if not os.path.isdir(os.path.join(SUMMARY_FILE_DIR, 'figures')):
     os.makedirs(os.path.join(SUMMARY_FILE_DIR, 'figures'))
 
 # DATASET
