@@ -52,6 +52,7 @@ def preprocess_dataset2(example):
 
 ds_train = ds_train.map(preprocess_dataset)
 ds_train = ds_train.batch(BATCH_SIZE)
+ds_train = ds_train.prefetch(20)
 
 ds_test = ds_test.map(preprocess_dataset2)
 
