@@ -38,7 +38,6 @@ ds_train, ds_test = get_mnist_dataset(use_colab=USE_COLAB)
 def preprocess_dataset(example):
     image, label = example['image'], example['label']
     image = tf.dtypes.cast(image, tf.float32)
-    image = tf.reshape(image, [INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL])
     image = image / 256.0
     image = tf.expand_dims(image, axis=0)
     return image, image
@@ -155,6 +154,8 @@ def fit(train_ds, epochs, test_ds):
                 print('.', end='')
             if (n + 1) % 1000 == 0:
                 print()
+
+            input_image = tf.reshape(input_image, [INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL])
 
             train_step(input_image, target_image, step)
             step += 1
