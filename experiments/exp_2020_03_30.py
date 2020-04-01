@@ -22,10 +22,13 @@ INPUT_CHANNEL = 1
 
 
 if USE_COLAB:
-    SUMMARY_FILE_PATH = '/content/drive/My Drive/trained_models/exp_2020_03_30'
+    SUMMARY_FILE_DIR = '/content/drive/My Drive/trained_models/exp_2020_03_30'
 else:
-    SUMMARY_FILE_PATH = '/Users/umutkucukaslan/Desktop/thesis/testsummaryfile'
+    SUMMARY_FILE_DIR = '/Users/umutkucukaslan/Desktop/thesis/testsummaryfile'
 
+if os.path.isdir(SUMMARY_FILE_DIR):
+    os.makedirs(SUMMARY_FILE_DIR)
+    os.makedirs(os.path.join(SUMMARY_FILE_DIR, 'figures'))
 
 # DATASET
 ds_train, ds_test = get_mnist_dataset(use_colab=USE_COLAB)
@@ -86,7 +89,7 @@ loss_object = tf.keras.losses.BinaryCrossentropy()
 
 generator_optimizer = tf.optimizers.Adam(2e-4, beta_1=0.5)
 
-summary_writer = tf.summary.create_file_writer(SUMMARY_FILE_PATH)
+summary_writer = tf.summary.create_file_writer(SUMMARY_FILE_DIR)
 
 
 # LOSSES
@@ -141,7 +144,7 @@ def fit(train_ds, epochs, test_ds):
         image_name = str(epoch) + '_test.png'
         generate_images(generator,
                         test_input,
-                        os.path.join(SUMMARY_FILE_PATH, 'figures', image_name),
+                        os.path.join(SUMMARY_FILE_DIR, 'figures', image_name),
                         show=False)
 
         for n, (input_image, target_image) in train_ds.enumerate():
