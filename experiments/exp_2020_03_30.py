@@ -15,7 +15,7 @@ This is a toy example for GAN training using MNIST dataset.
 USE_COLAB = True
 
 BUFFER_SIZE = 400
-BATCH_SIZE = 2
+BATCH_SIZE = 128
 INPUT_WIDTH = 28
 INPUT_HEIGHT = 28
 INPUT_CHANNEL = 1
@@ -137,6 +137,7 @@ def generate_images(model, test_input, path=None, show=True):
 
 def fit(train_ds, epochs, test_ds):
 
+    train_ds = train_ds.batch(BATCH_SIZE)
     test_ds = test_ds.make_one_shot_iterator()
     step = 0
     for epoch in range(epochs):
