@@ -27,7 +27,7 @@ INPUT_CHANNEL = 1
 LAMBDA = 100
 
 EPOCHS = 150
-CHECKPOINT_SAVE_INTERVAL = 20
+CHECKPOINT_SAVE_INTERVAL = 10
 MAX_TO_KEEP = 3
 
 if USE_COLAB:
@@ -222,12 +222,13 @@ def fit(train_ds, epochs, test_ds):
                         show=False)
 
         for n, (input_image, target_image) in train_ds.enumerate():
-            if (n + 1) % 100 == 0:
-                print('.', end='')
-            if (n + 1) % 1000 == 0:
-                print()
-
             gen_total_loss, disc_loss = train_step(input_image, target_image, step)
+            if (n + 1) % 200 == 0:
+                print('.', end='')
+            if (n + 1) % 10000 == 0:
+                print()
+                print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
+                print("disc_loss {:1.2f}".format(disc_loss.numpy()))
             step += 1
         print('epoch %d ended' % epoch)
 
