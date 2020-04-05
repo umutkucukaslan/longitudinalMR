@@ -1,3 +1,4 @@
+import datetime
 import os
 import sys
 
@@ -8,11 +9,14 @@ import numpy as np
 from datasets.mnist_dataset import get_mnist_dataset
 from model.autoencoder import build_encoder, build_decoder
 
+import model.gan as gan
+
 """
 This is a toy example for GAN training using MNIST dataset.
 """
 
-USE_COLAB = False
+USE_COLAB = True
+EXPERIMENT_NAME = 'exp_2020_04_05'
 
 BUFFER_SIZE = 400
 BATCH_SIZE = 128
@@ -20,22 +24,24 @@ INPUT_WIDTH = 28
 INPUT_HEIGHT = 28
 INPUT_CHANNEL = 1
 
-EXPERIMENT_FOLDER = '/Users/umutkucukaslan/Desktop/thesis/experiments/exp_2020_03_30'
-GEN_MODEL_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'gen_model_plot.jpg')
+LAMBDA = 100
+EPOCHS = 150
+
+if USE_COLAB:
+    EXPERIMENT_FOLDER = os.path.join('/content/drive/My Drive/experiments', EXPERIMENT_NAME)
+else:
+    EXPERIMENT_FOLDER = os.path.join('/Users/umutkucukaslan/Desktop/thesis/experiments', EXPERIMENT_NAME)
 
 if not os.path.isdir(EXPERIMENT_FOLDER):
     os.makedirs(EXPERIMENT_FOLDER)
 
+# generator model plot path
+GEN_MODEL_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'gen_model_plot.jpg')
+DIS_MODEL_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'dis_model_plot.jpg')
 
-if USE_COLAB:
-    SUMMARY_FILE_DIR = '/content/drive/My Drive/trained_models/exp_2020_03_30'
-else:
-    SUMMARY_FILE_DIR = '/Users/umutkucukaslan/Desktop/thesis/testsummaryfile'
-
-if not os.path.isdir(SUMMARY_FILE_DIR):
-    os.makedirs(SUMMARY_FILE_DIR)
-if not os.path.isdir(os.path.join(SUMMARY_FILE_DIR, 'figures')):
-    os.makedirs(os.path.join(SUMMARY_FILE_DIR, 'figures'))
+# folder to save generated test images during training
+if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
+    os.makedirs(os.path.join(EXPERIMENT_FOLDER, 'figures'))
 
 # DATASET
 ds_train, ds_test = get_mnist_dataset(use_colab=USE_COLAB)
@@ -84,6 +90,7 @@ encoder = build_encoder(input_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL),
 
 encoder.summary()
 
+
 decoder = build_decoder(input_shape=output_shape,
                         output_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL),
                         filters=tuple(reversed(list(filters))),
@@ -106,34 +113,70 @@ tf.keras.utils.plot_model(generator, to_file=GEN_MODEL_PLOT_PATH, show_shapes=Tr
 
 
 # DISCRIMINATOR
+discriminator = gan.get_mnist_discriminator()
+
+tf.keras.utils.plot_model(discriminator, to_file=DIS_MODEL_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=False)
 
 
-
+# =================
+# loss to be used
 loss_object = tf.keras.losses.BinaryCrossentropy()
 
+# optimizers
 generator_optimizer = tf.optimizers.Adam(2e-4, beta_1=0.5)
+discriminator_optimizer = tf.optimizers.Adam(2e-4, beta_1=0.5)
 
-summary_writer = tf.summary.create_file_writer(SUMMARY_FILE_DIR)
+# checkpoint writer
+checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, 'checkpoints')
+checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
+                                 discriminator_optimizer=discriminator_optimizer,
+                                 generator=generator,
+                                 discriminator=discriminator)
+
+# summary file writer for tensorboard
+log_dir = os.path.join(EXPERIMENT_FOLDER, 'logs')
+summary_writer = tf.summary.create_file_writer(os.path.join(log_dir, datetime.datetime.now().strftime('%Y%m%d-%H%M%S')))
 
 
 # LOSSES
-def generator_loss(gen_output, target):
+def generator_loss(disc_generated_output, gen_output, target):
+    gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
     l1_loss = tf.reduce_mean(tf.abs(gen_output - target))
-    return l1_loss
+    total_loss = gan_loss + LAMBDA * l1_loss
+    return total_loss, gan_loss, l1_loss
+
+
+def discriminator_loss(disc_real_output, disc_generated_output):
+    real_loss = loss_object(tf.ones_like(disc_real_output), disc_real_output)
+    generated_loss = loss_object(tf.zeros_like(disc_generated_output), disc_generated_output)
+    total_disc_loss = real_loss + generated_loss
+    return total_disc_loss
 
 
 # TRAINING
 def train_step(input_image, target, epoch):
-    with tf.GradientTape() as gen_tape:
+    with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+
         gen_output = generator(input_image, training=True)
 
-        gen_l1_loss = generator_loss(gen_output, target)
+        disc_real_output = discriminator([input_image, input_image], training=True)
+        disc_generated_output = discriminator([gen_output, input_image], training=True)
 
-    generator_gradients = gen_tape.gradient(gen_l1_loss, generator.trainable_variables)
+        gen_total_loss, gen_gan_loss, gen_l1_loss = generator_loss(disc_generated_output, gen_output, target)
+        disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
+
+    generator_gradients = gen_tape.gradient(gen_total_loss, generator.trainable_variables)
     generator_optimizer.apply_gradients(zip(generator_gradients, generator.trainable_variables))
 
+    discriminator_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
+    discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
+
     with summary_writer.as_default():
+        tf.summary.scalar('gen_total_loss', gen_total_loss, step=epoch)
         tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=epoch)
+        tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=epoch)
+        tf.summary.scalar('disc_loss', disc_loss, step=epoch)
 
 
 def generate_images(model, test_input, path=None, show=True):
@@ -148,7 +191,7 @@ def generate_images(model, test_input, path=None, show=True):
     title = ['Input Image', 'Reconstructed Image']
 
     for i in range(2):
-        plt.subplot(1, 3, i+1)
+        plt.subplot(1, 2, i+1)
         plt.title(title[i])
         plt.imshow(display_list[i])
         plt.axis('off')
@@ -168,7 +211,7 @@ def fit(train_ds, epochs, test_ds):
         image_name = str(epoch) + '_test.png'
         generate_images(generator,
                         test_input,
-                        os.path.join(SUMMARY_FILE_DIR, 'figures', image_name),
+                        os.path.join(EXPERIMENT_FOLDER, 'figures', image_name),
                         show=False)
 
         for n, (input_image, target_image) in train_ds.enumerate():
@@ -181,6 +224,14 @@ def fit(train_ds, epochs, test_ds):
             step += 1
         print('epoch %d ended' % epoch)
 
+        if (epoch + 1) % 3 == 0:
+            checkpoint.save(checkpoint_prefix + "_" + str(epoch + 1))
 
-# fit(ds_train, 120, ds_test.take(300))
+
+# fit(ds_train.take(10), EPOCHS, ds_test.take(2).repeat())
+fit(ds_train, EPOCHS, ds_test.repeat())
+
+
+
+
 
