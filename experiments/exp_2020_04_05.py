@@ -16,7 +16,7 @@ This is a toy example for GAN training using MNIST dataset.
 """
 
 USE_COLAB = True
-EXPERIMENT_NAME = 'exp_2020_04_05'
+EXPERIMENT_NAME = 'exp_2020_04_05__2'
 
 BUFFER_SIZE = 400
 BATCH_SIZE = 256
@@ -183,7 +183,7 @@ def train_step(input_image, target, epoch):
         tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=epoch)
         tf.summary.scalar('disc_loss', disc_loss, step=epoch)
 
-    return gen_total_loss, disc_loss
+    return gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss
 
 
 def generate_images(model, test_input, path=None, show=True):
@@ -222,16 +222,18 @@ def fit(train_ds, epochs, test_ds):
                         show=False)
 
         for n, (input_image, target_image) in train_ds.enumerate():
-            gen_total_loss, disc_loss = train_step(input_image, target_image, step)
-            if (n + 1) % 200 == 0:
-                print('.', end='')
-            if (n + 1) % 10000 == 0:
-                print()
+            gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = train_step(input_image, target_image, step)
+            # if (n + 1) % 200 == 0:
+            #     print('.', end='')
+            # if (n + 1) % 10000 == 0:
+            #     print()
 
             step += 1
         print('epoch %d ended' % epoch)
-        print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
-        print("disc_loss {:1.2f}".format(disc_loss.numpy()))
+        print("     gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
+        print("     gen_gan_loss {:1.2f}".format(gen_gan_loss.numpy()))
+        print("     gen_l1_loss {:1.2f}".format(gen_l1_loss.numpy()))
+        print("     disc_loss {:1.2f}".format(disc_loss.numpy()))
 
         checkpoint.step.assign_add(1)
 
