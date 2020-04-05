@@ -227,10 +227,11 @@ def fit(train_ds, epochs, test_ds):
                 print('.', end='')
             if (n + 1) % 10000 == 0:
                 print()
-                print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
-                print("disc_loss {:1.2f}".format(disc_loss.numpy()))
+
             step += 1
         print('epoch %d ended' % epoch)
+        print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
+        print("disc_loss {:1.2f}".format(disc_loss.numpy()))
 
         checkpoint.step.assign_add(1)
 
