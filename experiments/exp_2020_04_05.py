@@ -19,13 +19,16 @@ USE_COLAB = True
 EXPERIMENT_NAME = 'exp_2020_04_05'
 
 BUFFER_SIZE = 400
-BATCH_SIZE = 128
+BATCH_SIZE = 2
 INPUT_WIDTH = 28
 INPUT_HEIGHT = 28
 INPUT_CHANNEL = 1
 
 LAMBDA = 100
+
 EPOCHS = 150
+CHECKPOINT_SAVE_INTERVAL = 20
+MAX_TO_KEEP = 3
 
 if USE_COLAB:
     EXPERIMENT_FOLDER = os.path.join('/content/drive/My Drive/experiments', EXPERIMENT_NAME)
@@ -129,10 +132,12 @@ discriminator_optimizer = tf.optimizers.Adam(2e-4, beta_1=0.5)
 # checkpoint writer
 checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, 'checkpoints')
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
+checkpoint = tf.train.Checkpoint(step=tf.Variable(1),
+                                 generator_optimizer=generator_optimizer,
                                  discriminator_optimizer=discriminator_optimizer,
                                  generator=generator,
                                  discriminator=discriminator)
+manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=MAX_TO_KEEP)
 
 # summary file writer for tensorboard
 log_dir = os.path.join(EXPERIMENT_FOLDER, 'logs')
@@ -178,6 +183,8 @@ def train_step(input_image, target, epoch):
         tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=epoch)
         tf.summary.scalar('disc_loss', disc_loss, step=epoch)
 
+    return gen_total_loss, disc_loss
+
 
 def generate_images(model, test_input, path=None, show=True):
     prediction = model(test_input)
@@ -220,15 +227,22 @@ def fit(train_ds, epochs, test_ds):
             if (n + 1) % 1000 == 0:
                 print()
 
-            train_step(input_image, target_image, step)
+            gen_total_loss, disc_loss = train_step(input_image, target_image, step)
             step += 1
         print('epoch %d ended' % epoch)
 
-        if (epoch + 1) % 3 == 0:
-            checkpoint.save(checkpoint_prefix + "_" + str(epoch + 1))
+        checkpoint.step.assign_add(1)
+
+        if (int(checkpoint.step) + 1) % CHECKPOINT_SAVE_INTERVAL == 0:
+            save_path = manager.save()
+            print("Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path))
+            print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
+            print("disc_loss {:1.2f}".format(disc_loss.numpy()))
+
+            # checkpoint.save(checkpoint_prefix + "_" + str(epoch + 1))
 
 
-# fit(ds_train.take(10), EPOCHS, ds_test.take(2).repeat())
+# fit(ds_train.take(10), EPOCHS, ds_test.repeat())
 fit(ds_train, EPOCHS, ds_test.repeat())
 
 
