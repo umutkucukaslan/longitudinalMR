@@ -227,10 +227,12 @@ def fit(train_ds, epochs, val_ds, test_ds):
             losses[1].append(gen_gan_loss.numpy())
             losses[2].append(gen_l1_loss.numpy())
             losses[3].append(disc_loss.numpy())
-            # if (n + 1) % 200 == 0:
-            #     print('.', end='')
-            # if (n + 1) % 10000 == 0:
-            #     print()
+            if (n + 1) % 10 == 0:
+                print('.', end='')
+            if (n + 1) % 100 == 0:
+                print(' x ', end='')
+            if (n + 1) % 300 == 0:
+                print()
             step += 1
         losses = [statistics.mean(x) for x in losses]
 
