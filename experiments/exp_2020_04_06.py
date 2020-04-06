@@ -20,7 +20,7 @@ EXPERIMENT_NAME = 'exp_2020_04_06'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 INPUT_WIDTH = 256
 INPUT_HEIGHT = 256
 INPUT_CHANNEL = 1
@@ -229,12 +229,12 @@ def fit(train_ds, epochs, val_ds, test_ds):
             losses[1].append(gen_gan_loss.numpy())
             losses[2].append(gen_l1_loss.numpy())
             losses[3].append(disc_loss.numpy())
-            if (n + 1) % 10 == 0:
-                print('.', end='')
-            if (n + 1) % 100 == 0:
-                print(' x ', end='')
-            if (n + 1) % 300 == 0:
-                print()
+            # if (n + 1) % 10 == 0:
+            #     print('.', end='')
+            # if (n + 1) % 100 == 0:
+            #     print(' x ', end='')
+            # if (n + 1) % 300 == 0:
+            #     print()
             step += 1
         losses = [statistics.mean(x) for x in losses]
 
@@ -257,25 +257,26 @@ def fit(train_ds, epochs, val_ds, test_ds):
         end_time = time.time()
         print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)))
         print("     gen_total_loss {:1.2f}".format(losses[0]))
-        print("     gen_gan_loss {:1.2f}".format(losses[1]))
-        print("     gen_l1_loss {:1.2f}".format(losses[2]))
-        print("     disc_loss {:1.2f}".format(losses[3]))
+        print("     gen_gan_loss   {:1.2f}".format(losses[1]))
+        print("     gen_l1_loss    {:1.2f}".format(losses[2]))
+        print("     disc_loss      {:1.2f}".format(losses[3]))
 
         print("     val_gen_total_loss {:1.2f}".format(val_losses[0]))
-        print("     gen_gan_loss {:1.2f}".format(val_losses[1]))
-        print("     gen_l1_loss {:1.2f}".format(val_losses[2]))
-        print("     disc_loss {:1.2f}".format(val_losses[3]))
+        print("     gen_gan_loss       {:1.2f}".format(val_losses[1]))
+        print("     gen_l1_loss        {:1.2f}".format(val_losses[2]))
+        print("     disc_loss          {:1.2f}".format(val_losses[3]))
+
+
+        if int(checkpoint.step) % CHECKPOINT_SAVE_INTERVAL == 0:
+            save_path = manager.save()
+            print("Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path))
+            # print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
+            # print("disc_loss {:1.2f}".format(disc_loss.numpy()))
 
         checkpoint.step.assign_add(1)
 
-        if (int(checkpoint.step) + 1) % CHECKPOINT_SAVE_INTERVAL == 0:
-            save_path = manager.save()
-            print("Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path))
-            print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
-            print("disc_loss {:1.2f}".format(disc_loss.numpy()))
-
 
 print('Fit to the data set')
-fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
-# fit(train_ds, EPOCHS, val_ds, test_ds.repeat())
+# fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
+fit(train_ds, EPOCHS, val_ds, test_ds.repeat())
 
