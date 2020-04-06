@@ -220,6 +220,7 @@ def fit(train_ds, epochs, val_ds, test_ds):
                         show=False)
 
         # training
+        print('Training epoch {}'.format(epoch))
         losses = [[], [], [], []]
         for n, input_image in train_ds.enumerate():
             gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = train_step(input_image, input_image, step)
@@ -237,6 +238,7 @@ def fit(train_ds, epochs, val_ds, test_ds):
         losses = [statistics.mean(x) for x in losses]
 
         # testing
+        print('Calculating validation losses...')
         val_losses = [[], [], [], []]
         for input_image in val_ds:
             gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = eval_step(input_image, input_image)
@@ -273,5 +275,6 @@ def fit(train_ds, epochs, val_ds, test_ds):
 
 
 # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
+print('Fit to the data set')
 fit(train_ds, EPOCHS, val_ds, test_ds.repeat())
 
