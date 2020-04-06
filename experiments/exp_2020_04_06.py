@@ -1,6 +1,7 @@
 import datetime
 import os
 import statistics
+import time
 
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -211,7 +212,7 @@ def fit(train_ds, epochs, val_ds, test_ds):
     test_ds = iter(test_ds)
     step = 0
     for epoch in range(epochs):
-
+        start_time = time.time()
         test_input = next(test_ds)
         image_name = str(epoch) + '_test.png'
         generate_images(generator,
@@ -253,8 +254,8 @@ def fit(train_ds, epochs, val_ds, test_ds):
             tf.summary.scalar('val_gen_l1_loss', val_losses[2], step=step)
             tf.summary.scalar('val_disc_loss', val_losses[3], step=step)
 
-
-        print('Epoch %d ended' % epoch)
+        end_time = time.time()
+        print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)))
         print("     gen_total_loss {:1.2f}".format(losses[0]))
         print("     gen_gan_loss {:1.2f}".format(losses[1]))
         print("     gen_l1_loss {:1.2f}".format(losses[2]))
