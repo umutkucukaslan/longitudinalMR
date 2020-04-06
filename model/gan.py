@@ -125,7 +125,7 @@ def get_discriminator_2020_04_06():
     x = downsample(256, kernel_size, batch_norm)(x)  # (bs, 32, 32, 256)
     x = downsample(256, kernel_size, batch_norm)(x)  # (bs, 16, 16, 256)
 
-    x = tf.keras.layers.Conv2D(512, kernel_size, strides=1, padding='same', kernel_initializer=initializer,
+    x = tf.keras.layers.Conv2D(256, kernel_size, strides=1, padding='same', kernel_initializer=initializer,
                                use_bias=False)(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.LeakyReLU()(x)      # (bs, 16, 16, 512)
