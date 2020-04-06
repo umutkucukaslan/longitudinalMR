@@ -198,7 +198,7 @@ def generate_images(model, test_input, path=None, show=True):
     for i in range(2):
         plt.subplot(1, 2, i+1)
         plt.title(title[i])
-        plt.imshow(display_list[i])
+        plt.imshow(display_list[i], cmap=plt.get_cmap('gray'))
         plt.axis('off')
     if path is not None:
         plt.savefig(path)
