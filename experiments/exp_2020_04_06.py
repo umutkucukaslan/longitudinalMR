@@ -275,7 +275,7 @@ def fit(train_ds, epochs, val_ds, test_ds):
             print("disc_loss {:1.2f}".format(disc_loss.numpy()))
 
 
-# fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
 print('Fit to the data set')
-fit(train_ds, EPOCHS, val_ds, test_ds.repeat())
+fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
+# fit(train_ds, EPOCHS, val_ds, test_ds.repeat())
 
