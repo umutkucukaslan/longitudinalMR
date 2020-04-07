@@ -130,6 +130,9 @@ manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=MAX
 
 if RESTORE_FROM_CHECKPOINT:
     checkpoint.restore(manager.latest_checkpoint)
+    print('CHECKPOINT STEP is ', checkpoint.step)
+
+exit()
 
 if manager.latest_checkpoint:
     print("Restored from {}".format(manager.latest_checkpoint))
