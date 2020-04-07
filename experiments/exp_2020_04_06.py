@@ -138,6 +138,10 @@ if manager.latest_checkpoint:
 else:
     print("Initializing from scratch.")
 
+num_steps = tf.data.experimental.cardinality(train_ds)
+print("num_steps:  ", num_steps)
+print("num_steps.numpy:  ", num_steps.numpy())
+
 exit()
 
 # summary file writer for tensorboard
