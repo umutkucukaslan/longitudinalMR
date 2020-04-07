@@ -122,6 +122,7 @@ discriminator_optimizer = tf.optimizers.Adam(2e-4, beta_1=0.5)
 checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, 'checkpoints')
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
 checkpoint = tf.train.Checkpoint(step=tf.Variable(1),
+                                 epoch=tf.Variable(1),
                                  generator_optimizer=generator_optimizer,
                                  discriminator_optimizer=discriminator_optimizer,
                                  generator=generator,
@@ -141,6 +142,8 @@ else:
 num_steps = tf.data.experimental.cardinality(train_ds)
 print("num_steps:  ", num_steps)
 print("num_steps.numpy:  ", num_steps.numpy())
+print('checkpoint.step :  ', checkpoint.step)
+print('checkpoint.epoch :  ', checkpoint.epoch)
 
 exit()
 
