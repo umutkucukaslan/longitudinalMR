@@ -149,7 +149,7 @@ initial_epoch = checkpoint.epoch.numpy() + 1
 initial_step = checkpoint.step.numpy() + 1
 
 initial_epoch = initial_step
-initial_step = checkpoint.step.numpy() * num_steps
+initial_step = checkpoint.step.numpy() * num_steps.numpy()
 
 # summary file writer for tensorboard
 log_dir = os.path.join(EXPERIMENT_FOLDER, 'logs')
