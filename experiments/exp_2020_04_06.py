@@ -295,7 +295,7 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_step=0, initial_epoch=0):
         checkpoint.step.assign(step)
         checkpoint.epoch.assign(epoch)
 
-        if int(checkpoint.step) % CHECKPOINT_SAVE_INTERVAL == 0:
+        if int(checkpoint.epoch) % CHECKPOINT_SAVE_INTERVAL == 0:
             save_path = manager.save()
             print("Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path))
             # print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
