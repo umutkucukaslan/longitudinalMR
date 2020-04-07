@@ -132,12 +132,13 @@ if RESTORE_FROM_CHECKPOINT:
     checkpoint.restore(manager.latest_checkpoint)
     print('CHECKPOINT STEP is ', checkpoint.step)
 
-exit()
 
 if manager.latest_checkpoint:
     print("Restored from {}".format(manager.latest_checkpoint))
 else:
     print("Initializing from scratch.")
+
+exit()
 
 # summary file writer for tensorboard
 log_dir = os.path.join(EXPERIMENT_FOLDER, 'logs')
