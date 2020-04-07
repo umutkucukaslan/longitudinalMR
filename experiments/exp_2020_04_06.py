@@ -304,6 +304,8 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_step=0, initial_epoch=0):
 
 
 print('Fit to the data set')
+print('Initial epoch: ', initial_epoch)
+print('Initial step: ', initial_step)
 # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
 fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch, initial_step=initial_step)
 
