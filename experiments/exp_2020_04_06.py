@@ -16,6 +16,7 @@ Training autoencoder adversarially using ADNI dataset.
 """
 
 USE_COLAB = True
+RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = 'exp_2020_04_06'
 
 PREFETCH_BUFFER_SIZE = 5
@@ -28,8 +29,8 @@ INPUT_CHANNEL = 1
 LAMBDA = 100
 
 EPOCHS = 5000
-CHECKPOINT_SAVE_INTERVAL = 25
-MAX_TO_KEEP = 3
+CHECKPOINT_SAVE_INTERVAL = 5
+MAX_TO_KEEP = 8
 
 if USE_COLAB:
     EXPERIMENT_FOLDER = os.path.join('/content/drive/My Drive/experiments', EXPERIMENT_NAME)
@@ -126,6 +127,14 @@ checkpoint = tf.train.Checkpoint(step=tf.Variable(1),
                                  generator=generator,
                                  discriminator=discriminator)
 manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=MAX_TO_KEEP)
+
+if RESTORE_FROM_CHECKPOINT:
+    checkpoint.restore(manager.latest_checkpoint)
+
+if manager.latest_checkpoint:
+    print("Restored from {}".format(manager.latest_checkpoint))
+else:
+    print("Initializing from scratch.")
 
 # summary file writer for tensorboard
 log_dir = os.path.join(EXPERIMENT_FOLDER, 'logs')
@@ -279,4 +288,13 @@ def fit(train_ds, epochs, val_ds, test_ds):
 print('Fit to the data set')
 # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
 fit(train_ds, EPOCHS, val_ds, test_ds.repeat())
+
+
+
+
+
+
+# IP adresi   46.196.128.64
+# 46.196.128.64
+
 
