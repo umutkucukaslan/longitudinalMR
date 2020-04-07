@@ -145,7 +145,11 @@ print("num_steps.numpy:  ", num_steps.numpy())
 print('checkpoint.step :  ', checkpoint.step)
 print('checkpoint.epoch :  ', checkpoint.epoch)
 
-exit()
+initial_epoch = checkpoint.epoch.numpy() + 1
+initial_step = checkpoint.step.numpy() + 1
+
+initial_epoch = initial_step
+initial_step = checkpoint.step.numpy() * num_steps
 
 # summary file writer for tensorboard
 log_dir = os.path.join(EXPERIMENT_FOLDER, 'logs')
@@ -227,11 +231,12 @@ def generate_images(model, test_input, path=None, show=True):
         plt.show()
 
 
-def fit(train_ds, epochs, val_ds, test_ds):
+def fit(train_ds, num_epochs, val_ds, test_ds, initial_step=0, initial_epoch=0):
 
+    assert initial_epoch < num_epochs
     test_ds = iter(test_ds)
-    step = 0
-    for epoch in range(epochs):
+    step = initial_step
+    for epoch in range(initial_epoch, num_epochs):
         start_time = time.time()
         test_input = next(test_ds)
         image_name = str(epoch) + '_test.png'
@@ -287,18 +292,20 @@ def fit(train_ds, epochs, val_ds, test_ds):
         print("     disc_loss          {:1.2f}".format(val_losses[3]))
 
 
+        checkpoint.step.assign(step)
+        checkpoint.epoch.assign(epoch)
+
         if int(checkpoint.step) % CHECKPOINT_SAVE_INTERVAL == 0:
             save_path = manager.save()
             print("Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path))
             # print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
             # print("disc_loss {:1.2f}".format(disc_loss.numpy()))
 
-        checkpoint.step.assign_add(1)
 
 
 print('Fit to the data set')
 # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
-fit(train_ds, EPOCHS, val_ds, test_ds.repeat())
+fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch, initial_step=initial_step)
 
 
 
