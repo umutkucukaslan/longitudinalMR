@@ -15,7 +15,9 @@ import model.gan as gan
 Training autoencoder adversarially using ADNI dataset.
 """
 
+
 USE_COLAB = True
+USE_TPU = True
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = 'exp_2020_04_06'
 
@@ -31,6 +33,20 @@ LAMBDA = 100
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 8
+
+
+if USE_TPU:
+    try:
+        tpu = tf.distribute.cluster_resolver.TPUClusterResolver()  # TPU detection
+        print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])
+    except ValueError:
+        raise BaseException(
+            'ERROR: Not connected to a TPU runtime; please see the previous cell in this notebook for instructions!')
+
+    tf.config.experimental_connect_to_cluster(tpu)
+    tf.tpu.experimental.initialize_tpu_system(tpu)
+    tpu_strategy = tf.distribute.experimental.TPUStrategy(tpu)
+
 
 if USE_COLAB:
     EXPERIMENT_FOLDER = os.path.join('/content/drive/My Drive/experiments', EXPERIMENT_NAME)
