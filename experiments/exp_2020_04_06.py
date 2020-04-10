@@ -49,7 +49,10 @@ if USE_TPU:
 
 
 if USE_COLAB:
-    EXPERIMENT_FOLDER = os.path.join('/content/drive/My Drive/experiments', EXPERIMENT_NAME)
+    if USE_TPU:
+        EXPERIMENT_FOLDER = os.path.join('/content/experiments', EXPERIMENT_NAME)
+    else:
+        EXPERIMENT_FOLDER = os.path.join('/content/drive/My Drive/experiments', EXPERIMENT_NAME)
 else:
     EXPERIMENT_FOLDER = os.path.join('/Users/umutkucukaslan/Desktop/thesis/experiments', EXPERIMENT_NAME)
 
