@@ -19,7 +19,7 @@ Training autoencoder adversarially using ADNI dataset.
 USE_COLAB = True
 USE_TPU = True
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_06'
+EXPERIMENT_NAME = 'exp_2020_04_06_tpu'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
