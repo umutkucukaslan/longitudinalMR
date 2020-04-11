@@ -48,6 +48,10 @@ if USE_TPU:
     tf.config.experimental_connect_to_cluster(tpu)
     tf.tpu.experimental.initialize_tpu_system(tpu)
     tpu_strategy = tf.distribute.experimental.TPUStrategy(tpu)
+else:
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
 
 
 if RUNTIME == 'colab':
