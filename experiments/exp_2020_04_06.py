@@ -94,9 +94,9 @@ val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 #     plt.imshow(np.squeeze(example.numpy()[0]), cmap=plt.get_cmap('gray'))
 #     plt.show()
 #     img = example.numpy()
-#     log_print('mean value: ', img.mean(), file=log_file)
-#     log_print('max value : ', img.max(), file=log_file)
-#     log_print('min value : ', img.min(), file=log_file)
+#     print('mean value: ', img.mean())
+#     print('max value : ', img.max())
+#     print('min value : ', img.min())
 # exit()
 
 # BUILD GENERATOR
@@ -332,7 +332,7 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
 
 try:
     log_print('Fitting to the data set')
-    log_print('Initial epoch: ', initial_epoch)
+    log_print('Initial epoch: {}'.format(initial_epoch))
     # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
     fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch)
 
