@@ -75,7 +75,7 @@ if not os.path.isdir(EXPERIMENT_FOLDER):
 
 def log_print(msg, add_timestamp=False):
     if add_timestamp:
-        msg += ' (at {})'.format(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        msg += ' (logged at {})'.format(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
     with open(os.path.join(EXPERIMENT_FOLDER, 'logs.txt'), 'a+') as log_file:
         log_file.write(msg + '\n')
 
