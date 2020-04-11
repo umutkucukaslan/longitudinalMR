@@ -272,7 +272,7 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
                         show=False)
 
         # training
-        log_print('Training epoch {} at {}'.format(epoch, datetime.time.now.strftime("%d/%m/%Y %H:%M:%S")))
+        log_print('Training epoch {} at {}'.format(epoch, datetime.datetime.now.strftime("%d/%m/%Y %H:%M:%S")))
         losses = [[], [], [], []]
         for n, input_image in train_ds.enumerate():
             gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = train_step(input_image, input_image)
