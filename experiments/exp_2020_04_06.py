@@ -35,6 +35,7 @@ EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
 
+
 # set batch size easily
 if len(sys.argv) > 1:
     BATCH_SIZE = int(sys.argv[1])
@@ -74,6 +75,8 @@ if not os.path.isdir(EXPERIMENT_FOLDER):
 
 
 def log_print(msg, add_timestamp=False):
+    if not isinstance(msg, str):
+        msg = str(msg)
     if add_timestamp:
         msg += ' (logged at {})'.format(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
     with open(os.path.join(EXPERIMENT_FOLDER, 'logs.txt'), 'a+') as log_file:
@@ -334,6 +337,22 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
 
 try:
     log_print('Fitting to the data set', add_timestamp=True)
+    log_print(' ')
+    log_print('Parameters:')
+    log_print('Experiment name: ' + str(EXPERIMENT_NAME))
+    log_print('Batch size: ' + str(BATCH_SIZE))
+    log_print('Epochs: ' + str(EPOCHS))
+    log_print('Restore from checkpoint: ' + str(RESTORE_FROM_CHECKPOINT))
+    log_print('Chechpoint save interval: ', str(CHECKPOINT_SAVE_INTERVAL))
+    log_print('Max number of checkpoints kept: ' + str(MAX_TO_KEEP))
+    log_print('Runtime: ' + str(RUNTIME))
+    log_print('Use TPU: ' + str(USE_TPU))
+    log_print('Prefetch buffer size: ' + str(PREFETCH_BUFFER_SIZE))
+    log_print('Shuffle buffer size: ' + str(SHUFFLE_BUFFER_SIZE))
+    log_print('Input shape: ( ' + str(INPUT_HEIGHT) + ', ' + str(INPUT_WIDTH) + ', ' + str(INPUT_CHANNEL) + ' )')
+    log_print('Cost weight lambda: ' + str(LAMBDA))
+    log_print(' ')
+
     log_print('Initial epoch: {}'.format(initial_epoch))
     # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
     fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch)
