@@ -73,7 +73,9 @@ if not os.path.isdir(EXPERIMENT_FOLDER):
     os.makedirs(EXPERIMENT_FOLDER)
 
 
-def log_print(msg):
+def log_print(msg, add_timestamp=False):
+    if add_timestamp:
+        msg += ' (at {})'.format(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
     with open(os.path.join(EXPERIMENT_FOLDER, 'logs.txt'), 'a+') as log_file:
         log_file.write(msg + '\n')
 
@@ -272,7 +274,7 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
                         show=False)
 
         # training
-        log_print('Training epoch {} at {}'.format(epoch, datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
+        log_print('Training epoch {}'.format(epoch), add_timestamp=True)
         losses = [[], [], [], []]
         for n, input_image in train_ds.enumerate():
             gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = train_step(input_image, input_image)
@@ -331,7 +333,7 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
 
 
 try:
-    log_print('Fitting to the data set')
+    log_print('Fitting to the data set', add_timestamp=True)
     log_print('Initial epoch: {}'.format(initial_epoch))
     # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
     fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch)
@@ -341,11 +343,11 @@ try:
     log_print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
 
 except KeyboardInterrupt:
-    log_print('Keyboard Interrupt')
+    log_print('Keyboard Interrupt', add_timestamp=True)
 
     # save latest checkpoint and close log file
     save_path = manager.save()
-    log_print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
+    log_print("Saved checkpoint for epoch {}: {} due to KeyboardInterrupt".format(int(checkpoint.epoch), save_path))
 
 
 
