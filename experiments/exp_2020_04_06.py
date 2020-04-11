@@ -16,10 +16,10 @@ Training autoencoder adversarially using ADNI dataset.
 """
 
 
-RUNTIME = 'cloud'   # cloud, colab or none
-USE_TPU = False
+RUNTIME = 'colab'   # cloud, colab or none
+USE_TPU = True
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_06_cloud'
+EXPERIMENT_NAME = 'exp_2020_04_06_tpu'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
@@ -104,6 +104,7 @@ encoder = build_encoder(input_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL),
                         name='encoder')
 
 encoder.summary()
+encoder.summary(print_fn=print)
 
 
 decoder = build_decoder(input_shape=output_shape,
@@ -115,6 +116,7 @@ decoder = build_decoder(input_shape=output_shape,
                         name='decoder')
 
 decoder.summary()
+decoder.summary(print_fn=print)
 
 
 generator = tf.keras.Sequential(name='generator')
@@ -122,6 +124,7 @@ generator.add(encoder)
 generator.add(decoder)
 
 generator.summary()
+generator.summary(print_fn=print)
 
 tf.keras.utils.plot_model(generator, to_file=GEN_MODEL_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=True)
 
@@ -130,6 +133,7 @@ tf.keras.utils.plot_model(generator, to_file=GEN_MODEL_PLOT_PATH, show_shapes=Tr
 # DISCRIMINATOR
 discriminator = gan.get_discriminator_2020_04_06()
 discriminator.summary()
+discriminator.summary(print_fn=print)
 
 tf.keras.utils.plot_model(discriminator, to_file=DIS_MODEL_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=False)
 
