@@ -16,14 +16,14 @@ Training autoencoder adversarially using ADNI dataset.
 """
 
 
-USE_COLAB = True
-USE_TPU = True
+RUNTIME = 'cloud'   # cloud, colab or none
+USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_06_tpu'
+EXPERIMENT_NAME = 'exp_2020_04_06_cloud'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 INPUT_WIDTH = 256
 INPUT_HEIGHT = 256
 INPUT_CHANNEL = 1
@@ -32,13 +32,16 @@ LAMBDA = 100
 
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
-MAX_TO_KEEP = 8
+MAX_TO_KEEP = 5
 
+DEFAULT_FLOAT_TYPE = 'float32'
+
+tf.keras.backend.set_floatx(DEFAULT_FLOAT_TYPE)
 
 if USE_TPU:
     try:
         tpu = tf.distribute.cluster_resolver.TPUClusterResolver()  # TPU detection
-        print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])
+        print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'], file=log_file)
     except ValueError:
         raise BaseException(
             'ERROR: Not connected to a TPU runtime; please see the previous cell in this notebook for instructions!')
@@ -48,16 +51,20 @@ if USE_TPU:
     tpu_strategy = tf.distribute.experimental.TPUStrategy(tpu)
 
 
-if USE_COLAB:
+if RUNTIME == 'colab':
     if USE_TPU:
         EXPERIMENT_FOLDER = os.path.join('/content/experiments', EXPERIMENT_NAME)
     else:
         EXPERIMENT_FOLDER = os.path.join('/content/drive/My Drive/experiments', EXPERIMENT_NAME)
+elif RUNTIME == 'cloud':
+    EXPERIMENT_FOLDER = os.path.join('/home/umutkucukaslan/experiments', EXPERIMENT_NAME)
 else:
     EXPERIMENT_FOLDER = os.path.join('/Users/umutkucukaslan/Desktop/thesis/experiments', EXPERIMENT_NAME)
 
 if not os.path.isdir(EXPERIMENT_FOLDER):
     os.makedirs(EXPERIMENT_FOLDER)
+
+log_file = open(os.path.join(EXPERIMENT_FOLDER, 'logs.txt'), 'a+')
 
 # generator model plot path
 GEN_MODEL_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'gen_model_plot.jpg')
@@ -68,7 +75,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, 'figures'))
 
 # DATASET
-train_ds, val_ds, test_ds = get_adni_dataset(use_colab=USE_COLAB)
+train_ds, val_ds, test_ds = get_adni_dataset(runtime=RUNTIME)
 train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 
@@ -76,11 +83,10 @@ val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 #     plt.imshow(np.squeeze(example.numpy()[0]), cmap=plt.get_cmap('gray'))
 #     plt.show()
 #     img = example.numpy()
-#     print('mean value: ', img.mean())
-#     print('max value : ', img.max())
-#     print('min value : ', img.min())
+#     print('mean value: ', img.mean(), file=log_file)
+#     print('max value : ', img.max(), file=log_file)
+#     print('min value : ', img.min(), file=log_file)
 # exit()
-
 
 # BUILD GENERATOR
 # encoder
@@ -140,8 +146,7 @@ discriminator_optimizer = tf.optimizers.Adam(2e-4, beta_1=0.5)
 # checkpoint writer
 checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, 'checkpoints')
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-checkpoint = tf.train.Checkpoint(step=tf.Variable(1),
-                                 epoch=tf.Variable(1),
+checkpoint = tf.train.Checkpoint(epoch=tf.Variable(1),
                                  generator_optimizer=generator_optimizer,
                                  discriminator_optimizer=discriminator_optimizer,
                                  generator=generator,
@@ -150,22 +155,13 @@ manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=MAX
 
 if RESTORE_FROM_CHECKPOINT:
     checkpoint.restore(manager.latest_checkpoint)
-    print('CHECKPOINT STEP is ', checkpoint.step)
-
 
 if manager.latest_checkpoint:
-    print("Restored from {}".format(manager.latest_checkpoint))
+    print("Restored from {}".format(manager.latest_checkpoint), file=log_file)
 else:
-    print("Initializing from scratch.")
-
-num_steps = tf.data.experimental.cardinality(train_ds)
-print("num_steps:  ", num_steps)
-print("num_steps.numpy:  ", num_steps.numpy())
-print('checkpoint.step :  ', checkpoint.step)
-print('checkpoint.epoch :  ', checkpoint.epoch)
+    print("Initializing from scratch.", file=log_file)
 
 initial_epoch = checkpoint.epoch.numpy() + 1
-initial_step = checkpoint.step.numpy() + 1
 
 # summary file writer for tensorboard
 log_dir = os.path.join(EXPERIMENT_FOLDER, 'logs')
@@ -188,7 +184,7 @@ def discriminator_loss(disc_real_output, disc_generated_output):
 
 
 # TRAINING
-def train_step(input_image, target, epoch):
+def train_step(input_image, target):
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
 
         gen_output = generator(input_image, training=True)
@@ -205,11 +201,11 @@ def train_step(input_image, target, epoch):
     discriminator_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
     discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
 
-    with summary_writer.as_default():
-        tf.summary.scalar('gen_total_loss', gen_total_loss, step=epoch)
-        tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=epoch)
-        tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=epoch)
-        tf.summary.scalar('disc_loss', disc_loss, step=epoch)
+    # with summary_writer.as_default():
+    #     tf.summary.scalar('gen_total_loss', gen_total_loss, step=epoch)
+    #     tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=epoch)
+    #     tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=epoch)
+    #     tf.summary.scalar('disc_loss', disc_loss, step=epoch)
 
     return gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss
 
@@ -247,11 +243,10 @@ def generate_images(model, test_input, path=None, show=True):
         plt.show()
 
 
-def fit(train_ds, num_epochs, val_ds, test_ds, initial_step=0, initial_epoch=0):
+def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
 
     assert initial_epoch < num_epochs
     test_ds = iter(test_ds)
-    step = initial_step
     for epoch in range(initial_epoch, num_epochs):
         start_time = time.time()
         test_input = next(test_ds)
@@ -262,10 +257,10 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_step=0, initial_epoch=0):
                         show=False)
 
         # training
-        print('Training epoch {}'.format(epoch))
+        print('Training epoch {}'.format(epoch), file=log_file)
         losses = [[], [], [], []]
         for n, input_image in train_ds.enumerate():
-            gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = train_step(input_image, input_image, step)
+            gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = train_step(input_image, input_image)
             losses[0].append(gen_total_loss.numpy())
             losses[1].append(gen_gan_loss.numpy())
             losses[2].append(gen_l1_loss.numpy())
@@ -276,11 +271,15 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_step=0, initial_epoch=0):
             #     print(' x ', end='')
             # if (n + 1) % 300 == 0:
             #     print()
-            step += 1
         losses = [statistics.mean(x) for x in losses]
+        with summary_writer.as_default():
+            tf.summary.scalar('gen_total_loss', losses[0], step=epoch)
+            tf.summary.scalar('gen_gan_loss', losses[1], step=epoch)
+            tf.summary.scalar('gen_l1_loss', losses[2], step=epoch)
+            tf.summary.scalar('disc_loss', losses[3], step=epoch)
 
         # testing
-        print('Calculating validation losses...')
+        print('Calculating validation losses...', file=log_file)
         val_losses = [[], [], [], []]
         for input_image in val_ds:
             gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = eval_step(input_image, input_image)
@@ -290,42 +289,50 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_step=0, initial_epoch=0):
             val_losses[3].append(disc_loss.numpy())
         val_losses = [statistics.mean(x) for x in val_losses]
         with summary_writer.as_default():
-            tf.summary.scalar('val_gen_total_loss', val_losses[0], step=step)
-            tf.summary.scalar('val_gen_gan_loss', val_losses[1], step=step)
-            tf.summary.scalar('val_gen_l1_loss', val_losses[2], step=step)
-            tf.summary.scalar('val_disc_loss', val_losses[3], step=step)
+            tf.summary.scalar('val_gen_total_loss', val_losses[0], step=epoch)
+            tf.summary.scalar('val_gen_gan_loss', val_losses[1], step=epoch)
+            tf.summary.scalar('val_gen_l1_loss', val_losses[2], step=epoch)
+            tf.summary.scalar('val_disc_loss', val_losses[3], step=epoch)
 
         end_time = time.time()
-        print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)))
-        print("     gen_total_loss {:1.2f}".format(losses[0]))
-        print("     gen_gan_loss   {:1.2f}".format(losses[1]))
-        print("     gen_l1_loss    {:1.2f}".format(losses[2]))
-        print("     disc_loss      {:1.2f}".format(losses[3]))
+        print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)), file=log_file)
+        print("     gen_total_loss {:1.2f}".format(losses[0]), file=log_file)
+        print("     gen_gan_loss   {:1.2f}".format(losses[1]), file=log_file)
+        print("     gen_l1_loss    {:1.2f}".format(losses[2]), file=log_file)
+        print("     disc_loss      {:1.2f}".format(losses[3]), file=log_file)
 
-        print("     val_gen_total_loss {:1.2f}".format(val_losses[0]))
-        print("     gen_gan_loss       {:1.2f}".format(val_losses[1]))
-        print("     gen_l1_loss        {:1.2f}".format(val_losses[2]))
-        print("     disc_loss          {:1.2f}".format(val_losses[3]))
+        print("     val_gen_total_loss {:1.2f}".format(val_losses[0]), file=log_file)
+        print("     gen_gan_loss       {:1.2f}".format(val_losses[1]), file=log_file)
+        print("     gen_l1_loss        {:1.2f}".format(val_losses[2]), file=log_file)
+        print("     disc_loss          {:1.2f}".format(val_losses[3]), file=log_file)
 
-
-        checkpoint.step.assign(step)
         checkpoint.epoch.assign(epoch)
 
         if int(checkpoint.epoch) % CHECKPOINT_SAVE_INTERVAL == 0:
             save_path = manager.save()
-            print("Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path))
+            print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
             # print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
             # print("disc_loss {:1.2f}".format(disc_loss.numpy()))
 
 
+try:
+    print('Fitting to the data set')
+    print('Initial epoch: ', initial_epoch)
+    # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
+    fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch)
 
-print('Fit to the data set')
-print('Initial epoch: ', initial_epoch)
-print('Initial step: ', initial_step)
-# fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
-fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch, initial_step=initial_step)
+    # save last checkpoint and close log file
+    save_path = manager.save()
+    print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
+    log_file.close()
 
+except KeyboardInterrupt:
+    print('Keyboard Interrupt', file=log_file)
 
+    # save latest checkpoint and close log file
+    save_path = manager.save()
+    print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
+    log_file.close()
 
 
 

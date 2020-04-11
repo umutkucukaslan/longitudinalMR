@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 
 
-def get_adni_dataset(use_colab=False):
+def get_adni_dataset(runtime='none'):
     """
     train, val, test datasets from processed_data folder
     Images are normalized to [0, 1] interval
@@ -14,8 +14,10 @@ def get_adni_dataset(use_colab=False):
     :return: train_ds, val_ds, test_ds
     """
 
-    if use_colab:
+    if runtime == 'colab':
         data_dir = '/content/processed_data'
+    elif runtime == 'cloud':
+        data_dir = '/data/processed_data'
     else:
         data_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data'
 

@@ -34,3 +34,8 @@ print('Pulled recent changes from the repository.')
 print('Running module main...')
 ! cd /content/pmsd-project && python3 -m main
 ```
+
+## Useful Links
+* [Tensorflow GPU Support Installation Guide](https://www.tensorflow.org/install/gpu)
+* [Tensorflow GPU Version Compatilibity Page](https://www.tensorflow.org/install/source#linux)
+* [CUDA 10.1 installation on Ubuntu 18.04](https://medium.com/@exesse/cuda-10-1-installation-on-ubuntu-18-04-lts-d04f89287130)
