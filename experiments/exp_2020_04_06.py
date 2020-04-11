@@ -16,10 +16,10 @@ Training autoencoder adversarially using ADNI dataset.
 """
 
 
-RUNTIME = 'cloud'   # cloud, colab or none
-USE_TPU = False
+RUNTIME = 'colab'   # cloud, colab or none
+USE_TPU = True
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_06_cloud'
+EXPERIMENT_NAME = 'exp_2020_04_06_tpu'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
@@ -36,12 +36,12 @@ MAX_TO_KEEP = 5
 
 DEFAULT_FLOAT_TYPE = 'float32'
 
-tf.keras.backend.set_floatx(DEFAULT_FLOAT_TYPE)
+# tf.keras.backend.set_floatx(DEFAULT_FLOAT_TYPE)
 
 if USE_TPU:
     try:
         tpu = tf.distribute.cluster_resolver.TPUClusterResolver()  # TPU detection
-        print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'], file=log_file)
+        print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'], file=None)
     except ValueError:
         raise BaseException(
             'ERROR: Not connected to a TPU runtime; please see the previous cell in this notebook for instructions!')
