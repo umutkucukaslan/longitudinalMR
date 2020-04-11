@@ -17,7 +17,7 @@ def get_adni_dataset(runtime='none'):
     if runtime == 'colab':
         data_dir = '/content/processed_data'
     elif runtime == 'cloud':
-        data_dir = '/data/processed_data'
+        data_dir = '/home/umutkucukaslan/data/processed_data'
     else:
         data_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data'
 
