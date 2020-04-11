@@ -1,6 +1,7 @@
 import datetime
 import os
 import statistics
+import sys
 import time
 
 import tensorflow as tf
@@ -15,6 +16,11 @@ import model.gan as gan
 Training autoencoder adversarially using ADNI dataset.
 """
 
+print('argv: ', sys.argv)
+print('argv[0]', sys.argv[0])
+print('argv[1]', sys.argv[1])
+print('len  ', len(sys.argv))
+exit()
 
 RUNTIME = 'cloud'   # cloud, colab or none
 USE_TPU = False
@@ -33,6 +39,10 @@ LAMBDA = 100
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
+
+# set batch size easily
+if len(sys.argv) > 1:
+    BATCH_SIZE = int(sys.argv[1])
 
 # DEFAULT_FLOAT_TYPE = 'float32'
 # tf.keras.backend.set_floatx(DEFAULT_FLOAT_TYPE)
