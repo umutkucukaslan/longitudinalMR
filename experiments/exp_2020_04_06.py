@@ -16,10 +16,10 @@ Training autoencoder adversarially using ADNI dataset.
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
-USE_TPU = True
+RUNTIME = 'cloud'   # cloud, colab or none
+USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_06_tpu'
+EXPERIMENT_NAME = 'exp_2020_04_06_cloud'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
@@ -149,7 +149,7 @@ discriminator_optimizer = tf.optimizers.Adam(2e-4, beta_1=0.5)
 # checkpoint writer
 checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, 'checkpoints')
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-checkpoint = tf.train.Checkpoint(epoch=tf.Variable(1),
+checkpoint = tf.train.Checkpoint(epoch=tf.Variable(0),
                                  generator_optimizer=generator_optimizer,
                                  discriminator_optimizer=discriminator_optimizer,
                                  generator=generator,
