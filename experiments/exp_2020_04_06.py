@@ -16,11 +16,6 @@ import model.gan as gan
 Training autoencoder adversarially using ADNI dataset.
 """
 
-print('argv: ', sys.argv)
-print('argv[0]', sys.argv[0])
-print('argv[1]', sys.argv[1])
-print('len  ', len(sys.argv))
-exit()
 
 RUNTIME = 'cloud'   # cloud, colab or none
 USE_TPU = False
