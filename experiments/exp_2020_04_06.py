@@ -75,7 +75,7 @@ if not os.path.isdir(EXPERIMENT_FOLDER):
 
 def log_print(msg):
     with open(os.path.join(EXPERIMENT_FOLDER, 'logs.txt'), 'a+') as log_file:
-        log_file.write(msg)
+        log_file.write(msg + '\n')
 
 # generator model plot path
 GEN_MODEL_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'gen_model_plot.jpg')
