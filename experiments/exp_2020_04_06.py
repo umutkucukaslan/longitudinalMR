@@ -77,7 +77,10 @@ else:
 if not os.path.isdir(EXPERIMENT_FOLDER):
     os.makedirs(EXPERIMENT_FOLDER)
 
-log_file = open(os.path.join(EXPERIMENT_FOLDER, 'logs.txt'), 'a+')
+
+def log_print(msg):
+    with open(os.path.join(EXPERIMENT_FOLDER, 'logs.txt'), 'a+') as log_file:
+        log_file.write(msg)
 
 # generator model plot path
 GEN_MODEL_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'gen_model_plot.jpg')
@@ -96,9 +99,9 @@ val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 #     plt.imshow(np.squeeze(example.numpy()[0]), cmap=plt.get_cmap('gray'))
 #     plt.show()
 #     img = example.numpy()
-#     print('mean value: ', img.mean(), file=log_file)
-#     print('max value : ', img.max(), file=log_file)
-#     print('min value : ', img.min(), file=log_file)
+#     log_print('mean value: ', img.mean(), file=log_file)
+#     log_print('max value : ', img.max(), file=log_file)
+#     log_print('min value : ', img.min(), file=log_file)
 # exit()
 
 # BUILD GENERATOR
@@ -118,7 +121,7 @@ encoder = build_encoder(input_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL),
                         name='encoder')
 
 encoder.summary()
-encoder.summary(print_fn=print)
+encoder.summary(print_fn=log_print)
 
 
 decoder = build_decoder(input_shape=output_shape,
@@ -130,7 +133,7 @@ decoder = build_decoder(input_shape=output_shape,
                         name='decoder')
 
 decoder.summary()
-decoder.summary(print_fn=print)
+decoder.summary(print_fn=log_print)
 
 
 generator = tf.keras.Sequential(name='generator')
@@ -138,7 +141,7 @@ generator.add(encoder)
 generator.add(decoder)
 
 generator.summary()
-generator.summary(print_fn=print)
+generator.summary(print_fn=log_print)
 
 tf.keras.utils.plot_model(generator, to_file=GEN_MODEL_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=True)
 
@@ -147,7 +150,7 @@ tf.keras.utils.plot_model(generator, to_file=GEN_MODEL_PLOT_PATH, show_shapes=Tr
 # DISCRIMINATOR
 discriminator = gan.get_discriminator_2020_04_06()
 discriminator.summary()
-discriminator.summary(print_fn=print)
+discriminator.summary(print_fn=log_print)
 
 tf.keras.utils.plot_model(discriminator, to_file=DIS_MODEL_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=False)
 
@@ -174,9 +177,9 @@ if RESTORE_FROM_CHECKPOINT:
     checkpoint.restore(manager.latest_checkpoint)
 
 if manager.latest_checkpoint:
-    print("Restored from {}".format(manager.latest_checkpoint), file=log_file)
+    log_print("Restored from {}".format(manager.latest_checkpoint))
 else:
-    print("Initializing from scratch.", file=log_file)
+    log_print("Initializing from scratch.")
 
 initial_epoch = checkpoint.epoch.numpy() + 1
 
@@ -274,7 +277,7 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
                         show=False)
 
         # training
-        print('Training epoch {}'.format(epoch), file=log_file)
+        log_print('Training epoch {}'.format(epoch))
         losses = [[], [], [], []]
         for n, input_image in train_ds.enumerate():
             gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = train_step(input_image, input_image)
@@ -296,7 +299,7 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
             tf.summary.scalar('disc_loss', losses[3], step=epoch)
 
         # testing
-        print('Calculating validation losses...', file=log_file)
+        log_print('Calculating validation losses...')
         val_losses = [[], [], [], []]
         for input_image in val_ds:
             gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = eval_step(input_image, input_image)
@@ -312,44 +315,42 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
             tf.summary.scalar('val_disc_loss', val_losses[3], step=epoch)
 
         end_time = time.time()
-        print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)), file=log_file)
-        print("     gen_total_loss {:1.2f}".format(losses[0]), file=log_file)
-        print("     gen_gan_loss   {:1.2f}".format(losses[1]), file=log_file)
-        print("     gen_l1_loss    {:1.2f}".format(losses[2]), file=log_file)
-        print("     disc_loss      {:1.2f}".format(losses[3]), file=log_file)
+        log_print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)))
+        log_print("     gen_total_loss {:1.2f}".format(losses[0]))
+        log_print("     gen_gan_loss   {:1.2f}".format(losses[1]))
+        log_print("     gen_l1_loss    {:1.2f}".format(losses[2]))
+        log_print("     disc_loss      {:1.2f}".format(losses[3]))
 
-        print("     val_gen_total_loss {:1.2f}".format(val_losses[0]), file=log_file)
-        print("     gen_gan_loss       {:1.2f}".format(val_losses[1]), file=log_file)
-        print("     gen_l1_loss        {:1.2f}".format(val_losses[2]), file=log_file)
-        print("     disc_loss          {:1.2f}".format(val_losses[3]), file=log_file)
+        log_print("     val_gen_total_loss {:1.2f}".format(val_losses[0]))
+        log_print("     gen_gan_loss       {:1.2f}".format(val_losses[1]))
+        log_print("     gen_l1_loss        {:1.2f}".format(val_losses[2]))
+        log_print("     disc_loss          {:1.2f}".format(val_losses[3]))
 
         checkpoint.epoch.assign(epoch)
 
         if int(checkpoint.epoch) % CHECKPOINT_SAVE_INTERVAL == 0:
             save_path = manager.save()
-            print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
+            log_print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
             # print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
             # print("disc_loss {:1.2f}".format(disc_loss.numpy()))
 
 
 try:
-    print('Fitting to the data set')
-    print('Initial epoch: ', initial_epoch)
+    log_print('Fitting to the data set')
+    log_print('Initial epoch: ', initial_epoch)
     # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
     fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch)
 
-    # save last checkpoint and close log file
+    # save last checkpoint
     save_path = manager.save()
-    print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
-    log_file.close()
+    log_print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
 
 except KeyboardInterrupt:
-    print('Keyboard Interrupt', file=log_file)
+    log_print('Keyboard Interrupt')
 
     # save latest checkpoint and close log file
     save_path = manager.save()
-    print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
-    log_file.close()
+    log_print("Saved checkpoint for epoch {}: {}".format(int(checkpoint.epoch), save_path))
 
 
 
