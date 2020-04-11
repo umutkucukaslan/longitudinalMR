@@ -16,10 +16,10 @@ Training autoencoder adversarially using ADNI dataset.
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
-USE_TPU = True
+RUNTIME = 'cloud'   # cloud, colab or none
+USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_06_tpu'
+EXPERIMENT_NAME = 'exp_2020_04_06_cloud'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
@@ -34,8 +34,7 @@ EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
 
-DEFAULT_FLOAT_TYPE = 'float32'
-
+# DEFAULT_FLOAT_TYPE = 'float32'
 # tf.keras.backend.set_floatx(DEFAULT_FLOAT_TYPE)
 
 if USE_TPU:
