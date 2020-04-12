@@ -17,10 +17,10 @@ Training autoencoder adversarially using ADNI dataset.
 """
 
 
-RUNTIME = 'cloud'   # cloud, colab or none
-USE_TPU = False
+RUNTIME = 'colab'   # cloud, colab or none
+USE_TPU = True
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_06_cloud'
+EXPERIMENT_NAME = 'exp_2020_04_06_tpu'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
@@ -46,7 +46,7 @@ if len(sys.argv) > 1:
 if USE_TPU:
     try:
         tpu = tf.distribute.cluster_resolver.TPUClusterResolver()  # TPU detection
-        print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'], file=None)
+        print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])
     except ValueError:
         raise BaseException(
             'ERROR: Not connected to a TPU runtime; please see the previous cell in this notebook for instructions!')
