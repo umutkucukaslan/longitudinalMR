@@ -112,7 +112,8 @@ output_shape = 128
 kernel_size = 3
 batch_norm = True
 
-with tpu_strategy.scope():
+# with tpu_strategy.scope():
+if True:
 
     encoder = build_encoder(input_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL),
                             output_shape=output_shape,
