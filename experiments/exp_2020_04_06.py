@@ -17,10 +17,10 @@ Training autoencoder adversarially using ADNI dataset.
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
-USE_TPU = True
+RUNTIME = 'cloud'   # cloud, colab or none
+USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_06_tpu'
+EXPERIMENT_NAME = 'exp_2020_04_06_cloud'
 
 PREFETCH_BUFFER_SIZE = 5
 SHUFFLE_BUFFER_SIZE = 1000
@@ -29,7 +29,7 @@ INPUT_WIDTH = 256
 INPUT_HEIGHT = 256
 INPUT_CHANNEL = 1
 
-LAMBDA = 100
+LAMBDA = 10
 
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
@@ -95,14 +95,14 @@ train_ds, val_ds, test_ds = get_adni_dataset(runtime=RUNTIME)
 train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 
-for example in train_ds.take(5):
-    plt.imshow(np.squeeze(example.numpy()[0]), cmap=plt.get_cmap('gray'))
-    # plt.show()
-    img = example.numpy()
-    print('mean value: ', img.mean())
-    print('max value : ', img.max())
-    print('min value : ', img.min())
-exit()
+# for example in train_ds.take(5):
+#     plt.imshow(np.squeeze(example.numpy()[0]), cmap=plt.get_cmap('gray'))
+#     # plt.show()
+#     img = example.numpy()
+#     print('mean value: ', img.mean())
+#     print('max value : ', img.max())
+#     print('min value : ', img.min())
+# exit()
 
 # BUILD GENERATOR
 # encoder
@@ -343,7 +343,7 @@ try:
     log_print('Batch size: ' + str(BATCH_SIZE))
     log_print('Epochs: ' + str(EPOCHS))
     log_print('Restore from checkpoint: ' + str(RESTORE_FROM_CHECKPOINT))
-    log_print('Chechpoint save interval: ', str(CHECKPOINT_SAVE_INTERVAL))
+    log_print('Chechpoint save interval: ' + str(CHECKPOINT_SAVE_INTERVAL))
     log_print('Max number of checkpoints kept: ' + str(MAX_TO_KEEP))
     log_print('Runtime: ' + str(RUNTIME))
     log_print('Use TPU: ' + str(USE_TPU))
