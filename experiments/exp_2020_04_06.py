@@ -95,14 +95,14 @@ train_ds, val_ds, test_ds = get_adni_dataset(runtime=RUNTIME)
 train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 
-# for example in train_ds.take(5):
-#     plt.imshow(np.squeeze(example.numpy()[0]), cmap=plt.get_cmap('gray'))
-#     plt.show()
-#     img = example.numpy()
-#     print('mean value: ', img.mean())
-#     print('max value : ', img.max())
-#     print('min value : ', img.min())
-# exit()
+for example in train_ds.take(5):
+    plt.imshow(np.squeeze(example.numpy()[0]), cmap=plt.get_cmap('gray'))
+    # plt.show()
+    img = example.numpy()
+    print('mean value: ', img.mean())
+    print('max value : ', img.max())
+    print('min value : ', img.min())
+exit()
 
 # BUILD GENERATOR
 # encoder
@@ -355,7 +355,7 @@ try:
 
     log_print('Initial epoch: {}'.format(initial_epoch))
     # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
-    fit(train_ds.cache(), EPOCHS, val_ds, test_ds.cache().repeat(), initial_epoch=initial_epoch)
+    fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch)
 
     # save last checkpoint
     save_path = manager.save()
