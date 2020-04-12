@@ -355,7 +355,7 @@ try:
 
     log_print('Initial epoch: {}'.format(initial_epoch))
     # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat())
-    fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch)
+    fit(train_ds.cache(), EPOCHS, val_ds, test_ds.cache().repeat(), initial_epoch=initial_epoch)
 
     # save last checkpoint
     save_path = manager.save()
