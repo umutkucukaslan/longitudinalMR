@@ -96,13 +96,15 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
 train_ds, val_ds, test_ds = get_adni_dataset(runtime=RUNTIME)
 
 
-def gray_to_rgb(image):
-    return tf.concat([image, image, image], axis=-1)
+def process_dataset(image):
+    image = 2.0 * image - 1.0
+    # return tf.concat([image, image, image], axis=-1)
+    return image
 
 
-train_ds = train_ds.map(gray_to_rgb, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-val_ds = val_ds.map(gray_to_rgb, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-test_ds = test_ds.map(gray_to_rgb, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+train_ds = train_ds.map(process_dataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+val_ds = val_ds.map(process_dataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+test_ds = test_ds.map(process_dataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
 train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)

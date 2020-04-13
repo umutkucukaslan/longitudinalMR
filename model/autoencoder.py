@@ -121,10 +121,15 @@ def build_decoder_with_lrelu_activation(input_shape=128, output_shape=(128, 128,
 
 def build_encoder_2020_04_13(input_shape, latent_space_size, name):
 
+    inp = tf.keras.Input(input_shape)
+    base_model_inp = tf.concat([inp, inp, inp], axis=-1)
+
     base_model = tf.keras.applications.MobileNetV2(input_shape=input_shape, include_top=False, weights='imagenet')
     for layer in base_model.layers:
         layer.trainable = False
-    features = base_model.get_layer('block_15_add').output
+
+    # features = base_model.get_layer('block_15_add').output
+    features = base_model(base_model_inp)
     flattened = tf.keras.layers.Flatten()(features)
     out = tf.keras.layers.Dense(latent_space_size, activation=tf.nn.relu)(flattened)
 
