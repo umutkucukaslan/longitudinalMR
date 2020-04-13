@@ -133,4 +133,4 @@ def build_encoder_2020_04_13(input_shape, latent_space_size, name):
     flattened = tf.keras.layers.Flatten()(features)
     out = tf.keras.layers.Dense(latent_space_size, activation=tf.nn.relu)(flattened)
 
-    return tf.keras.Model(inputs=base_model.inputs, outputs=out, name=name)
+    return tf.keras.Model(inputs=inp, outputs=out, name=name)
