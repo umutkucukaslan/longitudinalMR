@@ -123,7 +123,7 @@ def build_encoder_2020_04_13(input_shape, latent_space_size, name):
 
     mobilenetv2 = tf.keras.applications.MobileNetV2(input_shape=(256, 256, 3), include_top=False, weights='imagenet')
     mobilenetv2_output = mobilenetv2.get_layer('block_15_add').output   # selected features
-    base_model = tf.keras.Model(inputs=mobilenetv2.inputs, outputs=mobilenetv2_output)
+    base_model = tf.keras.Model(inputs=mobilenetv2.inputs, outputs=mobilenetv2_output, name='mobilenetv2_feature_extractor')
 
     for layer in base_model.layers:
         layer.trainable = False
