@@ -92,7 +92,7 @@ def build_decoder_with_lrelu_activation(input_shape=128, output_shape=(128, 128,
     x_init, y_init = output_shape[0] // 2**n_upsamplings, output_shape[1] // 2**n_upsamplings
 
     if x_init * 2**n_upsamplings != output_shape[0] or y_init * 2**n_upsamplings != output_shape[1]:
-        logger.error("Output image dimensions should be divisible by 2^len(filters). Please set a suitable output_shape")
+        print("Output image dimensions should be divisible by 2^len(filters). Please set a suitable output_shape")
         sys.exit()
 
     inputs = tf.keras.Input(shape=input_shape)
@@ -117,3 +117,15 @@ def build_decoder_with_lrelu_activation(input_shape=128, output_shape=(128, 128,
                                      activation=tf.nn.sigmoid)(x)
 
     return tf.keras.Model(inputs=inputs, outputs=outputs, name=name)
+
+
+def build_encoder_2020_04_13(input_shape, latent_space_size, name):
+
+    base_model = tf.keras.applications.MobileNetV2(input_shape=input_shape, include_top=False, weights='imagenet')
+    for layer in base_model.layers:
+        layer.trainable = False
+    features = base_model.get_layer('block_15_add').output
+    flattened = tf.keras.layers.Flatten()(features)
+    out = tf.keras.layers.Dense(latent_space_size, activation=tf.nn.relu)(flattened)
+
+    return tf.keras.Model(inputs=base_model.inputs, outputs=out, name=name)

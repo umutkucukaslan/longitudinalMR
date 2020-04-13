@@ -138,3 +138,37 @@ def get_discriminator_2020_04_06():
     last = tf.keras.layers.Conv2D(1, 1, strides=1, kernel_initializer=initializer)(x)  # (bs, 16, 16, 1)
 
     return tf.keras.Model(inputs=[inp, tar], outputs=last, name='discriminator')
+
+
+
+
+
+def get_discriminator_2020_04_13():
+    input_shape = [256, 256, 3]
+    kernel_size = 3
+    batch_norm = True
+    initializer = tf.random_normal_initializer(0., 0.02)
+
+    inp = tf.keras.layers.Input(shape=input_shape, name='input_image')
+    tar = tf.keras.layers.Input(shape=input_shape, name='target_image')
+
+    x = tf.keras.layers.concatenate([inp, tar])  # (bs, 256, 256, channels*2=2)
+
+    x = downsample(64, kernel_size, batch_norm)(x)  # (bs, 128, 128, 64)
+    x = downsample(128, kernel_size, batch_norm)(x)  # (bs, 64, 64, 128)
+    x = downsample(256, kernel_size, batch_norm)(x)  # (bs, 32, 32, 256)
+    x = downsample(256, kernel_size, batch_norm)(x)  # (bs, 16, 16, 256)
+
+    x = tf.keras.layers.Conv2D(256, kernel_size, strides=1, padding='same', kernel_initializer=initializer,
+                               use_bias=False)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LeakyReLU()(x)      # (bs, 16, 16, 512)
+
+    x = tf.keras.layers.Conv2D(128, kernel_size, strides=1, padding='same', kernel_initializer=initializer,
+                               use_bias=False)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LeakyReLU()(x)  # (bs, 16, 16, 128)
+
+    last = tf.keras.layers.Conv2D(1, 1, strides=1, kernel_initializer=initializer)(x)  # (bs, 16, 16, 1)
+
+    return tf.keras.Model(inputs=[inp, tar], outputs=last, name='discriminator')
