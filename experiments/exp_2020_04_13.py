@@ -156,7 +156,7 @@ tf.keras.utils.plot_model(generator, to_file=GEN_MODEL_PLOT_PATH, show_shapes=Tr
 
 
 # DISCRIMINATOR
-discriminator = gan.get_discriminator_2020_04_13()
+discriminator = gan.get_discriminator_2020_04_06()
 discriminator.summary()
 discriminator.summary(print_fn=log_print)
 

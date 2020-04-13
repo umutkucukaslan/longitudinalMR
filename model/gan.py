@@ -144,7 +144,7 @@ def get_discriminator_2020_04_06():
 
 
 def get_discriminator_2020_04_13():
-    input_shape = [256, 256, 3]
+    input_shape = [256, 256, 1]
     kernel_size = 3
     batch_norm = True
     initializer = tf.random_normal_initializer(0., 0.02)
