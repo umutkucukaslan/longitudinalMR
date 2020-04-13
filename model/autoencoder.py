@@ -124,7 +124,7 @@ def build_encoder_2020_04_13(input_shape, latent_space_size, name):
     inp = tf.keras.Input(input_shape)
     base_model_inp = tf.concat([inp, inp, inp], axis=-1)
 
-    base_model = tf.keras.applications.MobileNetV2(input_shape=input_shape, include_top=False, weights='imagenet')
+    base_model = tf.keras.applications.MobileNetV2(input_shape=(256, 256, 3), include_top=False, weights='imagenet')
     for layer in base_model.layers:
         layer.trainable = False
 
