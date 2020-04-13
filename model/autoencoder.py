@@ -129,8 +129,11 @@ def build_encoder_2020_04_13(input_shape, latent_space_size, name):
         layer.trainable = False
 
     base_model.get_layer('input_1').input = base_model_inp
-    # features = base_model.get_layer('block_15_add').output
-    features = base_model(base_model_inp)
+    features = base_model.get_layer('block_15_add').output
+
+    # features = base_model(base_model_inp)
+
+
     flattened = tf.keras.layers.Flatten()(features)
     out = tf.keras.layers.Dense(latent_space_size, activation=tf.nn.relu)(flattened)
 
