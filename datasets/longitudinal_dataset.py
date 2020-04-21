@@ -140,9 +140,9 @@ class Patient:
                    self.images[slice_index][scan_triplet[0]],
                    self.images[slice_index][scan_triplet[1]],
                    self.images[slice_index][scan_triplet[2]]
-               ), (
-                   self.relative_dates[scan_triplet[1]] - self.relative_dates[scan_triplet[0]],
-                   self.relative_dates[scan_triplet[2]] - self.relative_dates[scan_triplet[0]]
+               ), (self.relative_dates[scan_triplet[0]],
+                   self.relative_dates[scan_triplet[1]],
+                   self.relative_dates[scan_triplet[2]]
                )
 
     def get_all_image_triplets(self, slice_index=None):
@@ -298,18 +298,17 @@ class LongitudinalDataset:
         return self.get_ad_longitudinal_sequences() + self.get_mci_longitudinal_sequences() + self.get_cn_longitudinal_sequences()
 
 
+if __name__ == "__main__":
+    data_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data/test'
+    longitudinal_dataset = LongitudinalDataset(data_dir=data_dir)
 
+    # print(longitudinal_dataset.get_ad_image_pairs())
+    # ad_image_pairs = longitudinal_dataset.get_ad_image_triplets()
+    # for pair in ad_image_pairs:
+    #     print(pair)
+    # print(len(ad_image_pairs))
 
-data_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data/test'
-longitudinal_dataset = LongitudinalDataset(data_dir=data_dir)
-
-# print(longitudinal_dataset.get_ad_image_pairs())
-# ad_image_pairs = longitudinal_dataset.get_ad_image_triplets()
-# for pair in ad_image_pairs:
-#     print(pair)
-# print(len(ad_image_pairs))
-
-long_seq = longitudinal_dataset.get_mci_image_triplets(20)
-for seq in long_seq:
-    print(seq)
-print(len(long_seq))
+    long_seq = longitudinal_dataset.get_mci_image_triplets(20)
+    for seq in long_seq:
+        print(seq)
+    print(len(long_seq))
