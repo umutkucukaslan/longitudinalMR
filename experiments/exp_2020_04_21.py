@@ -358,6 +358,7 @@ try:
     log_print('Shuffle buffer size: ' + str(SHUFFLE_BUFFER_SIZE))
     log_print('Input shape: ( ' + str(INPUT_HEIGHT) + ', ' + str(INPUT_WIDTH) + ', ' + str(INPUT_CHANNEL) + ' )')
     log_print('Cost weight lambda: ' + str(LAMBDA))
+    log_print('Clip by norm: ' + str(CLIP_BY_NORM))
     log_print(' ')
 
     log_print('Initial epoch: {}'.format(initial_epoch))
