@@ -54,9 +54,9 @@ of intensities in the region of interest.
 '''
 
 # Set the following parameters
-dataset_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/data'
-dataset_info_pth = '/Users/umutkucukaslan/Desktop/pmsd/dataset/ADNI1_Complete_2Yr_3T_11_25_2019.csv'
-target_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/processed_data_256x256'
+dataset_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/data'
+dataset_info_pth = '/Users/umutkucukaslan/Desktop/thesis/dataset/ADNI1_Complete_2Yr_3T_11_25_2019.csv'
+target_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data_256x256_new'
 start_offset = 30
 stop_offset = 100
 step_size = 1
@@ -81,7 +81,7 @@ if not os.path.isdir(target_dir):
 
 def save_slices(slices, dir_path, dtype="uint16", summary_image=None, slicing_pattern_image=None):
     for i in range(len(slices)):
-        pth = os.path.join(dir_path, "slice_" + str(i) + ".png")
+        pth = os.path.join(dir_path, "slice_{:03d}".format(i) + ".png")
         if dtype == "uint16":
             slice = np.asarray(slices[i] * (2 ** 16 - 1), dtype=np.uint16)
         else:

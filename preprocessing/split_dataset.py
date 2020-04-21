@@ -10,8 +10,8 @@ Adds ad/mci/cn prefixes to patient folders accordingly
 Set the params below
 """
 # set following params
-raw_dataset = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data_256x256'
-processed_dataset = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data'
+raw_dataset = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data_256x256_new'
+processed_dataset = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data_new'
 split_ratios = [70, 10, 20]     # train, val, test
 
 
