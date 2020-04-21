@@ -38,7 +38,7 @@ CLIP_BY_NORM = 1    # clip gradients to this norm
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
-LR = 1e-4
+LR = 1e-6
 
 
 # set batch size easily
@@ -200,6 +200,11 @@ summary_writer = tf.summary.create_file_writer(os.path.join(log_dir, datetime.da
 
 
 # LOSSES
+def generator_l1_loss(generator_output, target):
+    l1_loss = tf.reduce_mean(tf.abs(generator_output - target))
+    return l1_loss
+
+
 def generator_loss(disc_generated_output, gen_output, target):
     gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
     l1_loss = tf.reduce_mean(tf.abs(gen_output - target))
@@ -215,6 +220,8 @@ def discriminator_loss(disc_real_output, disc_generated_output):
 
 
 # TRAINING
+
+
 def train_step(input_image, target):
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
 
