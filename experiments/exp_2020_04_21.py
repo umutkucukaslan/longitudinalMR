@@ -31,14 +31,14 @@ INPUT_WIDTH = 256
 INPUT_HEIGHT = 256
 INPUT_CHANNEL = 1
 
-LAMBDA = 100
+LAMBDA_L1 = 100
 LAMBDA_ADV = 1
 CLIP_BY_NORM = 1    # clip gradients to this norm
 
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
-LR = 1e-6
+LR = 1e-5
 
 
 # set batch size easily
@@ -208,7 +208,7 @@ def generator_l1_loss(generator_output, target):
 def generator_loss(disc_generated_output, gen_output, target):
     gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
     l1_loss = tf.reduce_mean(tf.abs(gen_output - target))
-    total_loss = LAMBDA_ADV * gan_loss + LAMBDA * l1_loss
+    total_loss = LAMBDA_ADV * gan_loss + LAMBDA_L1 * l1_loss
     return total_loss, gan_loss, l1_loss
 
 
@@ -364,7 +364,8 @@ try:
     log_print('Prefetch buffer size: ' + str(PREFETCH_BUFFER_SIZE))
     log_print('Shuffle buffer size: ' + str(SHUFFLE_BUFFER_SIZE))
     log_print('Input shape: ( ' + str(INPUT_HEIGHT) + ', ' + str(INPUT_WIDTH) + ', ' + str(INPUT_CHANNEL) + ' )')
-    log_print('Cost weight lambda: ' + str(LAMBDA))
+    log_print('Cost L1 weight lambda: ' + str(LAMBDA_L1))
+    log_print('Cost advers. weight lambda: ' + str(LAMBDA_ADV))
     log_print('Clip by norm: ' + str(CLIP_BY_NORM))
     log_print(' ')
 
