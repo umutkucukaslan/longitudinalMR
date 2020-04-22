@@ -20,10 +20,10 @@ Used encoder decoder architecture similar to Feature2Mass paper.
 """
 
 
-RUNTIME = 'cloud'   # cloud, colab or none
+RUNTIME = 'colab'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_21_2_cloud'
+EXPERIMENT_NAME = 'exp_2020_04_21_2_colab'
 
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
