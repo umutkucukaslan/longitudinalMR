@@ -20,21 +20,22 @@ Used encoder decoder architecture similar to Feature2Mass paper.
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
+RUNTIME = 'cloud'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_21_2_colab'
+EXPERIMENT_NAME = 'exp_2020_04_21_2_cloud'
 
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 INPUT_WIDTH = 256
 INPUT_HEIGHT = 256
 INPUT_CHANNEL = 1
 
 LAMBDA_L1 = 100
 LAMBDA_ADV = 1
-CLIP_BY_NORM = 1    # clip gradients to this norm
+CLIP_BY_NORM = None    # clip gradients to this norm or None
+CLIP_BY_VALUE = 1   # clip gradient to this value or None
 
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
@@ -241,11 +242,18 @@ def train_step(input_image, target):
         disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
 
     generator_gradients = gen_tape.gradient(gen_total_loss, generator.trainable_variables)
-    generator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in generator_gradients]
+    if CLIP_BY_NORM is not None:
+        generator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in generator_gradients]
+    if CLIP_BY_VALUE is not None:
+        generator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in generator_gradients]
+
     generator_optimizer.apply_gradients(zip(generator_gradients, generator.trainable_variables))
 
     discriminator_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
-    discriminator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in discriminator_gradients]
+    if CLIP_BY_NORM is not None:
+        discriminator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in discriminator_gradients]
+    if CLIP_BY_VALUE is not None:
+        discriminator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in discriminator_gradients]
     discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
 
     return gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss
