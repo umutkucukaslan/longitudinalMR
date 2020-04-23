@@ -20,10 +20,10 @@ Used encoder decoder architecture similar to Feature2Mass paper.
 """
 
 
-RUNTIME = 'cloud'   # cloud, colab or none
+RUNTIME = 'colab'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_21_2_cloud'
+EXPERIMENT_NAME = 'exp_2020_04_21_2_colab'
 
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
@@ -34,8 +34,8 @@ INPUT_CHANNEL = 1
 
 LAMBDA_L1 = 100
 LAMBDA_ADV = 1
-CLIP_BY_NORM = None    # clip gradients to this norm or None
-CLIP_BY_VALUE = 1   # clip gradient to this value or None
+CLIP_BY_NORM = 1    # clip gradients to this norm or None
+CLIP_BY_VALUE = None   # clip gradient to this value or None
 
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
