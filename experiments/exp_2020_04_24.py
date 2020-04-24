@@ -342,7 +342,10 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
                 losses[3].append(disc_loss.numpy())
             else:
                 gen_l1_loss = train_generator_only_step(input_image, input_image)
+                losses[0].append(0)
+                losses[1].append(0)
                 losses[2].append(gen_l1_loss.numpy())
+                losses[3].append(0)
         losses = [statistics.mean(x) for x in losses]
         with summary_writer.as_default():
             tf.summary.scalar('gen_total_loss', losses[0], step=epoch)
@@ -362,7 +365,10 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
                 val_losses[3].append(disc_loss.numpy())
             else:
                 gen_l1_loss = eval_generator_only_step(input_image, input_image)
+                val_losses[0].append(0)
+                val_losses[1].append(0)
                 val_losses[2].append(gen_l1_loss.numpy())
+                val_losses[3].append(0)
         val_losses = [statistics.mean(x) for x in val_losses]
         with summary_writer.as_default():
             tf.summary.scalar('val_gen_total_loss', val_losses[0], step=epoch)
