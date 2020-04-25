@@ -35,7 +35,7 @@ INPUT_CHANNEL = 1
 TRAIN_ADVERSARIALLY = False
 LAMBDA_L1 = 100
 LAMBDA_ADV = 1
-CLIP_BY_NORM = 5    # clip gradients to this norm or None
+CLIP_BY_NORM = 1    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
 EPOCHS = 5000
