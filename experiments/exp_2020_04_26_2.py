@@ -23,7 +23,7 @@ Used encoder decoder architecture similar to Feature2Mass paper.
 RUNTIME = 'colab'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_26'
+EXPERIMENT_NAME = 'exp_2020_04_26_2'
 
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
