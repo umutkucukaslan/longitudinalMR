@@ -99,7 +99,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, 'figures'))
 
 # DATASET
-train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(machine=RUNTIME)
+train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(machine=RUNTIME, return_two_trains=True)
 
 
 def process_dataset(image):
