@@ -99,8 +99,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, 'figures'))
 
 # DATASET
-train_ds, val_ds, test_ds = get_adni_dataset(machine=MACHINE)
-train_ds_image_gen = copy.deepcopy(train_ds)
+train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(machine=MACHINE)
 
 
 def process_dataset(image):
@@ -435,7 +434,7 @@ try:
 
     log_print('Initial epoch: {}'.format(initial_epoch))
     # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat(), initial_epoch=initial_epoch)
-    fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), train_ds_image_gen.repeat(), initial_epoch=initial_epoch)
+    fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), train_ds2.repeat(), initial_epoch=initial_epoch)
 
     # save last checkpoint
     save_path = manager.save()

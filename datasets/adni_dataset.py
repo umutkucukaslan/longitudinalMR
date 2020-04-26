@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 
 
-def get_adni_dataset(machine='none'):
+def get_adni_dataset(machine='none', return_two_trains=False):
     """
     train, val, test datasets from processed_data folder
     Images are normalized to [0, 1] interval
@@ -26,6 +26,7 @@ def get_adni_dataset(machine='none'):
     test = glob.glob(os.path.join(data_dir, 'test/*/*/slice_*.png'))
 
     train_list_ds = tf.data.Dataset.from_tensor_slices(train)
+    train_list_ds2 = tf.data.Dataset.from_tensor_slices(train)
     val_list_ds = tf.data.Dataset.from_tensor_slices(val)
     test_list_ds = tf.data.Dataset.from_tensor_slices(test)
 
@@ -41,8 +42,12 @@ def get_adni_dataset(machine='none'):
         return img
 
     train_ds = train_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+    train_ds2 = train_list_ds2.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     val_ds = val_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
     test_ds = test_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+    if return_two_trains:
+        return train_ds, train_ds2, val_ds, test_ds
 
     return train_ds, val_ds, test_ds
 
