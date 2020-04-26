@@ -20,7 +20,7 @@ Used encoder decoder architecture similar to Feature2Mass paper.
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
+MACHINE = 'colab'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = 'exp_2020_04_26_2'
@@ -68,12 +68,12 @@ else:
         tf.config.experimental.set_memory_growth(gpu, True)
 
 
-if RUNTIME == 'colab':
+if MACHINE == 'colab':
     if USE_TPU:
         EXPERIMENT_FOLDER = os.path.join('/content/experiments', EXPERIMENT_NAME)
     else:
         EXPERIMENT_FOLDER = os.path.join('/content/drive/My Drive/experiments', EXPERIMENT_NAME)
-elif RUNTIME == 'cloud':
+elif MACHINE == 'cloud':
     EXPERIMENT_FOLDER = os.path.join('/home/umutkucukaslan/experiments', EXPERIMENT_NAME)
 else:
     EXPERIMENT_FOLDER = os.path.join('/Users/umutkucukaslan/Desktop/thesis/experiments', EXPERIMENT_NAME)
@@ -99,7 +99,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, 'figures'))
 
 # DATASET
-train_ds, val_ds, test_ds = get_adni_dataset(runtime=RUNTIME)
+train_ds, val_ds, test_ds = get_adni_dataset(machine=MACHINE)
 
 
 def process_dataset(image):
@@ -413,7 +413,7 @@ try:
     log_print('Restore from checkpoint: ' + str(RESTORE_FROM_CHECKPOINT))
     log_print('Chechpoint save interval: ' + str(CHECKPOINT_SAVE_INTERVAL))
     log_print('Max number of checkpoints kept: ' + str(MAX_TO_KEEP))
-    log_print('Runtime: ' + str(RUNTIME))
+    log_print('Machine: ' + str(MACHINE))
     log_print('Use TPU: ' + str(USE_TPU))
     log_print('Prefetch buffer size: ' + str(PREFETCH_BUFFER_SIZE))
     log_print('Shuffle buffer size: ' + str(SHUFFLE_BUFFER_SIZE))

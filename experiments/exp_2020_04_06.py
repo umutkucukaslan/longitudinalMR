@@ -92,7 +92,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, 'figures'))
 
 # DATASET
-train_ds, val_ds, test_ds = get_adni_dataset(runtime=RUNTIME)
+train_ds, val_ds, test_ds = get_adni_dataset(machine=RUNTIME)
 train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 
