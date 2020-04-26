@@ -327,6 +327,7 @@ def fit(train_ds, num_epochs, val_ds, test_ds, train_ds_images, initial_epoch=0)
 
     assert initial_epoch < num_epochs
     test_ds = iter(test_ds)
+    train_ds_images = iter(train_ds_images)
     for epoch in range(initial_epoch, num_epochs):
         start_time = time.time()
         test_input = next(test_ds)
