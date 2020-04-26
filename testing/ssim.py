@@ -105,10 +105,10 @@ if run_this_code:
             print("NO     New seq: ", metrics)
             non_mono_dec_counter += 1
 
-        # cv2.imshow('img', im_show)
-        # pressed_key = cv2.waitKey()
-        # if pressed_key == ord('q'):
-        #     break
+        cv2.imshow('img', im_show)
+        pressed_key = cv2.waitKey()
+        if pressed_key == ord('q'):
+            break
 
     print("# mon. decreasing: ", mono_dec_counter)
     print("# non mon. decreasing: ", non_mono_dec_counter)
