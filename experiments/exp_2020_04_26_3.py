@@ -1,4 +1,4 @@
-
+import copy
 import datetime
 import os
 import statistics
@@ -100,6 +100,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
 
 # DATASET
 train_ds, val_ds, test_ds = get_adni_dataset(machine=RUNTIME)
+train_ds_image_gen = copy.deepcopy(train_ds)
 
 
 def process_dataset(image):
@@ -317,7 +318,7 @@ def generate_images(model, test_input, path=None, show=True):
         plt.show()
 
 
-def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
+def fit(train_ds, num_epochs, val_ds, test_ds, train_ds_images, initial_epoch=0):
 
     assert initial_epoch < num_epochs
     test_ds = iter(test_ds)
@@ -327,6 +328,12 @@ def fit(train_ds, num_epochs, val_ds, test_ds, initial_epoch=0):
         image_name = str(epoch) + '_test.png'
         generate_images(generator,
                         test_input.numpy(),
+                        os.path.join(EXPERIMENT_FOLDER, 'figures', image_name),
+                        show=False)
+        train_input = next(train_ds_images)
+        image_name = str(epoch) + '_train.png'
+        generate_images(generator,
+                        train_input.numpy(),
                         os.path.join(EXPERIMENT_FOLDER, 'figures', image_name),
                         show=False)
 
@@ -422,7 +429,7 @@ try:
 
     log_print('Initial epoch: {}'.format(initial_epoch))
     # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat(), initial_epoch=initial_epoch)
-    fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), initial_epoch=initial_epoch)
+    fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), train_ds_image_gen.repeat(), initial_epoch=initial_epoch)
 
     # save last checkpoint
     save_path = manager.save()
