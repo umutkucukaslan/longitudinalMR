@@ -41,7 +41,7 @@ CLIP_BY_VALUE = None   # clip gradient to this value or None
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
-LR = 1e-5
+LR = 1e-6
 
 
 # set batch size easily
