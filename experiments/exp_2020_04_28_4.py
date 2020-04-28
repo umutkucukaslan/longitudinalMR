@@ -23,7 +23,7 @@ PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
 RUNTIME = 'colab'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_28'
+EXPERIMENT_NAME = 'exp_2020_04_28_4'
 
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
