@@ -32,9 +32,9 @@ INPUT_WIDTH = 256
 INPUT_HEIGHT = 256
 INPUT_CHANNEL = 1
 
-TRAIN_ADVERSARIALLY = False
+TRAIN_ADVERSARIALLY = True
 TRAIN_GENERATOR = False
-TRAIN_DISCRIMINATOR = True
+TRAIN_DISCRIMINATOR = False
 LAMBDA_L1 = 1
 LAMBDA_ADV = 1
 CLIP_BY_NORM = None    # clip gradients to this norm or None
@@ -242,7 +242,6 @@ if __name__ == "__main__":
         # l1_loss = tf.reduce_mean(tf.abs(gen_output - target))
         # total_loss = LAMBDA_ADV * gan_loss + LAMBDA_L1 * l1_loss
         # return total_loss, gan_loss, l1_loss
-
 
 
     def discriminator_loss(disc_real_output, disc_generated_output):
