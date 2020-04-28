@@ -23,7 +23,8 @@ PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
 RUNTIME = 'colab'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
-EXPERIMENT_NAME = 'exp_2020_04_28_4'
+# EXPERIMENT_NAME = 'exp_2020_04_28_4'
+EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
@@ -242,6 +243,7 @@ if __name__ == "__main__":
         sq = tf.square(gen_output - target)
         sq = tf.reshape(sq, [-1])
         l2_loss_top_k, temp = tf.nn.top_k(sq, TOP_K)
+        l2_loss_top_k = tf.reduce_mean(l2_loss_top_k)
         return l2_loss_top_k
 
 
