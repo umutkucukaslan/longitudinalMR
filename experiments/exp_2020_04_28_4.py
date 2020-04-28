@@ -241,14 +241,8 @@ if __name__ == "__main__":
     def generator_loss(gen_output, target, disc_generated_output=None):
         sq = tf.square(gen_output - target)
         sq = tf.reshape(sq, [-1])
-        print('shape is ', sq.shape)
         l2_loss_top_k, temp = tf.nn.top_k(sq, TOP_K)
         return l2_loss_top_k
-
-        # gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
-        # l1_loss = tf.reduce_mean(tf.abs(gen_output - target))
-        # total_loss = LAMBDA_ADV * gan_loss + LAMBDA_L1 * l1_loss
-        # return total_loss, gan_loss, l1_loss
 
 
     def discriminator_loss(disc_real_output, disc_generated_output):
