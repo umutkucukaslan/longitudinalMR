@@ -52,7 +52,7 @@ if len(sys.argv) > 1:
     BATCH_SIZE = int(sys.argv[1])
 
 
-TOP_K = TOP_K * BATCH_SIZE
+TOP_K = int(TOP_K * BATCH_SIZE)
 
 # DEFAULT_FLOAT_TYPE = 'float32'
 # tf.keras.backend.set_floatx(DEFAULT_FLOAT_TYPE)
@@ -241,6 +241,7 @@ if __name__ == "__main__":
     def generator_loss(gen_output, target, disc_generated_output=None):
         sq = tf.square(gen_output - target)
         sq = tf.reshape(sq, [-1])
+        print('shape is ', sq.shape)
         l2_loss_top_k, temp = tf.nn.top_k(sq, TOP_K)
         return l2_loss_top_k
 
