@@ -241,7 +241,7 @@ if __name__ == "__main__":
     def generator_loss(gen_output, target, disc_generated_output=None):
         sq = tf.square(gen_output - target)
         sq = tf.reshape(sq, [-1])
-        l2_loss_top_k = tf.nn.top_k(sq, TOP_K)
+        l2_loss_top_k, temp = tf.nn.top_k(sq, TOP_K)
         return l2_loss_top_k
 
         # gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
