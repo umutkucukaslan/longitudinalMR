@@ -41,7 +41,7 @@ CLIP_BY_NORM = 1    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
 EPOCHS = 5000
-CHECKPOINT_SAVE_INTERVAL = 5
+CHECKPOINT_SAVE_INTERVAL = 3
 MAX_TO_KEEP = 5
 LR = 1e-4
 
@@ -370,17 +370,17 @@ if __name__ == "__main__":
 
             end_time = time.time()
             log_print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)))
-            log_print("     gen_total_loss {:1.2f}".format(losses[0]))
-            log_print("     gen_gan_loss   {:1.2f}".format(losses[1]))
-            log_print("     gen_l1_loss    {:1.2f}".format(losses[2]))
-            log_print("     gen_l2_loss    {:1.2f}".format(losses[3]))
-            log_print("     disc_loss      {:1.2f}".format(losses[4]))
+            log_print("     gen_total_loss {:1.4f}".format(losses[0]))
+            log_print("     gen_gan_loss   {:1.4f}".format(losses[1]))
+            log_print("     gen_l1_loss    {:1.4f}".format(losses[2]))
+            log_print("     gen_l2_loss    {:1.4f}".format(losses[3]))
+            log_print("     disc_loss      {:1.4f}".format(losses[4]))
 
-            log_print("     val_gen_total_loss {:1.2f}".format(val_losses[0]))
-            log_print("     gen_gan_loss       {:1.2f}".format(val_losses[1]))
-            log_print("     gen_l1_loss        {:1.2f}".format(val_losses[2]))
-            log_print("     gen_l2_loss        {:1.2f}".format(val_losses[3]))
-            log_print("     disc_loss          {:1.2f}".format(val_losses[4]))
+            log_print("     val_gen_total_loss {:1.4f}".format(val_losses[0]))
+            log_print("     gen_gan_loss       {:1.4f}".format(val_losses[1]))
+            log_print("     gen_l1_loss        {:1.4f}".format(val_losses[2]))
+            log_print("     gen_l2_loss        {:1.4f}".format(val_losses[3]))
+            log_print("     disc_loss          {:1.4f}".format(val_losses[4]))
 
             checkpoint.epoch.assign(epoch)
 

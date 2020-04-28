@@ -39,6 +39,7 @@ LAMBDA_L1 = 1
 LAMBDA_ADV = 1
 CLIP_BY_NORM = None    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
+TOP_K = 256 * 256 / 4
 
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
@@ -49,6 +50,9 @@ LR = 1e-4
 # set batch size easily
 if len(sys.argv) > 1:
     BATCH_SIZE = int(sys.argv[1])
+
+
+TOP_K = TOP_K * BATCH_SIZE
 
 # DEFAULT_FLOAT_TYPE = 'float32'
 # tf.keras.backend.set_floatx(DEFAULT_FLOAT_TYPE)
@@ -235,8 +239,10 @@ if __name__ == "__main__":
         return tf.reduce_mean(tf.square(target_y - predicted_y))
 
     def generator_loss(gen_output, target, disc_generated_output=None):
-        gen_l2_loss = l2_loss(target, gen_output)
-        return gen_l2_loss
+        sq = tf.square(gen_output - target)
+        sq = tf.reshape(sq, [-1])
+        l2_loss_top_k = tf.nn.top_k(sq, TOP_K)
+        return l2_loss_top_k
 
         # gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
         # l1_loss = tf.reduce_mean(tf.abs(gen_output - target))
