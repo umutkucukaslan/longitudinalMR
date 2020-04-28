@@ -338,7 +338,7 @@ if __name__ == "__main__":
 
             # training
             log_print('Training epoch {}'.format(epoch), add_timestamp=True)
-            losses = [[], [], [], []]
+            losses = [[], [], [], [], []]
             for n, input_image in train_ds.enumerate():
                 if TRAIN_ADVERSARIALLY:
                     gen_l2_loss, disc_loss = train_step(input_image, input_image)
@@ -357,7 +357,7 @@ if __name__ == "__main__":
 
             # testing
             log_print('Calculating validation losses...')
-            val_losses = [[], [], [], []]
+            val_losses = [[], [], [], [], []]
             for input_image in val_ds:
                 if TRAIN_ADVERSARIALLY:
                     gen_l2_loss, disc_loss = eval_step(input_image, input_image)
