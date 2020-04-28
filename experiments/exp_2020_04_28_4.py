@@ -42,7 +42,7 @@ CLIP_BY_VALUE = None   # clip gradient to this value or None
 TOP_K = 256 * 256 / 4
 
 EPOCHS = 5000
-CHECKPOINT_SAVE_INTERVAL = 5
+CHECKPOINT_SAVE_INTERVAL = 2
 MAX_TO_KEEP = 5
 LR = 1e-4
 
