@@ -20,7 +20,7 @@ PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
+RUNTIME = 'none'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = 'exp_2020_04_28'
@@ -174,7 +174,8 @@ checkpoint = tf.train.Checkpoint(epoch=tf.Variable(0),
 manager = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=MAX_TO_KEEP)
 
 if RESTORE_FROM_CHECKPOINT:
-    checkpoint.restore(manager.latest_checkpoint)
+    # checkpoint.restore(manager.latest_checkpoint)
+    checkpoint.restore('/Users/umutkucukaslan/Desktop/thesis/experiments/exp_2020_04_28/checkpoints/ckpt-1')
 
 if manager.latest_checkpoint:
     log_print("Restored from {}".format(manager.latest_checkpoint))
@@ -184,12 +185,14 @@ else:
 initial_epoch = checkpoint.epoch.numpy() + 1
 
 
-def get_encoder_decoder_generator_discriminator():
+def get_encoder_decoder_generator_discriminator(return_experiment_folder=True):
     """
     This function returns the constructed and restored (if possible) sub-models that are constructed in this experiment
 
     :return: encoder, decoder, generator, discriminator
     """
+    if return_experiment_folder:
+        return encoder, decoder, generator, discriminator, EXPERIMENT_FOLDER
     return encoder, decoder, generator, discriminator
 
 
