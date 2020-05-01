@@ -38,6 +38,7 @@ INPUT_CHANNEL = 1
 TRAIN_ADVERSARIALLY = True
 TRAIN_GENERATOR = False
 TRAIN_DISCRIMINATOR = False
+N_MULTIPLE_DISC_TRAIN = 5
 LAMBDA_SIM = 1
 LAMBDA_ADV = 1
 CLIP_BY_NORM = None    # clip gradients to this norm or None
@@ -272,6 +273,21 @@ if __name__ == "__main__":
             discriminator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in discriminator_gradients]
         discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
 
+        for i in range(N_MULTIPLE_DISC_TRAIN - 1):
+            with tf.GradientTape() as disc_tape:
+                disc_real_output = discriminator([input_image, input_image], training=True)
+                disc_generated_output = discriminator([gen_output, input_image], training=True)
+
+                disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
+
+            discriminator_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
+            if CLIP_BY_NORM is not None:
+                discriminator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in discriminator_gradients]
+            if CLIP_BY_VALUE is not None:
+                discriminator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in
+                                           discriminator_gradients]
+            discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
+
         return total_loss, gan_loss, gen_l2_loss, disc_loss
 
 
@@ -412,6 +428,7 @@ if __name__ == "__main__":
         log_print('Train adversarially: ' + str(TRAIN_ADVERSARIALLY))
         log_print('Train generator: ' + str(TRAIN_GENERATOR))
         log_print('Train discriminator: ' + str(TRAIN_DISCRIMINATOR))
+        log_print('# discriminator train each epoch: ' + str(N_MULTIPLE_DISC_TRAIN))
 
         log_print(' ')
 
