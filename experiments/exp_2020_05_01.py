@@ -258,7 +258,7 @@ if __name__ == "__main__":
             total_loss, gan_loss, gen_l2_loss = generator_loss(gen_output, target, disc_generated_output)
             disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
 
-        generator_gradients = gen_tape.gradient(gen_l2_loss, generator.trainable_variables)
+        generator_gradients = gen_tape.gradient(total_loss, generator.trainable_variables)
         if CLIP_BY_NORM is not None:
             generator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in generator_gradients]
         if CLIP_BY_VALUE is not None:
