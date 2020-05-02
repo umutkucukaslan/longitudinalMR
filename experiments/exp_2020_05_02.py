@@ -23,7 +23,7 @@ Loss:       Generator loss = L2 + adversarial loss
 """
 
 
-RUNTIME = 'none'   # cloud, colab or none
+RUNTIME = 'colab'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -31,8 +31,8 @@ EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
 BATCH_SIZE = 32
-INPUT_WIDTH = 64
-INPUT_HEIGHT = 64
+INPUT_WIDTH = 256
+INPUT_HEIGHT = 256
 INPUT_CHANNEL = 1
 
 TRAIN_ADVERSARIALLY = True
@@ -41,11 +41,11 @@ TRAIN_DISCRIMINATOR = False
 DISC_TRAIN_STEPS = 5
 LAMBDA_SIM = 1000
 LAMBDA_ADV = 1
-CLIP_BY_NORM = None    # clip gradients to this norm or None
+CLIP_BY_NORM = 10    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
 EPOCHS = 5000
-CHECKPOINT_SAVE_INTERVAL = 3
+CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
 LR = 1e-4
 
@@ -107,7 +107,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
 # encoder
 filters = (64, 128, 256, 512)
 output_shape = 1024
-kernel_size = 5
+kernel_size = 3
 batch_norm = False
 
 encoder = build_encoder(
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
 
 # DISCRIMINATOR
-discriminator = gan.get_discriminator_2020_05_01_inputsize64x64()
+discriminator = gan.get_discriminator_2020_04_06()
 if __name__ == "__main__":
     discriminator.summary()
     discriminator.summary(print_fn=log_print)
@@ -195,7 +195,7 @@ def get_encoder_decoder_generator_discriminator(return_experiment_folder=True):
     """
     if return_experiment_folder:
         return encoder, decoder, generator, discriminator, EXPERIMENT_FOLDER
-    return encoder, decoder, generator, discriminator, EXPERIMENT_FOLDER
+    return encoder, decoder, generator, discriminator
 
 
 if __name__ == "__main__":
@@ -207,15 +207,6 @@ if __name__ == "__main__":
 
     # DATASET
     train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(machine=RUNTIME, return_two_trains=True)
-
-    def process_dataset(image):
-        image = tf.image.resize(image, [INPUT_HEIGHT, INPUT_WIDTH])
-        return image
-
-    train_ds = train_ds.map(process_dataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    train_ds2 = train_ds2.map(process_dataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    val_ds = val_ds.map(process_dataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    test_ds = test_ds.map(process_dataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
     train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
     val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
