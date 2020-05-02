@@ -41,11 +41,11 @@ TRAIN_DISCRIMINATOR = False
 DISC_TRAIN_STEPS = 5
 LAMBDA_SIM = 1000
 LAMBDA_ADV = 1
-CLIP_BY_NORM = None    # clip gradients to this norm or None
+CLIP_BY_NORM = 10    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
 EPOCHS = 5000
-CHECKPOINT_SAVE_INTERVAL = 3
+CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
 LR = 1e-4
 
