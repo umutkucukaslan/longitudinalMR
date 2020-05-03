@@ -18,7 +18,7 @@ import model.gan as gan
 PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
                                  Decoder: Dense + Deconv(512, 256, 128, 64)
 Training:   Train generator once whereas train discriminator 5 times at each epoch.
-Loss:       Generator loss = L2 + adversarial loss
+Loss:       Generator loss = perceptual loss + adversarial loss
             Discriminator loss = adversarial loss
 """
 
