@@ -23,7 +23,7 @@ Loss:       Generator loss = L2 + adversarial loss
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
+RUNTIME = 'none'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -195,7 +195,7 @@ def get_encoder_decoder_generator_discriminator(return_experiment_folder=True):
     """
     if return_experiment_folder:
         return encoder, decoder, generator, discriminator, EXPERIMENT_FOLDER
-    return encoder, decoder, generator, discriminator
+    return encoder, decoder, generator, discriminator, EXPERIMENT_FOLDER
 
 
 if __name__ == "__main__":
