@@ -39,7 +39,7 @@ TRAIN_ADVERSARIALLY = True
 TRAIN_GENERATOR = False
 TRAIN_DISCRIMINATOR = False
 DISC_TRAIN_STEPS = 5
-LAMBDA_SIM = 1000
+LAMBDA_SIM = 10
 LAMBDA_ADV = 1
 CLIP_BY_NORM = 10    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
@@ -220,7 +220,7 @@ def get_encoder_decoder_generator_discriminator(return_experiment_folder=True):
     """
     if return_experiment_folder:
         return encoder, decoder, generator, discriminator, EXPERIMENT_FOLDER
-    return encoder, decoder, generator, discriminator
+    return encoder, decoder, generator, discriminator, EXPERIMENT_FOLDER
 
 
 if __name__ == "__main__":
