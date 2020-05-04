@@ -179,7 +179,7 @@ perceptual_loss_network = tf.keras.Model(inputs=inp, outputs=features, name='vgg
 if __name__ == "__main__":
     perceptual_loss_network.summary()
     perceptual_loss_network.summary(print_fn=log_print)
-    tf.keras.utils.plot_model(perceptual_loss_network, to_file=PERCEPTUAL_LOSS_NETWORK_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=False)
+    tf.keras.utils.plot_model(perceptual_loss_network, to_file=PERCEPTUAL_LOSS_NETWORK_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=True)
 
 
 
