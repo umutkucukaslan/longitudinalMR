@@ -13,12 +13,14 @@ Splits processed dataset into train, val, test folders
 Adds ad/mci/cn prefixes to patient folders accordingly
 Set the params below
 """
+# --------------------
 # set following params
 raw_dataset = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data_256x256'
 processed_dataset = '/Users/umutkucukaslan/Desktop/thesis/dataset/cropped_processed_data'
 
 source_image_size = (256, 256)
 target_image_size = (192, 160)
+# --------------------
 
 processed_dataset = processed_dataset + '_' + str(target_image_size[0]) + 'x' + str(target_image_size[1])
 
