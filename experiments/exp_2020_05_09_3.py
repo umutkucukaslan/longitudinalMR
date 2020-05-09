@@ -42,6 +42,7 @@ TRAIN_DISCRIMINATOR = False
 DISC_TRAIN_STEPS = 5
 LAMBDA_SIM = 1000
 LAMBDA_ADV = 1
+CLIP_DISC_WEIGHT = 0.01    # clip disc weight
 CLIP_BY_NORM = 10    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
@@ -163,8 +164,10 @@ if __name__ == "__main__":
 loss_object = tf.keras.losses.BinaryCrossentropy()
 
 # optimizers
-generator_optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
-discriminator_optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
+# generator_optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
+generator_optimizer = tf.optimizers.RMSprop(learning_rate=LR)
+# discriminator_optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
+discriminator_optimizer = tf.optimizers.RMSprop(learning_rate=LR)
 
 # checkpoint writer
 checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, 'checkpoints')
@@ -232,17 +235,22 @@ if __name__ == "__main__":
         return tf.reduce_mean(tf.square(target_y - predicted_y))
 
     def generator_loss(gen_output, target, disc_generated_output=None):
-        gen_l2_loss = l2_loss(target, gen_output)
-        gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
-        total_loss = LAMBDA_ADV * gan_loss + LAMBDA_SIM * gen_l2_loss
-        return total_loss, gan_loss, gen_l2_loss
+        # gen_l2_loss = l2_loss(target, gen_output)
+        # gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
+        # total_loss = LAMBDA_ADV * gan_loss + LAMBDA_SIM * gen_l2_loss
+
+        gan_loss = -tf.reduce_mean(disc_generated_output)
+        return gan_loss, gan_loss
 
 
     def discriminator_loss(disc_real_output, disc_generated_output):
-        real_loss = loss_object(tf.ones_like(disc_real_output), disc_real_output)
-        generated_loss = loss_object(tf.zeros_like(disc_generated_output), disc_generated_output)
-        total_disc_loss = real_loss + generated_loss
-        return total_disc_loss
+
+        # real_loss = loss_object(tf.ones_like(disc_real_output), disc_real_output)
+        # generated_loss = loss_object(tf.zeros_like(disc_generated_output), disc_generated_output)
+        # total_disc_loss = real_loss + generated_loss
+
+        disc_total_loss = tf.reduce_mean(disc_real_output) - tf.reduce_mean(disc_generated_output)
+        return -disc_total_loss
 
 
     # TRAINING
@@ -256,7 +264,7 @@ if __name__ == "__main__":
             disc_real_output = discriminator([input_image, input_image], training=True)
             disc_generated_output = discriminator([gen_output, input_image], training=True)
 
-            total_loss, gan_loss, gen_l2_loss = generator_loss(gen_output, target, disc_generated_output)
+            total_loss, gan_loss = generator_loss(gen_output, target, disc_generated_output)
             disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
 
         generator_gradients = gen_tape.gradient(total_loss, generator.trainable_variables)
@@ -274,6 +282,10 @@ if __name__ == "__main__":
             discriminator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in discriminator_gradients]
         discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
 
+        if CLIP_DISC_WEIGHT:
+            for disc_var in discriminator.trainable_variables:
+                disc_var.assign(tf.clip_by_value(disc_var, -CLIP_DISC_WEIGHT, CLIP_DISC_WEIGHT))
+
         for i in range(DISC_TRAIN_STEPS - 1):
             with tf.GradientTape() as disc_tape:
                 disc_real_output = discriminator([input_image, input_image], training=True)
@@ -288,8 +300,11 @@ if __name__ == "__main__":
                 discriminator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in
                                            discriminator_gradients]
             discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
+            if CLIP_DISC_WEIGHT:
+                for disc_var in discriminator.trainable_variables:
+                    disc_var.assign(tf.clip_by_value(disc_var, -CLIP_DISC_WEIGHT, CLIP_DISC_WEIGHT))
 
-        return total_loss, gan_loss, gen_l2_loss, disc_loss
+        return total_loss, gan_loss, disc_loss
 
 
     def eval_step(input_image, target):
@@ -298,10 +313,10 @@ if __name__ == "__main__":
         disc_real_output = discriminator([input_image, input_image], training=False)
         disc_generated_output = discriminator([gen_output, input_image], training=False)
 
-        total_loss, gan_loss, gen_l2_loss = generator_loss(gen_output, target, disc_generated_output)
+        total_loss, gan_loss = generator_loss(gen_output, target, disc_generated_output)
         disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
 
-        return total_loss, gan_loss, gen_l2_loss, disc_loss
+        return total_loss, gan_loss, disc_loss
 
 
     def generate_images(model, test_input, path=None, show=True):
@@ -350,11 +365,11 @@ if __name__ == "__main__":
             losses = [[], [], [], [], []]
             for n, input_image in train_ds.enumerate():
                 if TRAIN_ADVERSARIALLY:
-                    total_loss, gan_loss, gen_l2_loss, disc_loss = train_step(input_image, input_image)
+                    total_loss, gan_loss, disc_loss = train_step(input_image, input_image)
                     losses[0].append(total_loss.numpy())
                     losses[1].append(gan_loss.numpy())
                     losses[2].append(0)
-                    losses[3].append(gen_l2_loss.numpy())
+                    losses[3].append(0)
                     losses[4].append(disc_loss.numpy())
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
@@ -370,11 +385,11 @@ if __name__ == "__main__":
             val_losses = [[], [], [], [], []]
             for input_image in val_ds:
                 if TRAIN_ADVERSARIALLY:
-                    total_loss, gan_loss, gen_l2_loss, disc_loss = eval_step(input_image, input_image)
+                    total_loss, gan_loss, disc_loss = eval_step(input_image, input_image)
                     val_losses[0].append(total_loss.numpy())
                     val_losses[1].append(gan_loss.numpy())
                     val_losses[2].append(0)
-                    val_losses[3].append(gen_l2_loss.numpy())
+                    val_losses[3].append(0)
                     val_losses[4].append(disc_loss.numpy())
 
             val_losses = [statistics.mean(x) for x in val_losses]
