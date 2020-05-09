@@ -232,7 +232,7 @@ if __name__ == "__main__":
 
 
     # DATASET
-    train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(machine=RUNTIME, return_two_trains=True)
+    train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(folder_name='processed_data_192x160', machine=RUNTIME, return_two_trains=True)
 
     train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
     val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
