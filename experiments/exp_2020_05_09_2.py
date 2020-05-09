@@ -19,7 +19,7 @@ Input:  192x160
 PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
                                  Decoder: Dense + Deconv(512, 256, 128, 64)
 Training:   Train generator once whereas train discriminator 5 times at each epoch.
-Loss:       Generator loss = L2 + adversarial loss
+Loss:       Generator loss = perceptual loss + adversarial loss
             Discriminator loss = adversarial loss
 """
 
@@ -32,15 +32,15 @@ EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
 BATCH_SIZE = 32
-INPUT_WIDTH = 160
-INPUT_HEIGHT = 192
+INPUT_WIDTH = 192
+INPUT_HEIGHT = 160
 INPUT_CHANNEL = 1
 
 TRAIN_ADVERSARIALLY = True
 TRAIN_GENERATOR = False
 TRAIN_DISCRIMINATOR = False
 DISC_TRAIN_STEPS = 5
-LAMBDA_SIM = 1000
+LAMBDA_SIM = 10
 LAMBDA_ADV = 1
 CLIP_BY_NORM = 10    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
@@ -99,6 +99,7 @@ def log_print(msg, add_timestamp=False):
 # generator model plot path
 GEN_MODEL_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'gen_model_plot.jpg')
 DIS_MODEL_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'dis_model_plot.jpg')
+PERCEPTUAL_LOSS_NETWORK_PLOT_PATH = os.path.join(EXPERIMENT_FOLDER, 'perceptual_loss_model_plot.jpg')
 
 # folder to save generated test images during training
 if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
@@ -159,7 +160,31 @@ if __name__ == "__main__":
 
 
 # =================
-# loss to be used for adversarial training
+# Perceptual Loss
+# Pretrained VGG 16 model for loss network.
+
+vgg16 = tf.keras.applications.VGG16(input_shape=(INPUT_HEIGHT, INPUT_WIDTH, 3), include_top=False, weights='imagenet')
+vgg_block2_conv2 = vgg16.get_layer('block2_conv2').output
+vgg_model = tf.keras.Model(inputs=vgg16.inputs, outputs=vgg_block2_conv2, name='vgg16_feature_extractor')
+
+for layer in vgg_model.layers:
+    layer.trainable = False
+
+# loss network
+inp = tf.keras.Input((INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL))
+vgg16_inp = tf.concat([inp, inp, inp], axis=-1)
+features = vgg_model(vgg16_inp)
+
+perceptual_loss_network = tf.keras.Model(inputs=inp, outputs=features, name='vgg16_perceptual_loss_network')
+
+if __name__ == "__main__":
+    perceptual_loss_network.summary()
+    perceptual_loss_network.summary(print_fn=log_print)
+    tf.keras.utils.plot_model(perceptual_loss_network, to_file=PERCEPTUAL_LOSS_NETWORK_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=True)
+
+
+
+# loss to be used
 loss_object = tf.keras.losses.BinaryCrossentropy()
 
 # optimizers
@@ -207,7 +232,7 @@ if __name__ == "__main__":
 
 
     # DATASET
-    train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(folder_name='processed_data_192x160', machine=RUNTIME, return_two_trains=True)
+    train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(machine=RUNTIME, return_two_trains=True)
 
     train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
     val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
@@ -231,11 +256,16 @@ if __name__ == "__main__":
     def l2_loss(target_y, predicted_y):
         return tf.reduce_mean(tf.square(target_y - predicted_y))
 
+    def perceptual_loss(target_y, predicted_y):
+        target_y_features = perceptual_loss_network(target_y)
+        predicted_y_features = perceptual_loss_network(predicted_y)
+        return l2_loss(target_y_features, predicted_y_features)
+
     def generator_loss(gen_output, target, disc_generated_output=None):
-        gen_l2_loss = l2_loss(target, gen_output)
+        gen_perceptual_loss = perceptual_loss(target, gen_output)
         gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
-        total_loss = LAMBDA_ADV * gan_loss + LAMBDA_SIM * gen_l2_loss
-        return total_loss, gan_loss, gen_l2_loss
+        total_loss = LAMBDA_ADV * gan_loss + LAMBDA_SIM * gen_perceptual_loss
+        return total_loss, gan_loss, gen_perceptual_loss
 
 
     def discriminator_loss(disc_real_output, disc_generated_output):
@@ -256,7 +286,7 @@ if __name__ == "__main__":
             disc_real_output = discriminator([input_image, input_image], training=True)
             disc_generated_output = discriminator([gen_output, input_image], training=True)
 
-            total_loss, gan_loss, gen_l2_loss = generator_loss(gen_output, target, disc_generated_output)
+            total_loss, gan_loss, gen_perceptual_loss = generator_loss(gen_output, target, disc_generated_output)
             disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
 
         generator_gradients = gen_tape.gradient(total_loss, generator.trainable_variables)
@@ -289,7 +319,7 @@ if __name__ == "__main__":
                                            discriminator_gradients]
             discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
 
-        return total_loss, gan_loss, gen_l2_loss, disc_loss
+        return total_loss, gan_loss, gen_perceptual_loss, disc_loss
 
 
     def eval_step(input_image, target):
@@ -298,10 +328,10 @@ if __name__ == "__main__":
         disc_real_output = discriminator([input_image, input_image], training=False)
         disc_generated_output = discriminator([gen_output, input_image], training=False)
 
-        total_loss, gan_loss, gen_l2_loss = generator_loss(gen_output, target, disc_generated_output)
+        total_loss, gan_loss, gen_perceptual_loss = generator_loss(gen_output, target, disc_generated_output)
         disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
 
-        return total_loss, gan_loss, gen_l2_loss, disc_loss
+        return total_loss, gan_loss, gen_perceptual_loss, disc_loss
 
 
     def generate_images(model, test_input, path=None, show=True):
@@ -347,37 +377,38 @@ if __name__ == "__main__":
 
             # training
             log_print('Training epoch {}'.format(epoch), add_timestamp=True)
-            losses = [[], [], [], [], []]
+            losses = [[], [], [], [], [], []]
             for n, input_image in train_ds.enumerate():
                 if TRAIN_ADVERSARIALLY:
-                    total_loss, gan_loss, gen_l2_loss, disc_loss = train_step(input_image, input_image)
+                    total_loss, gan_loss, gen_perceptual_loss, disc_loss = train_step(input_image, input_image)
                     losses[0].append(total_loss.numpy())
                     losses[1].append(gan_loss.numpy())
                     losses[2].append(0)
-                    losses[3].append(gen_l2_loss.numpy())
-                    losses[4].append(disc_loss.numpy())
+                    losses[3].append(0)
+                    losses[4].append(gen_perceptual_loss.numpy())
+                    losses[5].append(disc_loss.numpy())
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
                 tf.summary.scalar('gen_total_loss', losses[0], step=epoch)
                 tf.summary.scalar('gen_gan_loss', losses[1], step=epoch)
                 tf.summary.scalar('gen_l1_loss', losses[2], step=epoch)
                 tf.summary.scalar('gen_l2_loss', losses[3], step=epoch)
-                tf.summary.scalar('disc_loss', losses[4], step=epoch)
-            tf.summary.flush(
-                writer=summary_writer, name=None
-            )
+                tf.summary.scalar('gen_perceptual_loss', losses[4], step=epoch)
+                tf.summary.scalar('disc_loss', losses[5], step=epoch)
+            summary_writer.flush()
 
             # testing
             log_print('Calculating validation losses...')
-            val_losses = [[], [], [], [], []]
+            val_losses = [[], [], [], [], [], []]
             for input_image in val_ds:
                 if TRAIN_ADVERSARIALLY:
-                    total_loss, gan_loss, gen_l2_loss, disc_loss = eval_step(input_image, input_image)
+                    total_loss, gan_loss, gen_perceptual_loss, disc_loss = eval_step(input_image, input_image)
                     val_losses[0].append(total_loss.numpy())
                     val_losses[1].append(gan_loss.numpy())
                     val_losses[2].append(0)
-                    val_losses[3].append(gen_l2_loss.numpy())
-                    val_losses[4].append(disc_loss.numpy())
+                    val_losses[3].append(0)
+                    val_losses[4].append(gen_perceptual_loss.numpy())
+                    val_losses[5].append(disc_loss.numpy())
 
             val_losses = [statistics.mean(x) for x in val_losses]
             with summary_writer.as_default():
@@ -385,23 +416,25 @@ if __name__ == "__main__":
                 tf.summary.scalar('val_gen_gan_loss', val_losses[1], step=epoch)
                 tf.summary.scalar('val_gen_l1_loss', val_losses[2], step=epoch)
                 tf.summary.scalar('val_gen_l2_loss', val_losses[3], step=epoch)
-                tf.summary.scalar('val_disc_loss', val_losses[4], step=epoch)
-            tf.summary.flush(
-                writer=summary_writer, name=None
-            )
+                tf.summary.scalar('val_gen_perceptual_loss', val_losses[4], step=epoch)
+                tf.summary.scalar('val_disc_loss', val_losses[5], step=epoch)
+            summary_writer.flush()
+
             end_time = time.time()
             log_print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)))
-            log_print("     gen_total_loss {:1.4f}".format(losses[0]))
-            log_print("     gen_gan_loss   {:1.4f}".format(losses[1]))
-            log_print("     gen_l1_loss    {:1.4f}".format(losses[2]))
-            log_print("     gen_l2_loss    {:1.4f}".format(losses[3]))
-            log_print("     disc_loss      {:1.4f}".format(losses[4]))
+            log_print("     gen_total_loss         {:1.4f}".format(losses[0]))
+            log_print("     gen_gan_loss           {:1.4f}".format(losses[1]))
+            log_print("     gen_l1_loss            {:1.4f}".format(losses[2]))
+            log_print("     gen_l2_loss            {:1.4f}".format(losses[3]))
+            log_print("     gen_perceptual_loss    {:1.4f}".format(losses[4]))
+            log_print("     disc_loss              {:1.4f}".format(losses[5]))
 
-            log_print("     val_gen_total_loss {:1.4f}".format(val_losses[0]))
-            log_print("     gen_gan_loss       {:1.4f}".format(val_losses[1]))
-            log_print("     gen_l1_loss        {:1.4f}".format(val_losses[2]))
-            log_print("     gen_l2_loss        {:1.4f}".format(val_losses[3]))
-            log_print("     disc_loss          {:1.4f}".format(val_losses[4]))
+            log_print("     val_gen_total_loss     {:1.4f}".format(val_losses[0]))
+            log_print("     gen_gan_loss           {:1.4f}".format(val_losses[1]))
+            log_print("     gen_l1_loss            {:1.4f}".format(val_losses[2]))
+            log_print("     gen_l2_loss            {:1.4f}".format(val_losses[3]))
+            log_print("     gen_perceptual_loss    {:1.4f}".format(val_losses[4]))
+            log_print("     disc_loss              {:1.4f}".format(val_losses[5]))
 
             checkpoint.epoch.assign(epoch)
 
@@ -455,5 +488,3 @@ if __name__ == "__main__":
         log_print("Saved checkpoint for epoch {}: {} due to KeyboardInterrupt".format(int(checkpoint.epoch), save_path))
         summary_writer.close()
 
-    except:
-        summary_writer.close()
