@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 
 
-def get_adni_dataset(machine='none', return_two_trains=False):
+def get_adni_dataset(folder_name='processed_data', machine='none', return_two_trains=False):
     """
     train, val, test datasets from processed_data folder
     Images are normalized to [0, 1] interval
@@ -15,11 +15,11 @@ def get_adni_dataset(machine='none', return_two_trains=False):
     """
 
     if machine == 'colab':
-        data_dir = '/content/processed_data'
+        data_dir = os.path.join('/content', folder_name)
     elif machine == 'cloud':
-        data_dir = '/home/umutkucukaslan/data/processed_data'
+        data_dir = os.path.join('/home/umutkucukaslan/data', folder_name)
     else:
-        data_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data'
+        data_dir = os.path.join('/Users/umutkucukaslan/Desktop/thesis/dataset', folder_name)
 
     train = glob.glob(os.path.join(data_dir, 'train/*/*/slice_*.png'))
     val = glob.glob(os.path.join(data_dir, 'val/*/*/slice_*.png'))
