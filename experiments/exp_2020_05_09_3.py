@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
 
 # DISCRIMINATOR
-discriminator = gan.get_discriminator(input_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL))
+discriminator = gan.get_discriminator(input_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL), batch_norm=False)
 if __name__ == "__main__":
     discriminator.summary()
     discriminator.summary(print_fn=log_print)

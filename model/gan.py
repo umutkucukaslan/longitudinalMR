@@ -158,12 +158,14 @@ def get_discriminator(input_shape=(256, 256, 1), kernel_size=3, batch_norm=True,
 
     x = tf.keras.layers.Conv2D(256, kernel_size, strides=1, padding='same', kernel_initializer=initializer,
                                use_bias=False)(x)
-    x = tf.keras.layers.BatchNormalization()(x)
+    if batch_norm:
+        x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.LeakyReLU()(x)      # (bs, H/16, W/16, 512)
 
     x = tf.keras.layers.Conv2D(128, kernel_size, strides=1, padding='same', kernel_initializer=initializer,
                                use_bias=False)(x)
-    x = tf.keras.layers.BatchNormalization()(x)
+    if batch_norm:
+        x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.LeakyReLU()(x)  # (bs, H/16, W/16, 128)
 
     last = tf.keras.layers.Conv2D(1, 1, strides=1, kernel_initializer=initializer)(x)  # (bs, H/16, W/16, 1)

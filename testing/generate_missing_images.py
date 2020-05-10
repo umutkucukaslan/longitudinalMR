@@ -10,7 +10,7 @@ import imageio
 from skimage.metrics import structural_similarity
 
 from datasets.longitudinal_dataset import LongitudinalDataset
-from experiments.exp_2020_05_09 import get_encoder_decoder_generator_discriminator
+from experiments.exp_2020_05_09_2 import get_encoder_decoder_generator_discriminator
 from testing.utils import preprocess_image, postprocess_image, mse_float, mse_uint8
 
 
@@ -85,8 +85,8 @@ def generate_statistics(triplets, title):
 
 
     plt.figure()
-    figure_path = os.path.join(results_folder, 'SSIM - actual vs OURS' + title + '.jpg')
-    plt.hist(ssims_original_generated, bins=30)
+    figure_path = os.path.join(results_folder, 'SSIM (actual vs OURS) ' + title + '.jpg')
+    plt.hist(ssims_original_generated, bins=100, range=(0, 1))
     mean_ssim = np.mean(ssims_original_generated)
     std_ssim = np.std(ssims_original_generated)
     mean_ssim = round(mean_ssim, 3)
@@ -94,11 +94,12 @@ def generate_statistics(triplets, title):
     plt.title(title + ' SSIM (actual vs OURS)  mean: {}  std: {}'.format(mean_ssim, std_ssim))
     plt.xlabel('SSIM index')
     plt.ylabel('# images')
+    plt.xticks(np.arange(0, 1.001, 0.1))
     plt.savefig(figure_path, dpi=300)
 
     plt.figure()
-    figure_path = os.path.join(results_folder, 'SSIM - actual vs mean' + title + '.jpg')
-    plt.hist(ssims_original_mean, bins=30)
+    figure_path = os.path.join(results_folder, 'SSIM (actual vs mean) ' + title + '.jpg')
+    plt.hist(ssims_original_mean, bins=100, range=(0, 1))
     mean_ssim = np.mean(ssims_original_mean)
     std_ssim = np.std(ssims_original_mean)
     mean_ssim = round(mean_ssim, 3)
@@ -106,11 +107,12 @@ def generate_statistics(triplets, title):
     plt.title(title + ' SSIM (actual vs mean image)  mean: {}  std: {}'.format(mean_ssim, std_ssim))
     plt.xlabel('SSIM index')
     plt.ylabel('# images')
+    plt.xticks(np.arange(0, 1.0001, 0.1))
     plt.savefig(figure_path, dpi=300)
 
     plt.figure()
-    figure_path = os.path.join(results_folder, 'DIFF (OURS - mean of actuals)' + title + '.jpg')
-    plt.hist(ssim_diff_mean_generated, bins=30)
+    figure_path = os.path.join(results_folder, 'DIFF (OURS - mean of actuals) ' + title + '.jpg')
+    plt.hist(ssim_diff_mean_generated, bins=100)
     mean_ssim = np.mean(ssim_diff_mean_generated)
     std_ssim = np.std(ssim_diff_mean_generated)
     mean_ssim = round(mean_ssim, 3)
@@ -121,8 +123,8 @@ def generate_statistics(triplets, title):
     plt.savefig(figure_path, dpi=300)
 
     plt.figure()
-    figure_path = os.path.join(results_folder, 'DIFF (OURS - mean of generated images)' + title + '.jpg')
-    plt.hist(ssim_diff_truemean_generated, bins=30)
+    figure_path = os.path.join(results_folder, 'DIFF (OURS - mean of generated images) ' + title + '.jpg')
+    plt.hist(ssim_diff_truemean_generated, bins=100)
     mean_ssim = np.mean(ssim_diff_truemean_generated)
     std_ssim = np.std(ssim_diff_truemean_generated)
     mean_ssim = round(mean_ssim, 3)
