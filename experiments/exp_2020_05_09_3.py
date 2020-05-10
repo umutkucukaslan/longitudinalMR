@@ -18,7 +18,7 @@ import model.gan as gan
 Input:  192x160
 PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
                                  Decoder: Dense + Deconv(512, 256, 128, 64)
-Training:   WGAN - clip weight = 0.1
+Training:   WGAN - clip weight = 0.02
 Loss:       Generator loss = EM distance
             Discriminator loss = EM distance
 """
@@ -42,7 +42,7 @@ TRAIN_DISCRIMINATOR = False
 DISC_TRAIN_STEPS = 5
 LAMBDA_SIM = 1000
 LAMBDA_ADV = 1
-CLIP_DISC_WEIGHT = 0.02    # clip disc weight
+CLIP_DISC_WEIGHT = 0.1    # clip disc weight
 CLIP_BY_NORM = 10    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
