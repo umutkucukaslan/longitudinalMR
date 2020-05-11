@@ -10,7 +10,7 @@ import imageio
 from skimage.metrics import structural_similarity
 
 from datasets.longitudinal_dataset import LongitudinalDataset
-from experiments.exp_2020_05_09_2 import get_encoder_decoder_generator_discriminator
+from experiments.exp_2020_05_09_3 import get_encoder_decoder_generator_discriminator
 from testing.utils import preprocess_image, postprocess_image, mse_float, mse_uint8
 
 
@@ -23,7 +23,7 @@ if not os.path.isdir(results_folder):
 # encoder.save(os.path.join(EXPERIMENT_FOLDER, 'testing', 'encoder'), include_optimizer=False)
 
 data_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data_192x160'
-N_SAMPLES = 500
+N_SAMPLES = 250
 
 train_dataset = LongitudinalDataset(data_dir=os.path.join(data_dir, 'train'))
 val_dataset = LongitudinalDataset(data_dir=os.path.join(data_dir, 'val'))
@@ -68,20 +68,20 @@ def generate_statistics(triplets, title):
         mse1 = mse_uint8(imgs[1], generated_img)     # mse between original and generated missing images
         mses_original_generated.append(mse1)
 
-        mean_img = blend_images(imgs, days)
-        ssim2 = structural_similarity(imgs[1], mean_img)  # ssim between original and mean missing images
-        ssims_original_mean.append(ssim2)
-        mse2 = mse_uint8(imgs[1], mean_img)  # mse between original and mean missing images
-        mses_original_mean.append(mse2)
+        # mean_img = blend_images(imgs, days)
+        # ssim2 = structural_similarity(imgs[1], mean_img)  # ssim between original and mean missing images
+        # ssims_original_mean.append(ssim2)
+        # mse2 = mse_uint8(imgs[1], mean_img)  # mse between original and mean missing images
+        # mses_original_mean.append(mse2)
 
-        true_mean_img = blend_images([postprocess_image(decoder(vecs[0])), None, postprocess_image(decoder(vecs[0]))], days)
-        ssim3 = structural_similarity(imgs[1], true_mean_img)  # ssim between original and true mean missing images
-        ssims_original_mean.append(ssim3)
-        mse3 = mse_uint8(imgs[1], true_mean_img)  # mse between original and true mean missing images
-        mses_original_mean.append(mse3)
+        # true_mean_img = blend_images([postprocess_image(decoder(vecs[0])), None, postprocess_image(decoder(vecs[0]))], days)
+        # ssim3 = structural_similarity(imgs[1], true_mean_img)  # ssim between original and true mean missing images
+        # ssims_original_mean.append(ssim3)
+        # mse3 = mse_uint8(imgs[1], true_mean_img)  # mse between original and true mean missing images
+        # mses_original_mean.append(mse3)
 
-        ssim_diff_mean_generated.append(ssim1 - ssim2)
-        ssim_diff_truemean_generated.append(ssim1 - ssim3)
+        # ssim_diff_mean_generated.append(ssim1 - ssim2)
+        # ssim_diff_truemean_generated.append(ssim1 - ssim3)
 
 
     plt.figure()
@@ -97,57 +97,57 @@ def generate_statistics(triplets, title):
     plt.xticks(np.arange(0, 1.001, 0.1))
     plt.savefig(figure_path, dpi=300)
 
-    plt.figure()
-    figure_path = os.path.join(results_folder, 'SSIM (actual vs mean) ' + title + '.jpg')
-    plt.hist(ssims_original_mean, bins=100, range=(0, 1))
-    mean_ssim = np.mean(ssims_original_mean)
-    std_ssim = np.std(ssims_original_mean)
-    mean_ssim = round(mean_ssim, 3)
-    std_ssim = round(std_ssim, 3)
-    plt.title(title + ' SSIM (actual vs mean image)  mean: {}  std: {}'.format(mean_ssim, std_ssim))
-    plt.xlabel('SSIM index')
-    plt.ylabel('# images')
-    plt.xticks(np.arange(0, 1.0001, 0.1))
-    plt.savefig(figure_path, dpi=300)
+    # plt.figure()
+    # figure_path = os.path.join(results_folder, 'SSIM (actual vs mean) ' + title + '.jpg')
+    # plt.hist(ssims_original_mean, bins=100, range=(0, 1))
+    # mean_ssim = np.mean(ssims_original_mean)
+    # std_ssim = np.std(ssims_original_mean)
+    # mean_ssim = round(mean_ssim, 3)
+    # std_ssim = round(std_ssim, 3)
+    # plt.title(title + ' SSIM (actual vs mean image)  mean: {}  std: {}'.format(mean_ssim, std_ssim))
+    # plt.xlabel('SSIM index')
+    # plt.ylabel('# images')
+    # plt.xticks(np.arange(0, 1.0001, 0.1))
+    # plt.savefig(figure_path, dpi=300)
 
-    plt.figure()
-    figure_path = os.path.join(results_folder, 'DIFF (OURS - mean of actuals) ' + title + '.jpg')
-    plt.hist(ssim_diff_mean_generated, bins=100)
-    mean_ssim = np.mean(ssim_diff_mean_generated)
-    std_ssim = np.std(ssim_diff_mean_generated)
-    mean_ssim = round(mean_ssim, 3)
-    std_ssim = round(std_ssim, 3)
-    plt.title(title + ' (OURS - mean of actuals)  mean: {}  std: {}'.format(mean_ssim, std_ssim))
-    plt.xlabel('SSIM index')
-    plt.ylabel('# images')
-    plt.savefig(figure_path, dpi=300)
+    # plt.figure()
+    # figure_path = os.path.join(results_folder, 'DIFF (OURS - mean of actuals) ' + title + '.jpg')
+    # plt.hist(ssim_diff_mean_generated, bins=100)
+    # mean_ssim = np.mean(ssim_diff_mean_generated)
+    # std_ssim = np.std(ssim_diff_mean_generated)
+    # mean_ssim = round(mean_ssim, 3)
+    # std_ssim = round(std_ssim, 3)
+    # plt.title(title + ' (OURS - mean of actuals)  mean: {}  std: {}'.format(mean_ssim, std_ssim))
+    # plt.xlabel('SSIM index')
+    # plt.ylabel('# images')
+    # plt.savefig(figure_path, dpi=300)
 
-    plt.figure()
-    figure_path = os.path.join(results_folder, 'DIFF (OURS - mean of generated images) ' + title + '.jpg')
-    plt.hist(ssim_diff_truemean_generated, bins=100)
-    mean_ssim = np.mean(ssim_diff_truemean_generated)
-    std_ssim = np.std(ssim_diff_truemean_generated)
-    mean_ssim = round(mean_ssim, 3)
-    std_ssim = round(std_ssim, 3)
-    plt.title(title + ' (OURS-mean of generateds)  mean: {}  std: {}'.format(mean_ssim, std_ssim))
-    plt.xlabel('SSIM index')
-    plt.ylabel('# images')
-    plt.savefig(figure_path, dpi=300)
-
-
+    # plt.figure()
+    # figure_path = os.path.join(results_folder, 'DIFF (OURS - mean of generated images) ' + title + '.jpg')
+    # plt.hist(ssim_diff_truemean_generated, bins=100)
+    # mean_ssim = np.mean(ssim_diff_truemean_generated)
+    # std_ssim = np.std(ssim_diff_truemean_generated)
+    # mean_ssim = round(mean_ssim, 3)
+    # std_ssim = round(std_ssim, 3)
+    # plt.title(title + ' (OURS-mean of generateds)  mean: {}  std: {}'.format(mean_ssim, std_ssim))
+    # plt.xlabel('SSIM index')
+    # plt.ylabel('# images')
+    # plt.savefig(figure_path, dpi=300)
 
 
 
 
-triplets = train_dataset.get_ad_image_triplets()
-random.shuffle(triplets)
-triplets = triplets[:N_SAMPLES]
-generate_statistics(triplets, 'train-ad')
 
-triplets = train_dataset.get_mci_image_triplets()
-random.shuffle(triplets)
-triplets = triplets[:N_SAMPLES]
-generate_statistics(triplets, 'train-mci')
+
+# triplets = train_dataset.get_ad_image_triplets()
+# random.shuffle(triplets)
+# triplets = triplets[:N_SAMPLES]
+# generate_statistics(triplets, 'train-ad')
+#
+# triplets = train_dataset.get_mci_image_triplets()
+# random.shuffle(triplets)
+# triplets = triplets[:N_SAMPLES]
+# generate_statistics(triplets, 'train-mci')
 
 triplets = train_dataset.get_cn_image_triplets()
 random.shuffle(triplets)
