@@ -141,10 +141,6 @@ def get_discriminator_2020_04_06():
 
 
 def get_discriminator(input_shape=(256, 256, 1), kernel_size=3, batch_norm=True, initializer=tf.random_normal_initializer(0., 0.02)):
-    # input_shape = [256, 256, 1]
-    # kernel_size = 3
-    # batch_norm = True
-    # initializer = tf.random_normal_initializer(0., 0.02)
 
     inp = tf.keras.layers.Input(shape=input_shape, name='input_image')
     tar = tf.keras.layers.Input(shape=input_shape, name='target_image')
