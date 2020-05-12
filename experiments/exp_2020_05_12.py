@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from datasets.adni_dataset import get_adni_dataset
-from model.autoencoder import build_encoder, build_decoder, build_encoder_2020_04_13, \
-    build_encoder_with_lrelu_activation, build_decoder_with_lrelu_activation
+from model.autoencoder import build_encoder, build_decoder
 import model.gan as gan
 from model.losses import wgan_gp_loss
 
@@ -22,6 +21,8 @@ PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
 Training:   WGAN-GP loss (GP: gradient penalty)
 Loss:       Generator loss = EM distance
             Discriminator loss = EM distance - GP
+
+maybe add layer normalization as recommended in the paper WGAN-GP
 """
 
 
@@ -37,10 +38,7 @@ INPUT_WIDTH = 160
 INPUT_HEIGHT = 192
 INPUT_CHANNEL = 1
 
-TRAIN_ADVERSARIALLY = True
 DISC_TRAIN_STEPS = 5
-LAMBDA_SIM = 1000
-LAMBDA_ADV = 1
 LAMBDA_GP = 10
 CLIP_DISC_WEIGHT = None    # clip disc weight
 CLIP_BY_NORM = None    # clip gradients to this norm or None
@@ -148,7 +146,6 @@ if __name__ == "__main__":
     generator.summary()
     generator.summary(print_fn=log_print)
     tf.keras.utils.plot_model(generator, to_file=GEN_MODEL_PLOT_PATH, show_shapes=True, dpi=150, expand_nested=True)
-
 
 
 # DISCRIMINATOR
@@ -374,7 +371,6 @@ if __name__ == "__main__":
         log_print('LAMBDA_GP: ' + str(LAMBDA_GP))
         log_print('Clip by norm: ' + str(CLIP_BY_NORM))
         log_print('Clip by value: ' + str(CLIP_BY_VALUE))
-        log_print('Train adversarially: ' + str(TRAIN_ADVERSARIALLY))
         log_print('Discriminator train steps/epoch: ' + str(DISC_TRAIN_STEPS))
 
         log_print(' ')
