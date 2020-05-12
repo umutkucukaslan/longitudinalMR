@@ -26,7 +26,7 @@ maybe add layer normalization as recommended in the paper WGAN-GP
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
+RUNTIME = 'none'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -305,8 +305,10 @@ if __name__ == "__main__":
             log_print('Training epoch {}'.format(epoch), add_timestamp=True)
             losses = [[], [], []]
             for n, input_image in train_ds.enumerate():
-                if n % (DISC_TRAIN_STEPS + 1) == 0:
+                if n.numpy() % (DISC_TRAIN_STEPS + 1) == 0:
                     gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
+                else:
+                    gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
 
                 losses[0].append(gen_loss.numpy())
                 losses[1].append(disc_loss.numpy())
@@ -376,8 +378,8 @@ if __name__ == "__main__":
         log_print(' ')
 
         log_print('Initial epoch: {}'.format(initial_epoch))
-        # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat(), initial_epoch=initial_epoch)
-        fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), train_ds2.repeat(), initial_epoch=initial_epoch)
+        fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat(), train_ds2.repeat(), initial_epoch=initial_epoch)
+        # fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), train_ds2.repeat(), initial_epoch=initial_epoch)
 
         # save last checkpoint
         save_path = manager.save()
