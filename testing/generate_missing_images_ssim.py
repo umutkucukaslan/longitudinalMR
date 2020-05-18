@@ -10,7 +10,7 @@ import imageio
 from skimage.metrics import structural_similarity
 
 from datasets.longitudinal_dataset import LongitudinalDataset
-from experiments.exp_2020_05_09_3 import get_encoder_decoder_generator_discriminator
+from experiments.exp_2020_05_12 import get_encoder_decoder_generator_discriminator
 from testing.utils import preprocess_image, postprocess_image, mse_float, mse_uint8
 
 
@@ -139,15 +139,15 @@ def generate_statistics(triplets, title):
 
 
 
-# triplets = train_dataset.get_ad_image_triplets()
-# random.shuffle(triplets)
-# triplets = triplets[:N_SAMPLES]
-# generate_statistics(triplets, 'train-ad')
-#
-# triplets = train_dataset.get_mci_image_triplets()
-# random.shuffle(triplets)
-# triplets = triplets[:N_SAMPLES]
-# generate_statistics(triplets, 'train-mci')
+triplets = train_dataset.get_ad_image_triplets()
+random.shuffle(triplets)
+triplets = triplets[:N_SAMPLES]
+generate_statistics(triplets, 'train-ad')
+
+triplets = train_dataset.get_mci_image_triplets()
+random.shuffle(triplets)
+triplets = triplets[:N_SAMPLES]
+generate_statistics(triplets, 'train-mci')
 
 triplets = train_dataset.get_cn_image_triplets()
 random.shuffle(triplets)

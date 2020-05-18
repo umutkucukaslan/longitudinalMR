@@ -307,8 +307,10 @@ if __name__ == "__main__":
             for n, input_image in train_ds.enumerate():
                 if n.numpy() % (DISC_TRAIN_STEPS + 1) == 0:
                     gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
+                    log_print('Trained generator.')
                 else:
                     gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
+                    log_print('Trained discriminator.')
 
                 losses[0].append(gen_loss.numpy())
                 losses[1].append(disc_loss.numpy())

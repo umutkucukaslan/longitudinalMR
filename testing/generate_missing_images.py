@@ -4,7 +4,7 @@ import numpy as np
 import imageio
 
 from datasets.longitudinal_dataset import LongitudinalDataset
-from experiments.exp_2020_05_09_3 import get_encoder_decoder_generator_discriminator
+from experiments.exp_2020_05_12 import get_encoder_decoder_generator_discriminator
 from testing.utils import preprocess_image, postprocess_image, mse_float, mse_uint8
 
 
@@ -48,14 +48,14 @@ def generate_sequence(seq, timepoints, save_folder):
                 real_img[:, idx:idx+160] = temp
     out_img = np.vstack((real_img, target_img))
 
-    cv2.imshow('out img', out_img)
+    cv2.imshow('out img - ' + patient_name, out_img)
     pressed_key = cv2.waitKey()
     if pressed_key == ord('s'):
         path = os.path.join(save_folder, patient_type + '_' + patient_name + '_' + slice_name + '.png')
         imageio.imwrite(path, out_img)
-        cv2.destroyWindow('out img')
+        cv2.destroyWindow('out img - ' + patient_name)
     if pressed_key == ord('d'):
-        cv2.destroyWindow('out img')
+        cv2.destroyWindow('out img - ' + patient_name)
 
 
 def populate_vec(vec, step):

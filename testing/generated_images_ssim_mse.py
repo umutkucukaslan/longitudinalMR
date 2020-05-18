@@ -8,7 +8,7 @@ import imageio
 from skimage.metrics import structural_similarity
 
 from datasets.longitudinal_dataset import LongitudinalDataset
-from experiments.exp_2020_05_09_3 import get_encoder_decoder_generator_discriminator
+from experiments.exp_2020_05_12 import get_encoder_decoder_generator_discriminator
 from testing.utils import preprocess_image, postprocess_image, mse_float, mse_uint8
 
 """
@@ -23,7 +23,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'testing')):
 # encoder.save(os.path.join(EXPERIMENT_FOLDER, 'testing', 'encoder'), include_optimizer=False)
 
 data_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data_192x160'
-N_SAMPLES = 500
+N_SAMPLES = 250
 
 train_dataset = LongitudinalDataset(data_dir=os.path.join(data_dir, 'train'))
 val_dataset = LongitudinalDataset(data_dir=os.path.join(data_dir, 'val'))
