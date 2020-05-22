@@ -38,7 +38,7 @@ INPUT_WIDTH = 160
 INPUT_HEIGHT = 192
 INPUT_CHANNEL = 1
 
-DISC_TRAIN_STEPS = 5
+DISC_TRAIN_STEPS = 10
 LAMBDA_GP = 10
 CLIP_DISC_WEIGHT = None    # clip disc weight
 CLIP_BY_NORM = None    # clip gradients to this norm or None
