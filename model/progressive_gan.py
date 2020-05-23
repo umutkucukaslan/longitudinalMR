@@ -117,6 +117,19 @@ def conv_1x1(input_shape, filters, name='from_to_image'):
 
 
 def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
+    """
+    Build encoder-decoder architecture with discriminator that is suitable for progressive GAN training. It returns
+    all levels of generators and discriminators together with fadein networks for training.
+
+    :param input_shape: [image_height, image_width, image_channels]
+    :param filters: A list of lists. Ex: [[128, 256], [256, 512], [512, 512], [512, 512], [512, 512]]
+                    Each sublist corresponds to the filters in ProgressiveGAN block and reduced input size by half.
+                    Ensure input_shape is dividable by 2**len(filters).
+    :param latent_vector_size: Encoder latent space vector size
+    :param verbose: If True, prints network summaries.
+
+    :return: basic_generators, fadein_generators, basic_discriminators, fadein_discriminators, encoder, decoder
+    """
 
     n_downsampling = len(filters)
     input_shapes = [[input_shape[0] // 2**n, input_shape[1] // 2**n, input_shape[2]] for n in range(n_downsampling + 1)]
@@ -127,6 +140,8 @@ def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
     for i in range(len(filters)):
         down_model_input_shapes[i][2] = filters[i][0]
     down_model_input_shapes[-1][2] = filters[-1][-1]
+
+    # GENERATOR
 
     # down_models
     down_models = [down_model(down_model_input_shapes[i], filters[i], name='down_model_{}'.format(i)) for i in range(len(filters))]
@@ -182,6 +197,22 @@ def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
         x = to_image(x)
 
         basic_generators.append(tf.keras.Model(inputs=inp, outputs=x, name='basic_generator_{}'.format(i + 1)))
+
+    # encoder definitions for inference and testing
+    inp = input_layers[0]
+    x = from_image_models[0](inp)
+    for d in down_models:
+        x = d(x)
+    latent = core_enc(x)
+    encoder = tf.keras.Model(inputs=inp, outputs=latent, name='encoder')
+
+    # decoder definition for inference and testing
+    inp = tf.keras.Input([latent_vector_size])
+    x = core_dec(inp)
+    for u in reversed(up_models):
+        x = u(x)
+    x = to_image_models[0](x)
+    decoder = tf.keras.Model(inputs=inp, outputs=x, name='decoder')
 
     downsample = tf.keras.layers.AveragePooling2D()
     upsample = tf.keras.layers.UpSampling2D()
@@ -292,7 +323,12 @@ def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
         fadein_discriminators.append(
             tf.keras.Model(inputs=[inp, weight], outputs=x, name='fadein_discriminator_{}'.format(i + 1)))
 
-    # for i in range(len(basic_discriminators)):
+    return basic_generators, fadein_generators, basic_discriminators, fadein_discriminators, encoder, decoder
+
+
+# progressive_gan([192, 160, 1], filters=[[128, 256], [256, 512], [512, 512], [512, 512], [512, 512]], latent_vector_size=512, verbose=False)
+
+# for i in range(len(basic_discriminators)):
     #     disc = basic_discriminators[i]
     #     disc.summary()
     #     tf.keras.utils.plot_model(disc, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/basic_discriminator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
@@ -311,11 +347,4 @@ def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
     #     gen = fadein_generators[i]
     #     gen.summary()
     #     tf.keras.utils.plot_model(gen, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/fadein_generator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
-
-
-    return
-
-
-progressive_gan([192, 160, 1], filters=[[128, 256], [256, 512], [512, 512], [512, 512], [512, 512]], latent_vector_size=512, verbose=False)
-
 
