@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from datasets.adni_dataset import get_adni_dataset
-from model.autoencoder import build_encoder, build_decoder
-import model.gan as gan
 from model.losses import wgan_gp_loss
 from model.progressive_gan import progressive_gan
 
@@ -27,7 +25,7 @@ maybe add layer normalization as recommended in the paper WGAN-GP
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
+RUNTIME = 'none'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -47,6 +45,7 @@ CLIP_BY_NORM = None    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
 EPOCHS = 5000
+EPOCHS_PER_SUB_MODEL = 40
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
 LR = 1e-3
@@ -182,10 +181,10 @@ if __name__ == "__main__":
 
 
     # DATASET
-    train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(folder_name='processed_data_192x160', machine=RUNTIME, return_two_trains=True)
+    # train_ds, train_ds2, val_ds, test_ds = get_adni_dataset(folder_name='processed_data_192x160', machine=RUNTIME, return_two_trains=True)
 
-    train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
-    val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
+    # train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
+    # val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
 
 
     # for example in train_ds.take(5):
@@ -257,9 +256,9 @@ if __name__ == "__main__":
             plt.show()
 
 
-    def fit(train_ds, num_epochs, val_ds, test_ds, train_ds_images, initial_epoch=0):
+    def fit_to_given_models(generator, discriminator, train_ds, val_ds, test_ds, train_ds_images, num_epochs, initial_epoch=0):
 
-        assert initial_epoch < num_epochs
+        # assert initial_epoch < num_epochs
         test_ds = iter(test_ds)
         train_ds_images = iter(train_ds_images)
         for epoch in range(initial_epoch, num_epochs):
@@ -282,10 +281,10 @@ if __name__ == "__main__":
             losses = [[], [], []]
             for n, input_image in train_ds.enumerate():
                 if n.numpy() % (DISC_TRAIN_STEPS + 1) == 0:
-                    gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
+                    gen_loss, disc_loss, gp_loss = train_step(generator, discriminator, input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
                     log_print('Trained generator.')
                 else:
-                    gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
+                    gen_loss, disc_loss, gp_loss = train_step(generator, discriminator, input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
                     log_print('Trained discriminator.')
 
                 losses[0].append(gen_loss.numpy())
@@ -302,7 +301,7 @@ if __name__ == "__main__":
             log_print('Calculating validation losses...')
             val_losses = [[], [], []]
             for input_image in val_ds:
-                gen_loss, disc_loss, gp_loss = eval_step(input_image, input_image)
+                gen_loss, disc_loss, gp_loss = eval_step(generator, discriminator, input_image, input_image)
                 val_losses[0].append(gen_loss.numpy())
                 val_losses[1].append(disc_loss.numpy())
                 val_losses[2].append(gp_loss.numpy())
@@ -332,6 +331,77 @@ if __name__ == "__main__":
                 # print("gen_total_loss {:1.2f}".format(gen_total_loss.numpy()))
                 # print("disc_loss {:1.2f}".format(disc_loss.numpy()))
 
+    def get_train_models():
+        """
+        Returns a list of generator and discriminator pair with their input shape in the order of training.
+        :return:
+        """
+        input_shape = [INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL]
+        n_downsampling = len(filters)
+        input_shapes = [[input_shape[0] // 2 ** n, input_shape[1] // 2 ** n, input_shape[2]] for n in
+                        range(n_downsampling + 1)]
+
+        # generator, discriminator, input_shape to be trained
+        train_models = []
+        train_models.append((basic_generators[0], basic_discriminators[0], input_shapes[0]))
+
+        for i in range(len(fadein_generators)):
+            fadein_gen = fadein_generators[i]
+            fadein_disc = fadein_discriminators[i]
+            basic_gen = basic_generators[i + 1]
+            basic_disc = basic_discriminators[i + 1]
+            in_shape = input_shapes[i + 1]
+
+            train_models.append((fadein_gen, fadein_disc, in_shape))
+            train_models.append((basic_gen, basic_disc, in_shape))
+
+        return train_models
+
+
+    def process_datasets(raw_datasets, input_shape):
+        train_list_ds, train_list_ds2, val_list_ds, test_list_ds = raw_datasets
+
+        image_shape = [input_shape[0], input_shape[1]]
+        num_channels = input_shape[2]
+
+        def decode_img(img, image_shape, num_channel=1):
+            img = tf.io.decode_png(img, channels=num_channel)
+            img = tf.image.resize(img, image_shape)
+            img = tf.cast(img, tf.float32)
+            img = img / 256.0
+            return img
+
+        def process_path(file_path):
+            img = tf.io.read_file(file_path)
+            img = decode_img(img, image_shape, num_channels)
+            return img
+
+        train_ds = train_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        train_ds2 = train_list_ds2.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        val_ds = val_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        test_ds = test_list_ds.map(process_path, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+
+        train_ds = train_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
+        val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
+
+        return train_ds, train_ds2, val_ds, test_ds
+
+    def fit(epochs_per_model=40, check_with_small_dataset=False):
+        list_datasets = get_adni_dataset(folder_name='processed_data_192x160', machine=RUNTIME, return_two_trains=True, return_raw_dataset=True)
+        train_models = get_train_models()
+
+        for i in range(len(train_models)):
+            gen, disc, in_shape = train_models[i]
+            train_ds, train_ds2, val_ds, test_ds = process_datasets(list_datasets, in_shape)
+
+            if check_with_small_dataset:
+                train_ds = train_ds.take(10)
+                train_ds2 = train_ds2.take(10)
+                val_ds = val_ds.take(3)
+                test_ds = test_ds.take(5)
+
+            initial_epoch = checkpoint.epoch.numpy() + 1
+            fit_to_given_models(gen, disc, train_ds, val_ds, test_ds.repeat(), train_ds2.repeat(), (i + 1) * epochs_per_model, initial_epoch)
 
     try:
         log_print('Fitting to the data set', add_timestamp=True)
@@ -339,7 +409,8 @@ if __name__ == "__main__":
         log_print('Parameters:')
         log_print('Experiment name: ' + str(EXPERIMENT_NAME))
         log_print('Batch size: ' + str(BATCH_SIZE))
-        log_print('Epochs: ' + str(EPOCHS))
+        # log_print('Epochs: ' + str(EPOCHS))
+        log_print('Epochs per sub model: ' + str(EPOCHS_PER_SUB_MODEL))
         log_print('Restore from checkpoint: ' + str(RESTORE_FROM_CHECKPOINT))
         log_print('Chechpoint save interval: ' + str(CHECKPOINT_SAVE_INTERVAL))
         log_print('Max number of checkpoints kept: ' + str(MAX_TO_KEEP))
@@ -357,7 +428,7 @@ if __name__ == "__main__":
 
         log_print('Initial epoch: {}'.format(initial_epoch))
         # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat(), train_ds2.repeat(), initial_epoch=initial_epoch)
-        fit(train_ds, EPOCHS, val_ds, test_ds.repeat(), train_ds2.repeat(), initial_epoch=initial_epoch)
+        fit(epochs_per_model=EPOCHS_PER_SUB_MODEL)
 
         # save last checkpoint
         save_path = manager.save()

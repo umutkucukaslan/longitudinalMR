@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 
 
-def get_adni_dataset(folder_name='processed_data', machine='none', return_two_trains=False):
+def get_adni_dataset(folder_name='processed_data', machine='none', return_two_trains=False, return_raw_dataset=False):
     """
     train, val, test datasets from processed_data folder
     Images are normalized to [0, 1] interval
@@ -29,6 +29,11 @@ def get_adni_dataset(folder_name='processed_data', machine='none', return_two_tr
     train_list_ds2 = tf.data.Dataset.from_tensor_slices(train)
     val_list_ds = tf.data.Dataset.from_tensor_slices(val)
     test_list_ds = tf.data.Dataset.from_tensor_slices(test)
+
+    if return_raw_dataset:
+        if return_two_trains:
+            return train_list_ds, train_list_ds2, val_list_ds, test_list_ds
+        return train_list_ds, train_list_ds2, val_list_ds, test_list_ds
 
     def decode_img(img, num_channel=1):
         img = tf.io.decode_png(img, channels=num_channel)
