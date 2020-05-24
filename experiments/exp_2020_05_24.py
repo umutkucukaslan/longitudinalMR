@@ -39,7 +39,7 @@ BATCH_SIZE = 32
 INPUT_WIDTH = 160
 INPUT_HEIGHT = 192
 INPUT_CHANNEL = 1
-LATENT_VECTOR_SIZE = 512
+LATENT_VECTOR_SIZE = 1024
 
 DISC_TRAIN_STEPS = 5
 LAMBDA_GP = 10
@@ -108,7 +108,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, 'figures'))
 
 # generator and discriminator
-filters = [[128, 256], [256, 512], [512, 512]]
+filters = [[128, 256], [256, 512], [512, 512], [512, 512]]
 
 basic_generators, fadein_generators, basic_discriminators, fadein_discriminators, encoder, decoder = progressive_gan(
     input_shape=[INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL],
@@ -415,6 +415,8 @@ if __name__ == "__main__":
     def fit(epochs_per_model=40, check_with_small_dataset=False):
         list_datasets = get_adni_dataset(folder_name='processed_data_192x160', machine=RUNTIME, return_two_trains=True, return_raw_dataset=True)
         train_models = get_train_models()
+
+        train_models = train_models[4:]
 
         for i in range(len(train_models)):
             gen, disc, in_shape, use_weight, name = train_models[i]
