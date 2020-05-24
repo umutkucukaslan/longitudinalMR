@@ -462,7 +462,7 @@ if __name__ == "__main__":
 
         log_print('Initial epoch: {}'.format(initial_epoch))
         # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat(), train_ds2.repeat(), initial_epoch=initial_epoch)
-        fit(epochs_per_model=EPOCHS_PER_SUB_MODEL, check_with_small_dataset=True)
+        fit(epochs_per_model=EPOCHS_PER_SUB_MODEL, check_with_small_dataset=False)
 
         # save last checkpoint
         save_path = manager.save()
