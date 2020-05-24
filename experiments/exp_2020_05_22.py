@@ -41,7 +41,7 @@ INPUT_HEIGHT = 192
 INPUT_CHANNEL = 1
 LATENT_VECTOR_SIZE = 512
 
-DISC_TRAIN_STEPS = 1
+DISC_TRAIN_STEPS = 5
 LAMBDA_GP = 10
 CLIP_DISC_WEIGHT = None    # clip disc weight
 CLIP_BY_NORM = None    # clip gradients to this norm or None
@@ -51,7 +51,7 @@ EPOCHS = 5000
 EPOCHS_PER_SUB_MODEL = 40
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
-LR = 1e-3
+LR = 1e-4
 
 
 # set batch size easily
