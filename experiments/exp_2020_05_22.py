@@ -1,4 +1,3 @@
-import copy
 import datetime
 import os
 import statistics
@@ -10,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from datasets.adni_dataset import get_adni_dataset
-from model.losses import wgan_gp_loss
+from model.losses import wgan_gp_loss, wgan_gp_loss_progressive_gan
 from model.progressive_gan import progressive_gan
 
 """
@@ -38,15 +37,15 @@ INPUT_HEIGHT = 192
 INPUT_CHANNEL = 1
 LATENT_VECTOR_SIZE = 512
 
-DISC_TRAIN_STEPS = 5
+DISC_TRAIN_STEPS = 1
 LAMBDA_GP = 10
 CLIP_DISC_WEIGHT = None    # clip disc weight
 CLIP_BY_NORM = None    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
 EPOCHS = 5000
-EPOCHS_PER_SUB_MODEL = 40
-CHECKPOINT_SAVE_INTERVAL = 5
+EPOCHS_PER_SUB_MODEL = 3
+CHECKPOINT_SAVE_INTERVAL = 2
 MAX_TO_KEEP = 5
 LR = 1e-3
 
@@ -199,11 +198,19 @@ if __name__ == "__main__":
 
     # training
 
-    def train_step(generator, discriminator, input_image, target, train_generator=True, train_discriminator=True):
+    def train_step(generator, discriminator, weight, input_image, target, train_generator=True, train_discriminator=True):
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_image = generator(input_image, training=True)
-            gen_loss, disc_loss, gp_loss = wgan_gp_loss(discriminator, target, generated_image, LAMBDA_GP)
+            if weight is not None:
+                print('train step if weight statement')
+
+                generated_image = generator([input_image, weight], training=True)
+
+                gen_loss, disc_loss, gp_loss = wgan_gp_loss_progressive_gan(discriminator, target, generated_image, LAMBDA_GP, weight)
+                print('inferenceeeee')
+            else:
+                generated_image = generator(input_image, training=True)
+                gen_loss, disc_loss, gp_loss = wgan_gp_loss_progressive_gan(discriminator, target, generated_image, LAMBDA_GP)
 
         if train_generator:
             generator_gradients = gen_tape.gradient(gen_loss, generator.trainable_variables)
@@ -228,23 +235,39 @@ if __name__ == "__main__":
         return gen_loss, disc_loss, gp_loss
 
 
-    def eval_step(generator, discriminator, input_image, target):
-        generated_image = generator(input_image, training=False)
-        gen_loss, disc_loss, gp_loss = wgan_gp_loss(discriminator, target, generated_image, LAMBDA_GP)
+    def eval_step(generator, discriminator, weight, input_image, target):
+        if weight is not None:
+            # weight = np.asarray(input_image.shape[0] * [[weight]])
+            generated_image = generator([input_image, weight], training=False)
+            gen_loss, disc_loss, gp_loss = wgan_gp_loss_progressive_gan(discriminator, target, generated_image, LAMBDA_GP, weight)
+        else:
+            generated_image = generator(input_image, training=False)
+            gen_loss, disc_loss, gp_loss = wgan_gp_loss_progressive_gan(discriminator, target, generated_image, LAMBDA_GP)
 
         return gen_loss, disc_loss, gp_loss
 
 
-    def generate_images(model, test_input, path=None, show=True):
+    def generate_images(model, test_input, path=None, show=True, weight=None):
         if test_input.ndim < 4:
             test_input = np.expand_dims(test_input, axis=0)
-        prediction = model(test_input)
+        if weight is not None:
+            print('inside if weight statement')
+            # weight = np.asarray(test_input.shape[0] * [weight])
+            # weight = np.asarray(test_input.shape[0] * [[weight]])
+
+            # print('weight is ', weight)
+            # print('image shape is ', test_input.shape)
+            prediction = model([test_input, weight])
+            print('generate images     prediction done')
+        else:
+            prediction = model(test_input)
         if isinstance(test_input, tf.Tensor):
             display_list = [np.squeeze(test_input.numpy()[0, :, :, 0]), np.squeeze(prediction.numpy()[0, :, :, 0])]
         else:
             display_list = [np.squeeze(test_input[0, :, :, 0]), np.squeeze(prediction[0, :, :, 0])]
         title = ['Input Image', 'Reconstructed Image']
 
+        print('constructing plot')
         for i in range(2):
             plt.subplot(1, 2, i+1)
             plt.title(title[i])
@@ -255,36 +278,56 @@ if __name__ == "__main__":
         if show:
             plt.show()
 
+    def get_weight(epoch, train_interval):
+        if epoch < train_interval[0]:
+            return 0.
+        if epoch > train_interval[1]:
+            return 1.
+        return (epoch - train_interval[0]) / (train_interval[1] - train_interval[0])
 
-    def fit_to_given_models(generator, discriminator, train_ds, val_ds, test_ds, train_ds_images, num_epochs, initial_epoch=0):
+    def fit_to_given_models(generator, discriminator, train_ds, val_ds, test_ds, train_ds_images, num_epochs, initial_epoch=0, use_weight=False, train_interval=None, name=None):
 
         # assert initial_epoch < num_epochs
+        print('inside fit_to_given_models')
         test_ds = iter(test_ds)
         train_ds_images = iter(train_ds_images)
+        print('initial epoch  ', initial_epoch)
+        print('num epochs   ', num_epochs)
+        print('use weight   ', use_weight)
+        print('train interval   ', train_interval)
         for epoch in range(initial_epoch, num_epochs):
+            weight = None
+            if use_weight and train_interval:
+                weight = get_weight(epoch, train_interval)
+
+            print('Processing for epoch {}, weight {}, name {}'.format(epoch, str(weight), name))
             start_time = time.time()
             test_input = next(test_ds)
             image_name = str(epoch) + '_test.png'
             generate_images(generator,
                             test_input.numpy(),
                             os.path.join(EXPERIMENT_FOLDER, 'figures', image_name),
-                            show=False)
+                            show=False,
+                            weight=weight)
             train_input = next(train_ds_images)
             image_name = str(epoch) + '_train.png'
+            print('in the middle')
             generate_images(generator,
                             train_input.numpy(),
                             os.path.join(EXPERIMENT_FOLDER, 'figures', image_name),
-                            show=False)
+                            show=False,
+                            weight=weight)
 
+            print('images were generated, starting training')
             # training
             log_print('Training epoch {}'.format(epoch), add_timestamp=True)
             losses = [[], [], []]
             for n, input_image in train_ds.enumerate():
                 if n.numpy() % (DISC_TRAIN_STEPS + 1) == 0:
-                    gen_loss, disc_loss, gp_loss = train_step(generator, discriminator, input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
+                    gen_loss, disc_loss, gp_loss = train_step(generator, discriminator, weight, input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
                     log_print('Trained generator.')
                 else:
-                    gen_loss, disc_loss, gp_loss = train_step(generator, discriminator, input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
+                    gen_loss, disc_loss, gp_loss = train_step(generator, discriminator, weight, input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
                     log_print('Trained discriminator.')
 
                 losses[0].append(gen_loss.numpy())
@@ -301,7 +344,7 @@ if __name__ == "__main__":
             log_print('Calculating validation losses...')
             val_losses = [[], [], []]
             for input_image in val_ds:
-                gen_loss, disc_loss, gp_loss = eval_step(generator, discriminator, input_image, input_image)
+                gen_loss, disc_loss, gp_loss = eval_step(generator, discriminator, weight, input_image, input_image)
                 val_losses[0].append(gen_loss.numpy())
                 val_losses[1].append(disc_loss.numpy())
                 val_losses[2].append(gp_loss.numpy())
@@ -343,17 +386,17 @@ if __name__ == "__main__":
 
         # generator, discriminator, input_shape to be trained
         train_models = []
-        train_models.append((basic_generators[0], basic_discriminators[0], input_shapes[0]))
+        train_models.append((basic_generators[0], basic_discriminators[0], input_shapes[-1], False, 'basic'))
 
         for i in range(len(fadein_generators)):
             fadein_gen = fadein_generators[i]
             fadein_disc = fadein_discriminators[i]
             basic_gen = basic_generators[i + 1]
             basic_disc = basic_discriminators[i + 1]
-            in_shape = input_shapes[i + 1]
+            in_shape = input_shapes[-i - 2]
 
-            train_models.append((fadein_gen, fadein_disc, in_shape))
-            train_models.append((basic_gen, basic_disc, in_shape))
+            train_models.append((fadein_gen, fadein_disc, in_shape, True, 'fadein'))
+            train_models.append((basic_gen, basic_disc, in_shape, False, 'basic'))
 
         return train_models
 
@@ -391,8 +434,12 @@ if __name__ == "__main__":
         train_models = get_train_models()
 
         for i in range(len(train_models)):
-            gen, disc, in_shape = train_models[i]
+            gen, disc, in_shape, use_weight, name = train_models[i]
             train_ds, train_ds2, val_ds, test_ds = process_datasets(list_datasets, in_shape)
+
+            print('MODELS BEING TRAINED WITH INPUT SHAPE   {}  of type {}'.format(str(in_shape), name))
+            gen.summary()
+            disc.summary()
 
             if check_with_small_dataset:
                 train_ds = train_ds.take(10)
@@ -400,8 +447,11 @@ if __name__ == "__main__":
                 val_ds = val_ds.take(3)
                 test_ds = test_ds.take(5)
 
+            print('here we are')
             initial_epoch = checkpoint.epoch.numpy() + 1
-            fit_to_given_models(gen, disc, train_ds, val_ds, test_ds.repeat(), train_ds2.repeat(), (i + 1) * epochs_per_model, initial_epoch)
+            train_interval = [i * epochs_per_model, (i + 1) * epochs_per_model]
+            print('calling fit_to_given_models')
+            fit_to_given_models(gen, disc, train_ds, val_ds, test_ds.repeat(), train_ds2.repeat(), (i + 1) * epochs_per_model, initial_epoch, use_weight, train_interval, name)
 
     try:
         log_print('Fitting to the data set', add_timestamp=True)
@@ -428,7 +478,7 @@ if __name__ == "__main__":
 
         log_print('Initial epoch: {}'.format(initial_epoch))
         # fit(train_ds.take(10), EPOCHS, val_ds.take(2), test_ds.repeat(), train_ds2.repeat(), initial_epoch=initial_epoch)
-        fit(epochs_per_model=EPOCHS_PER_SUB_MODEL)
+        fit(epochs_per_model=EPOCHS_PER_SUB_MODEL, check_with_small_dataset=True)
 
         # save last checkpoint
         save_path = manager.save()

@@ -220,7 +220,7 @@ def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
     fadein_generators = []
     for i in range(len(down_models)):
         inp = input_layers[-i-2]
-        weight = tf.keras.Input([1])
+        weight = tf.keras.Input([])
 
         downs = down_models[-i-1:]
         down_to_merge = downs[0]
@@ -267,12 +267,8 @@ def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
 
     # down_models
     disc_down_models = [down_model(down_model_input_shapes[i], filters[i], name='disc_down_model_{}'.format(i)) for i in range(len(filters))]
-    for m in disc_down_models:
-        m.summary()
 
     disc_from_image_models = [conv_1x1(input_shapes[i], down_model_input_shapes[i][-1], name='disc_from_image_{}'.format(i)) for i in range(len(input_shapes))]
-    for m in disc_from_image_models:
-        m.summary()
 
     core_disc = core_discriminator(input_shape=down_model_input_shapes[-1], filters=[filters[-1][-1]], latent_size=latent_vector_size, kernel_size=3, alpha=0.2, name="core_discriminator")
 
@@ -298,7 +294,7 @@ def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
     fadein_discriminators = []
     for i in range(len(disc_down_models)):
         inp = input_layers[-i - 2]
-        weight = tf.keras.Input([1])
+        weight = tf.keras.Input([])
 
         downs = disc_down_models[-i - 1:]
         down_to_merge = downs[0]
@@ -326,25 +322,25 @@ def progressive_gan(input_shape, filters, latent_vector_size, verbose=False):
     return basic_generators, fadein_generators, basic_discriminators, fadein_discriminators, encoder, decoder
 
 
-# progressive_gan([192, 160, 1], filters=[[128, 256], [256, 512], [512, 512], [512, 512], [512, 512]], latent_vector_size=512, verbose=False)
-
+# basic_generators, fadein_generators, basic_discriminators, fadein_discriminators, encoder, decoder = progressive_gan([192, 160, 1], filters=[[128, 256], [256, 512], [512, 512], [512, 512], [512, 512]], latent_vector_size=512, verbose=False)
+#
 # for i in range(len(basic_discriminators)):
-    #     disc = basic_discriminators[i]
-    #     disc.summary()
-    #     tf.keras.utils.plot_model(disc, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/basic_discriminator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
-    #
-    # for i in range(len(fadein_discriminators)):
-    #     disc = fadein_discriminators[i]
-    #     disc.summary()
-    #     tf.keras.utils.plot_model(disc, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/fadein_discriminator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
-    #
-    # for i in range(len(basic_generators)):
-    #     gen = basic_generators[i]
-    #     gen.summary()
-    #     tf.keras.utils.plot_model(gen, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/basic_generator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
-    #
-    # for i in range(len(fadein_generators)):
-    #     gen = fadein_generators[i]
-    #     gen.summary()
-    #     tf.keras.utils.plot_model(gen, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/fadein_generator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
-
+#         disc = basic_discriminators[i]
+#         disc.summary()
+#         tf.keras.utils.plot_model(disc, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/basic_discriminator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
+#
+# for i in range(len(fadein_discriminators)):
+#     disc = fadein_discriminators[i]
+#     disc.summary()
+#     tf.keras.utils.plot_model(disc, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/fadein_discriminator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
+#
+# for i in range(len(basic_generators)):
+#     gen = basic_generators[i]
+#     gen.summary()
+#     tf.keras.utils.plot_model(gen, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/basic_generator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
+#
+# for i in range(len(fadein_generators)):
+#     gen = fadein_generators[i]
+#     gen.summary()
+#     tf.keras.utils.plot_model(gen, to_file='/Users/umutkucukaslan/Desktop/thesis/fadein/fadein_generator_{}.jpg'.format(i), show_shapes=True, dpi=150, expand_nested=True)
+#
