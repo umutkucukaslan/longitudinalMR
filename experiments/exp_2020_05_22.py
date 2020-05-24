@@ -13,18 +13,22 @@ from model.losses import wgan_gp_loss, wgan_gp_loss_progressive_gan
 from model.progressive_gan import progressive_gan
 
 """
-Input:  192x160
-PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
-                                 Decoder: Dense + Deconv(512, 256, 128, 64)
-Training:   WGAN-GP loss (GP: gradient penalty)
-Loss:       Generator loss = EM distance
-            Discriminator loss = EM distance - GP
+Progressive GAN implementation
 
-maybe add layer normalization as recommended in the paper WGAN-GP
+It trains in steps starting from low resolution model to high resolution one using input shapes
+(6x5), (12x10), (24x20), (48x40), (96x80), (192x160).
+
+Activation: LeakyReLU of leakiness 0.2
+Normalization: L2_normalize for feature vectors
+
+Loss: WGAN-GP loss with GP weight of 10
+n_critic = 1
+lr = 0.001
+
 """
 
 
-RUNTIME = 'none'   # cloud, colab or none
+RUNTIME = 'colab'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -44,8 +48,8 @@ CLIP_BY_NORM = None    # clip gradients to this norm or None
 CLIP_BY_VALUE = None   # clip gradient to this value or None
 
 EPOCHS = 5000
-EPOCHS_PER_SUB_MODEL = 3
-CHECKPOINT_SAVE_INTERVAL = 2
+EPOCHS_PER_SUB_MODEL = 40
+CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
 LR = 1e-3
 
@@ -202,12 +206,8 @@ if __name__ == "__main__":
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             if weight is not None:
-                print('train step if weight statement')
-
                 generated_image = generator([input_image, weight], training=True)
-
                 gen_loss, disc_loss, gp_loss = wgan_gp_loss_progressive_gan(discriminator, target, generated_image, LAMBDA_GP, weight)
-                print('inferenceeeee')
             else:
                 generated_image = generator(input_image, training=True)
                 gen_loss, disc_loss, gp_loss = wgan_gp_loss_progressive_gan(discriminator, target, generated_image, LAMBDA_GP)
@@ -251,14 +251,7 @@ if __name__ == "__main__":
         if test_input.ndim < 4:
             test_input = np.expand_dims(test_input, axis=0)
         if weight is not None:
-            print('inside if weight statement')
-            # weight = np.asarray(test_input.shape[0] * [weight])
-            # weight = np.asarray(test_input.shape[0] * [[weight]])
-
-            # print('weight is ', weight)
-            # print('image shape is ', test_input.shape)
             prediction = model([test_input, weight])
-            print('generate images     prediction done')
         else:
             prediction = model(test_input)
         if isinstance(test_input, tf.Tensor):
@@ -267,7 +260,6 @@ if __name__ == "__main__":
             display_list = [np.squeeze(test_input[0, :, :, 0]), np.squeeze(prediction[0, :, :, 0])]
         title = ['Input Image', 'Reconstructed Image']
 
-        print('constructing plot')
         for i in range(2):
             plt.subplot(1, 2, i+1)
             plt.title(title[i])
@@ -288,13 +280,8 @@ if __name__ == "__main__":
     def fit_to_given_models(generator, discriminator, train_ds, val_ds, test_ds, train_ds_images, num_epochs, initial_epoch=0, use_weight=False, train_interval=None, name=None):
 
         # assert initial_epoch < num_epochs
-        print('inside fit_to_given_models')
         test_ds = iter(test_ds)
         train_ds_images = iter(train_ds_images)
-        print('initial epoch  ', initial_epoch)
-        print('num epochs   ', num_epochs)
-        print('use weight   ', use_weight)
-        print('train interval   ', train_interval)
         for epoch in range(initial_epoch, num_epochs):
             weight = None
             if use_weight and train_interval:
@@ -311,14 +298,12 @@ if __name__ == "__main__":
                             weight=weight)
             train_input = next(train_ds_images)
             image_name = str(epoch) + '_train.png'
-            print('in the middle')
             generate_images(generator,
                             train_input.numpy(),
                             os.path.join(EXPERIMENT_FOLDER, 'figures', image_name),
                             show=False,
                             weight=weight)
 
-            print('images were generated, starting training')
             # training
             log_print('Training epoch {}'.format(epoch), add_timestamp=True)
             losses = [[], [], []]
@@ -447,10 +432,8 @@ if __name__ == "__main__":
                 val_ds = val_ds.take(3)
                 test_ds = test_ds.take(5)
 
-            print('here we are')
             initial_epoch = checkpoint.epoch.numpy() + 1
             train_interval = [i * epochs_per_model, (i + 1) * epochs_per_model]
-            print('calling fit_to_given_models')
             fit_to_given_models(gen, disc, train_ds, val_ds, test_ds.repeat(), train_ds2.repeat(), (i + 1) * epochs_per_model, initial_epoch, use_weight, train_interval, name)
 
     try:
