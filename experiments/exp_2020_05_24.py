@@ -108,7 +108,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, 'figures'))
 
 # generator and discriminator
-filters = [[128, 256], [256, 512]]
+filters = [[128, 256], [256, 512], [512, 512]]
 
 basic_generators, fadein_generators, basic_discriminators, fadein_discriminators, encoder, decoder = progressive_gan(
     input_shape=[INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL],
