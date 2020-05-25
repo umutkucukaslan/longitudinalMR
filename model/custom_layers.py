@@ -27,7 +27,7 @@ class ProgressiveGANDownsample(tf.keras.layers.Layer):
         for conv in self.conv_layers:
             x = conv(x)
             x = self.leaky_relu(x)
-            x = tf.math.l2_normalize(x, axis=-1, name='l2_normalize')
+            # x = tf.math.l2_normalize(x, axis=-1, name='l2_normalize')
         x = self.max_pool(x)
         return x
 
@@ -63,7 +63,7 @@ class ProgressiveGANUpsample(tf.keras.layers.Layer):
         for conv in self.conv_layers:
             x = conv(x)
             x = self.leaky_relu(x)
-            x = tf.math.l2_normalize(x, axis=-1, name='l2_normalize')
+            # x = tf.math.l2_normalize(x, axis=-1, name='l2_normalize')
         return x
 
     def get_config(self):
@@ -97,7 +97,7 @@ class Conv2D_LeakyReLU_L2normalize(tf.keras.layers.Layer):
         for conv in self.conv_layers:
             x = conv(x)
             x = self.leaky_relu(x)
-            x = tf.math.l2_normalize(x, axis=-1, name='l2_normalize')
+            # x = tf.math.l2_normalize(x, axis=-1, name='l2_normalize')
         return x
 
     def get_config(self):
