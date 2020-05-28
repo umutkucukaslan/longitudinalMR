@@ -140,7 +140,7 @@ s = tf.keras.layers.Multiply()([gen_random, latent_std])
 latent = tf.keras.layers.Add()([latent_mean, s])
 out_im = decoder(latent)
 
-generator = tf.keras.Model(inputs=[gen_in, gen_random], outputs=[out_im, m, s], name='generator')
+generator = tf.keras.Model(inputs=[gen_in, gen_random], outputs=[out_im, latent_mean, latent_std], name='generator')
 
 
 if __name__ == "__main__":
