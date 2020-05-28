@@ -237,6 +237,7 @@ if __name__ == "__main__":
             random_var = tf.random.normal([batch_size, output_shape])
             generated_image, latent_mean, latent_std = generator([input_image, random_var], training=True)
             total_loss, reconst_loss, kl_loss = vae_loss(input_image, target, latent_mean, latent_std)
+            print('losses  ', total_loss.numpy(), reconst_loss.numpy(), kl_loss.numpy())
 
             # gen_loss, disc_loss, gp_loss = wgan_gp_loss(discriminator, target, generated_image, LAMBDA_GP)
 
