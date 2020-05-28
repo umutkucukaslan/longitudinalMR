@@ -237,15 +237,12 @@ if __name__ == "__main__":
             random_var = tf.random.normal([batch_size, output_shape])
             generated_image, latent_mean, latent_std = generator([input_image, random_var], training=True)
             total_loss, reconst_loss, kl_loss = vae_loss(target, generated_image, latent_mean, latent_std)
-            print('losses  ', total_loss.numpy(), reconst_loss.numpy(), kl_loss.numpy())
 
             # gen_loss, disc_loss, gp_loss = wgan_gp_loss(discriminator, target, generated_image, LAMBDA_GP)
 
         if train_generator:
             generator_gradients = gen_tape.gradient(total_loss, generator.trainable_variables)
-            # print('GENERATOR GRADS')
-            # for g, v in zip(generator_gradients, generator.trainable_variables):
-            #     print(g, v)
+
             if CLIP_BY_NORM is not None:
                 generator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in generator_gradients]
             if CLIP_BY_VALUE is not None:
@@ -281,9 +278,7 @@ if __name__ == "__main__":
             test_input = np.expand_dims(test_input, axis=0)
 
         random_val = np.zeros((test_input.shape[0], output_shape))
-        print('generate images')
         prediction, _, _ = model([test_input, random_val])
-        print('generate images prediction done')
         if isinstance(test_input, tf.Tensor):
             display_list = [np.squeeze(test_input.numpy()[0, :, :, 0]), np.squeeze(prediction.numpy()[0, :, :, 0])]
         else:
@@ -323,8 +318,8 @@ if __name__ == "__main__":
 
             # training
             log_print('Training epoch {}'.format(epoch), add_timestamp=True)
+            print('Training epoch {}'.format(epoch))
             losses = [[], [], []]
-            print('starting training')
             for n, input_image in train_ds.enumerate():
                 total_loss, reconst_loss, kl_loss = train_step(input_image=input_image, target=input_image,
                                                           train_generator=True, train_discriminator=False)
@@ -348,7 +343,6 @@ if __name__ == "__main__":
 
             # testing
             log_print('Calculating validation losses...')
-            print('Calculating validation losses...')
             val_losses = [[], [], []]
             for input_image in val_ds:
                 total_loss, reconst_loss, kl_loss = eval_step(input_image, input_image)
@@ -397,10 +391,10 @@ if __name__ == "__main__":
         log_print('Prefetch buffer size: ' + str(PREFETCH_BUFFER_SIZE))
         log_print('Shuffle buffer size: ' + str(SHUFFLE_BUFFER_SIZE))
         log_print('Input shape: ( ' + str(INPUT_HEIGHT) + ', ' + str(INPUT_WIDTH) + ', ' + str(INPUT_CHANNEL) + ' )')
-        log_print('LAMBDA_GP: ' + str(LAMBDA_GP))
+        # log_print('LAMBDA_GP: ' + str(LAMBDA_GP))
         log_print('Clip by norm: ' + str(CLIP_BY_NORM))
         log_print('Clip by value: ' + str(CLIP_BY_VALUE))
-        log_print('Discriminator train steps/epoch: ' + str(DISC_TRAIN_STEPS))
+        # log_print('Discriminator train steps/epoch: ' + str(DISC_TRAIN_STEPS))
 
         log_print(' ')
 
