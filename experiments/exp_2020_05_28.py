@@ -275,7 +275,7 @@ if __name__ == "__main__":
         if test_input.ndim < 4:
             test_input = np.expand_dims(test_input, axis=0)
 
-        random_val = np.zeros_like((test_input.shape[0], output_shape))
+        random_val = np.zeros((test_input.shape[0], output_shape))
         print('generate images')
         prediction, _, _ = model([test_input, random_val])
         print('generate images prediction done')
