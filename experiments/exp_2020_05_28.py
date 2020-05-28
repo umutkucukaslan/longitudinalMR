@@ -163,8 +163,8 @@ if __name__ == "__main__":
 # =================
 
 # optimizers
-# generator_optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
-generator_optimizer = tf.optimizers.RMSprop(learning_rate=LR)
+generator_optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
+# generator_optimizer = tf.optimizers.RMSprop(learning_rate=LR)
 # discriminator_optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
 # discriminator_optimizer = tf.optimizers.RMSprop(learning_rate=LR)
 
