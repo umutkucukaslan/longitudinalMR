@@ -109,7 +109,7 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, 'figures')):
 # BUILD GENERATOR
 # encoder
 filters = (64, 128, 256, 512)
-output_shape = 1024
+output_shape = 512
 kernel_size = 5
 batch_norm = False
 
