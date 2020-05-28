@@ -12,7 +12,7 @@ import numpy as np
 from datasets.adni_dataset import get_adni_dataset
 from model.autoencoder import build_decoder
 import model.gan as gan
-from model.losses import wgan_gp_loss
+from model.losses import wgan_gp_loss, vae_loss
 from model.vae import build_encoder
 
 """
@@ -233,43 +233,44 @@ if __name__ == "__main__":
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_image, latent_mean, latent_std = generator(input_image, training=True)
-            vae_loss, reconst_loss, kl_loss = vae_loss()
+            total_loss, reconst_loss, kl_loss = vae_loss(input_image, target, latent_mean, latent_std)
+
             # gen_loss, disc_loss, gp_loss = wgan_gp_loss(discriminator, target, generated_image, LAMBDA_GP)
 
         if train_generator:
-            generator_gradients = gen_tape.gradient(gen_loss, generator.trainable_variables)
+            generator_gradients = gen_tape.gradient(total_loss, generator.trainable_variables)
             if CLIP_BY_NORM is not None:
                 generator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in generator_gradients]
             if CLIP_BY_VALUE is not None:
                 generator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in generator_gradients]
             generator_optimizer.apply_gradients(zip(generator_gradients, generator.trainable_variables))
 
-        if train_discriminator:
-            discriminator_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
-            if CLIP_BY_NORM is not None:
-                discriminator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in discriminator_gradients]
-            if CLIP_BY_VALUE is not None:
-                discriminator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in discriminator_gradients]
-            discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
+        # if train_discriminator:
+        #     discriminator_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
+        #     if CLIP_BY_NORM is not None:
+        #         discriminator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in discriminator_gradients]
+        #     if CLIP_BY_VALUE is not None:
+        #         discriminator_gradients = [tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE) for t in discriminator_gradients]
+        #     discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
 
-        if CLIP_DISC_WEIGHT:
-            for disc_var in discriminator.trainable_variables:
-                disc_var.assign(tf.clip_by_value(disc_var, -CLIP_DISC_WEIGHT, CLIP_DISC_WEIGHT))
+        # if CLIP_DISC_WEIGHT:
+        #     for disc_var in discriminator.trainable_variables:
+        #         disc_var.assign(tf.clip_by_value(disc_var, -CLIP_DISC_WEIGHT, CLIP_DISC_WEIGHT))
 
-        return gen_loss, disc_loss, gp_loss
+        return total_loss, reconst_loss, kl_loss
 
 
     def eval_step(input_image, target):
-        generated_image = generator(input_image, training=False)
-        gen_loss, disc_loss, gp_loss = wgan_gp_loss(discriminator, target, generated_image, LAMBDA_GP)
+        generated_image, latent_mean, latent_std = generator(input_image, training=False)
+        total_loss, reconst_loss, kl_loss = vae_loss(input_image, target, latent_mean, latent_std)
 
-        return gen_loss, disc_loss, gp_loss
+        return total_loss, reconst_loss, kl_loss
 
 
     def generate_images(model, test_input, path=None, show=True):
         if test_input.ndim < 4:
             test_input = np.expand_dims(test_input, axis=0)
-        prediction = model(test_input)
+        prediction, _, _ = model(test_input)
         if isinstance(test_input, tf.Tensor):
             display_list = [np.squeeze(test_input.numpy()[0, :, :, 0]), np.squeeze(prediction.numpy()[0, :, :, 0])]
         else:
@@ -311,48 +312,51 @@ if __name__ == "__main__":
             log_print('Training epoch {}'.format(epoch), add_timestamp=True)
             losses = [[], [], []]
             for n, input_image in train_ds.enumerate():
-                if n.numpy() % (DISC_TRAIN_STEPS + 1) == 0:
-                    gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
-                    log_print('Trained generator.')
-                else:
-                    gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
-                    log_print('Trained discriminator.')
+                total_loss, reconst_loss, kl_loss = train_step(input_image=input_image, target=input_image,
+                                                          train_generator=True, train_discriminator=False)
 
-                losses[0].append(gen_loss.numpy())
-                losses[1].append(disc_loss.numpy())
-                losses[2].append(gp_loss.numpy())
+                # if n.numpy() % (DISC_TRAIN_STEPS + 1) == 0:
+                #     gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
+                #     log_print('Trained generator.')
+                # else:
+                #     gen_loss, disc_loss, gp_loss = train_step(input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
+                #     log_print('Trained discriminator.')
+
+                losses[0].append(total_loss.numpy())
+                losses[1].append(reconst_loss.numpy())
+                losses[2].append(kl_loss.numpy())
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
-                tf.summary.scalar('gen_loss', losses[0], step=epoch)
-                tf.summary.scalar('disc_loss', losses[1], step=epoch)
-                tf.summary.scalar('gp_loss', losses[2], step=epoch)
+                tf.summary.scalar('total_loss', losses[0], step=epoch)
+                tf.summary.scalar('reconst_loss', losses[1], step=epoch)
+                tf.summary.scalar('kl_loss', losses[2], step=epoch)
             summary_writer.flush()
 
             # testing
             log_print('Calculating validation losses...')
             val_losses = [[], [], []]
             for input_image in val_ds:
-                gen_loss, disc_loss, gp_loss = eval_step(input_image, input_image)
-                val_losses[0].append(gen_loss.numpy())
-                val_losses[1].append(disc_loss.numpy())
-                val_losses[2].append(gp_loss.numpy())
+                total_loss, reconst_loss, kl_loss = eval_step(input_image, input_image)
+                val_losses[0].append(total_loss.numpy())
+                val_losses[1].append(reconst_loss.numpy())
+                val_losses[2].append(kl_loss.numpy())
 
             val_losses = [statistics.mean(x) for x in val_losses]
             with summary_writer.as_default():
-                tf.summary.scalar('val_gen_loss', val_losses[0], step=epoch)
-                tf.summary.scalar('val_disc_loss', val_losses[1], step=epoch)
-                tf.summary.scalar('val_gp_loss', val_losses[2], step=epoch)
+                tf.summary.scalar('val_total_loss', val_losses[0], step=epoch)
+                tf.summary.scalar('val_reconst_loss', val_losses[1], step=epoch)
+                tf.summary.scalar('val_kl_loss', val_losses[2], step=epoch)
             summary_writer.flush()
 
             end_time = time.time()
             log_print('Epoch {} completed in {} seconds'.format(epoch, round(end_time - start_time)))
-            log_print("     gen_loss       {:1.4f}".format(losses[0]))
-            log_print("     disc_loss      {:1.4f}".format(losses[1]))
-            log_print("     gp_loss        {:1.4f}".format(losses[2]))
+            log_print("     total_loss       {:1.4f}".format(losses[0]))
+            log_print("     reconst_loss      {:1.4f}".format(losses[1]))
+            log_print("     kl_loss        {:1.4f}".format(losses[2]))
 
-            log_print("     val_gen_loss       {:1.4f}".format(val_losses[0]))
-            log_print("     val_disc_loss      {:1.4f}".format(val_losses[1]))
-            log_print("     val_gp_loss        {:1.4f}".format(val_losses[2]))
+            log_print("     val_total_loss       {:1.4f}".format(val_losses[0]))
+            log_print("     val_reconst_loss      {:1.4f}".format(val_losses[1]))
+            log_print("     val_kl_loss        {:1.4f}".format(val_losses[2]))
 
             checkpoint.epoch.assign(epoch)
 
