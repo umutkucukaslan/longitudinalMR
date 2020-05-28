@@ -135,9 +135,9 @@ decoder = build_decoder(
 input_shape = (INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL)
 gen_in = tf.keras.Input(shape=input_shape, name='image_input')
 gen_random = tf.keras.Input(shape=(output_shape), name='random_var')
-m, s = encoder(gen_in)  # mean and std for the distribution
-s = tf.keras.layers.Multiply()([gen_random, s])
-latent = tf.keras.layers.Add()([m, s])
+latent_std, latent_mean = encoder(gen_in)  # mean and std for the distribution
+s = tf.keras.layers.Multiply()([gen_random, latent_std])
+latent = tf.keras.layers.Add()([latent_mean, s])
 out_im = decoder(latent)
 
 generator = tf.keras.Model(inputs=[gen_in, gen_random], outputs=[out_im, m, s], name='generator')
