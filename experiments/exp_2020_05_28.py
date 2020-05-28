@@ -133,8 +133,8 @@ decoder = build_decoder(
 
 # generator definition
 input_shape = (INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL)
-gen_in = tf.keras.Input(shape=input_shape)
-gen_random = tf.keras.Input(shape=(output_shape))
+gen_in = tf.keras.Input(shape=input_shape, name='image_input')
+gen_random = tf.keras.Input(shape=(output_shape), name='random_var')
 m, s = encoder(gen_in)  # mean and std for the distribution
 latent = m + gen_random * s
 out_im = decoder(latent)
