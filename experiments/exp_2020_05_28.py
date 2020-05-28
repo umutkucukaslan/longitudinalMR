@@ -119,7 +119,7 @@ encoder = build_encoder(
     filters=filters,
     kernel_size=kernel_size,
     batch_normalization=batch_norm,
-    activation=tf.nn.relu,
+    activation="relu",
     name='encoder')
 
 decoder = build_decoder(
