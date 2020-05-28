@@ -241,9 +241,9 @@ if __name__ == "__main__":
 
         if train_generator:
             generator_gradients = gen_tape.gradient(total_loss, generator.trainable_variables)
-            print('GENERATOR GRADS')
-            for g, v in zip(generator_gradients, generator.trainable_variables):
-                print(g, v)
+            # print('GENERATOR GRADS')
+            # for g, v in zip(generator_gradients, generator.trainable_variables):
+            #     print(g, v)
             if CLIP_BY_NORM is not None:
                 generator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in generator_gradients]
             if CLIP_BY_VALUE is not None:
