@@ -276,7 +276,9 @@ if __name__ == "__main__":
             test_input = np.expand_dims(test_input, axis=0)
 
         random_val = np.zeros_like(test_input)
+        print('generate images')
         prediction, _, _ = model([test_input, random_val])
+        print('generate images prediction done')
         if isinstance(test_input, tf.Tensor):
             display_list = [np.squeeze(test_input.numpy()[0, :, :, 0]), np.squeeze(prediction.numpy()[0, :, :, 0])]
         else:
@@ -317,6 +319,7 @@ if __name__ == "__main__":
             # training
             log_print('Training epoch {}'.format(epoch), add_timestamp=True)
             losses = [[], [], []]
+            print('starting training')
             for n, input_image in train_ds.enumerate():
                 total_loss, reconst_loss, kl_loss = train_step(input_image=input_image, target=input_image,
                                                           train_generator=True, train_discriminator=False)
@@ -340,6 +343,7 @@ if __name__ == "__main__":
 
             # testing
             log_print('Calculating validation losses...')
+            print('Calculating validation losses...')
             val_losses = [[], [], []]
             for input_image in val_ds:
                 total_loss, reconst_loss, kl_loss = eval_step(input_image, input_image)
