@@ -90,8 +90,8 @@ def vae_loss(x_real, x_fake, latent_mean, latent_std):
     :param latent_std:
     :return:
     """
-
-    kl_loss = tf.reduce_mean(tf.math.log(1 / latent_std) + (latent_std * latent_std + latent_mean * latent_mean - 1) / 2)
+    epsilon = 1e-3
+    kl_loss = tf.reduce_mean(tf.math.log(1 / (latent_std + epsilon)) + (latent_std * latent_std + latent_mean * latent_mean - 1) / 2)
     reconst_loss = tf.reduce_mean(tf.square(x_real - x_fake))
     total_loss = reconst_loss + kl_loss
 
