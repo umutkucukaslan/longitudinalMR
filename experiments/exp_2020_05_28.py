@@ -135,7 +135,7 @@ decoder = build_decoder(
 input_shape = (INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL)
 gen_in = tf.keras.Input(shape=input_shape)
 m, s = encoder(gen_in)  # mean and std for the distribution
-random_var = tf.random.normal(s.shape)
+random_var = tf.random.normal([None, output_shape])
 latent = m + random_var * s
 out_im = decoder(latent)
 
