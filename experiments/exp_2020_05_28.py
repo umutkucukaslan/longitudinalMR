@@ -134,13 +134,12 @@ decoder = build_decoder(
 # generator definition
 input_shape = (INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL)
 gen_in = tf.keras.Input(shape=input_shape)
+gen_random = tf.keras.Input(shape=(output_shape))
 m, s = encoder(gen_in)  # mean and std for the distribution
-print('shape is ', s.shape)
-random_var = tf.random.normal([None, output_shape])
-latent = m + random_var * s
+latent = m + gen_random * s
 out_im = decoder(latent)
 
-generator = tf.keras.Model(inputs=gen_in, outputs=[out_im, m, s], name='generator')
+generator = tf.keras.Model(inputs=[gen_in, gen_random], outputs=[out_im, m, s], name='generator')
 
 
 if __name__ == "__main__":
@@ -232,8 +231,10 @@ if __name__ == "__main__":
 
     def train_step(input_image, target, train_generator=True, train_discriminator=True):
 
-        with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_image, latent_mean, latent_std = generator(input_image, training=True)
+        with tf.GradientTape() as gen_tape:
+            batch_size = input_image.shape[0]
+            random_var = tf.random.normal([batch_size, output_shape])
+            generated_image, latent_mean, latent_std = generator([input_image, random_var], training=True)
             total_loss, reconst_loss, kl_loss = vae_loss(input_image, target, latent_mean, latent_std)
 
             # gen_loss, disc_loss, gp_loss = wgan_gp_loss(discriminator, target, generated_image, LAMBDA_GP)
@@ -262,7 +263,9 @@ if __name__ == "__main__":
 
 
     def eval_step(input_image, target):
-        generated_image, latent_mean, latent_std = generator(input_image, training=False)
+        batch_size = input_image.shape[0]
+        random_var = tf.random.normal([batch_size, output_shape])
+        generated_image, latent_mean, latent_std = generator([input_image, random_var], training=True)
         total_loss, reconst_loss, kl_loss = vae_loss(input_image, target, latent_mean, latent_std)
 
         return total_loss, reconst_loss, kl_loss
@@ -271,7 +274,9 @@ if __name__ == "__main__":
     def generate_images(model, test_input, path=None, show=True):
         if test_input.ndim < 4:
             test_input = np.expand_dims(test_input, axis=0)
-        prediction, _, _ = model(test_input)
+
+        random_val = np.zeros_like(test_input)
+        prediction, _, _ = model([test_input, random_val])
         if isinstance(test_input, tf.Tensor):
             display_list = [np.squeeze(test_input.numpy()[0, :, :, 0]), np.squeeze(prediction.numpy()[0, :, :, 0])]
         else:
