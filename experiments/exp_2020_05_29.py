@@ -21,9 +21,7 @@ Variational Autoencoder
 Input:  192x160
 PMSD best autoencoder structure. Encoder: Conv(64, 128, 256, 512) + Dense
                                  Decoder: Dense + Deconv(512, 256, 128, 64)
-Training:   WGAN-GP loss (GP: gradient penalty)
-Loss:       Generator loss = EM distance
-            Discriminator loss = EM distance - GP
+Training:   WGAN-GP loss + KL divergence loss
 
 maybe add layer normalization as recommended in the paper WGAN-GP
 """
