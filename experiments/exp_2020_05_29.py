@@ -249,7 +249,7 @@ if __name__ == "__main__":
             generator_optimizer.apply_gradients(zip(generator_gradients, generator.trainable_variables))
 
         if train_discriminator:
-            discriminator_gradients = disc_tape.gradient(total_loss, discriminator.trainable_variables)
+            discriminator_gradients = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
             if CLIP_BY_NORM is not None:
                 discriminator_gradients = [tf.clip_by_norm(t, CLIP_BY_NORM) for t in discriminator_gradients]
             if CLIP_BY_VALUE is not None:
@@ -328,10 +328,8 @@ if __name__ == "__main__":
 
                 if n.numpy() % (DISC_TRAIN_STEPS + 1) == 0:
                     total_loss, gen_loss, kl_loss = train_step(input_image=input_image, target=input_image, train_generator=True, train_discriminator=False)
-                    log_print('Trained generator.')
                 else:
                     total_loss, gen_loss, kl_loss = train_step(input_image=input_image, target=input_image, train_generator=False, train_discriminator=True)
-                    log_print('Trained discriminator.')
 
                 losses[0].append(total_loss.numpy())
                 losses[1].append(gen_loss.numpy())
