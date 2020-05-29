@@ -73,7 +73,7 @@ def wgan_gp_loss_progressive_gan(f, x_real, x_fake, lambda_gp, weight=None):
     return gen_loss, disc_loss, gp
 
 
-def vae_loss(x_real, x_fake, latent_mean, latent_std):
+def vae_loss(x_real, x_fake, latent_mean, latent_std, normal_std=1):
     """
     This loss assumes that latent variables are generated using Gaussian distribution of zero mean and unit variance.
 
@@ -91,7 +91,7 @@ def vae_loss(x_real, x_fake, latent_mean, latent_std):
     :return:
     """
     epsilon = 1e-3
-    kl_loss = tf.reduce_mean(tf.math.log(1 / (tf.math.abs(latent_std) + epsilon)) + (latent_std * latent_std + latent_mean * latent_mean - 1) / 2)
+    kl_loss = tf.reduce_mean(tf.math.log(normal_std / (tf.math.abs(latent_std) + epsilon)) + (latent_std * latent_std + latent_mean * latent_mean - normal_std * normal_std) / (2 * normal_std * normal_std))
     reconst_loss = tf.reduce_mean(tf.square(x_real - x_fake))
     total_loss = reconst_loss + kl_loss
 
