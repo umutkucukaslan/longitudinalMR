@@ -38,13 +38,16 @@ Rigid body transformation of images to baseline image for each patient in data f
 '''
 
 
-dataset_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/data'
+dataset_dir = '/Volumes/SAMSUNG/umut/thesis/adni_15T'
 
 # Patient folders in data folder. This folder contains folders with
 patients = sorted(glob.glob(os.path.join(dataset_dir, '*')))
 
-
+counter = 1
 for patient in patients:
+    print("Processing {} / {}".format(counter, len(patients)))
+    counter += 1
+
     logger.info('Starting registrations for new patient (%s)', os.path.basename(patient))
     dates = sorted(glob.glob(os.path.join(patient, '*')))
     baseline = dates[0]
