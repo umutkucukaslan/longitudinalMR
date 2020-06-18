@@ -1,3 +1,4 @@
+import csv
 import os
 import glob
 import sys
@@ -11,7 +12,7 @@ import logging
 
 
 # Create a custom logger
-from preprocessing.utils import get_axial_cortex_slices, ssim_of_sequence
+from preprocessing.utils import get_axial_cortex_slices
 
 logging.root.setLevel(logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -55,21 +56,22 @@ of intensities in the region of interest.
 """
 
 # Set the following parameters
-dataset_dir = "/Volumes/SAMSUNG/umut/thesis/adni_15T"
+# dataset_dir = "/Volumes/SAMSUNG/umut/thesis/adni_15T"
+dataset_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/data"
 dataset_info_pth = (
-    "/Users/umutkucukaslan/Desktop/thesis/dataset/ADNI1_Complete_2Yr_1.5T_5_24_2020.csv"
+    "/Users/umutkucukaslan/Desktop/thesis/dataset/ADNI1_Complete_2Yr_3T_11_25_2019.csv"
 )
-target_dir = "/Volumes/SAMSUNG/umut/thesis/processed_data_15T_256x256_4slices"
+target_dir = "/Volumes/SAMSUNG/umut/thesis/processed_data_3T_256x256_4slices"
 start_offset = 75
 num_slices = 4
 stop_offset = start_offset + num_slices
 step_size = 1
-# offset_search_range = 5
-# inspect_offset = False
-use_registered_image = True
 saved_image_data_type = "uint8"
 show_results = False
 shape_after_padding = (256, 256)
+slicing_index_csv_file = os.path.join(
+    os.path.dirname(target_dir), "slicing_indexes_3T.csv"
+)
 
 # Condition of patients
 dataset_info = pd.read_csv(dataset_info_pth)
@@ -85,9 +87,7 @@ if not os.path.isdir(target_dir):
     os.makedirs(target_dir)
 
 
-def save_slices(
-    slices, dir_path, dtype="uint16", summary_image=None, slicing_pattern_image=None
-):
+def save_slices(slices, dir_path, dtype="uint16", slicing_pattern_image=None):
     for i in range(len(slices)):
         pth = os.path.join(dir_path, "slice_{:03d}".format(i) + ".png")
         if dtype == "uint16":
@@ -97,15 +97,44 @@ def save_slices(
         imageio.imwrite(pth, slice)
     logger.info("%d slices were written to %s", len(slices), dir_path)
 
-    if summary_image is not None:
-        pth = os.path.join(dir_path, "summary_slicing_range.png")
-        imageio.imwrite(pth, summary_image)
-        logger.info("Summary image was written to %s", pth)
-
     if slicing_pattern_image is not None:
         pth = os.path.join(dir_path, "summary_slicing_pattern.png")
         imageio.imwrite(pth, slicing_pattern_image)
         logger.info("Slicing pattern image was written to %s", pth)
+
+
+def get_numpy_image(img):
+    # get numpy correctted dimension order image from nibabel image format Nifti1....
+    img_data = img.get_fdata()
+    img_data = np.array(img_data)
+    img_data = np.flip(img_data, axis=0)
+    img_data = np.flip(img_data, axis=1)
+    img_data = np.flip(img_data, axis=2)
+    img_data = np.transpose(img_data, (2, 1, 0))
+
+    return img_data
+
+
+def add_row_to_csv_file(patient_name, start_index, stop_index, step_size):
+    if os.path.isfile(slicing_index_csv_file):
+        with open(slicing_index_csv_file, mode="a") as file:
+            csv_writer = csv.writer(
+                file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
+            csv_writer.writerow(
+                [patient_name, str(start_index), str(stop_index), str(step_size)]
+            )
+    else:
+        with open(slicing_index_csv_file, mode="w") as file:
+            csv_writer = csv.writer(
+                file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
+            csv_writer.writerow(
+                ["patient_name", "start_index", "stop_index", "step_size",]
+            )
+            csv_writer.writerow(
+                [patient_name, str(start_index), str(stop_index), str(step_size)]
+            )
 
 
 for idx in range(len(patients)):
@@ -127,32 +156,44 @@ for idx in range(len(patients)):
     # Baseline image folder path
     baseline = dates[0]
 
+    # Target date dir where slices will be saved
+    target_date_dir = os.path.join(target_patient_dir, os.path.basename(baseline))
+    if not os.path.isdir(target_date_dir):
+        os.makedirs(target_date_dir)
+
+    if os.listdir(target_date_dir):
+        logger.info(
+            "Already processed this patient {}, continuing".format(patient_name)
+        )
+        continue
+
     logger.info("Working on image from %s", os.path.basename(baseline))
 
     # Baseline image path
-    baseline_img_pth = glob.glob(os.path.join(baseline, "*.nii"))[0]
+    baseline_img_pth = glob.glob(os.path.join(baseline, "resampled_*.nii"))[0]
 
     # Baseline image
     baseline_img = nib.load(baseline_img_pth)
+    baseline_img_data = get_numpy_image(baseline_img)
 
     pressed_key = 0
     while pressed_key != ord("o"):
         # Extract slices from the baseline image
-        (
-            processed_slices,
-            summary_image,
-            slicing_pattern_image,
-            head_start,
-        ) = get_axial_cortex_slices(
-            baseline_img,
+        (processed_slices, slicing_pattern_image,) = get_axial_cortex_slices(
+            baseline_img_data,
             start_offset=start_offset,
             stop_offset=stop_offset,
             step=step_size,
             shape_after_padding=shape_after_padding,
             show_results=show_results,
         )
-        # seq = np.hstack([cv2.resize(x, (96, 80)) for x in processed_slices])
-        seq = np.hstack([cv2.resize(x, (144, 120)) for x in processed_slices])
+        seq = np.hstack(
+            [
+                # cv2.resize(x, (x.shape[0] // 2, x.shape[1] // 2))
+                x
+                for x in processed_slices
+            ]
+        )
         cv2.imshow("slices", seq)
         cv2.imshow("slicing pattern", slicing_pattern_image)
         pressed_key = cv2.waitKey()
@@ -166,127 +207,42 @@ for idx in range(len(patients)):
         if pressed_key == ord("q"):
             exit()
 
-    # ssim_processed_slices, _, _ = get_axial_cortex_slices(
-    #     baseline_img,
-    #     start_offset=30,
-    #     stop_offset=100,
-    #     step=5,
-    #     shape_after_padding=shape_after_padding,
-    #     show_results=show_results,
-    # )
-
-    # Target date dir where slices will be saved
-    target_date_dir = os.path.join(target_patient_dir, os.path.basename(baseline))
-    if not os.path.isdir(target_date_dir):
-        os.makedirs(target_date_dir)
-
     # Save extracted slices to target date dir
     save_slices(
         processed_slices,
         target_date_dir,
         dtype=saved_image_data_type,
-        summary_image=summary_image,
         slicing_pattern_image=slicing_pattern_image,
+    )
+
+    # add the chosen start stop indexes for the patient to the csv file for future use
+    add_row_to_csv_file(
+        patient_name=patient_name,
+        start_index=start_offset,
+        stop_index=stop_offset,
+        step_size=step_size,
     )
 
     # Follow-up scan folders (other date folders)
     follow_ups = dates[1:]
 
-    follow_up_processed_slices = None
-    follow_up_summary_image = None
-    follow_up_slicing_pattern_image = None
-
     for follow_up in follow_ups:
         logger.info("Working on image from %s", os.path.basename(follow_up))
 
-        # Follow-up image path
-        if use_registered_image:
-            follow_up_img_pth = glob.glob(os.path.join(follow_up, "reg_*.nii"))[0]
-        else:
-            follow_up_img_pth = glob.glob(os.path.join(follow_up, "[!reg_]*.nii"))[0]
-
-        # Follow-up image
+        follow_up_img_pth = glob.glob(os.path.join(follow_up, "resampled_*.nii"))[0]
         follow_up_img = nib.load(follow_up_img_pth)
-
-        # best_mean_ssim_index = float("-Inf")
-        # best_offset = None
-        # for search_offset in range(-offset_search_range, offset_search_range):
-        #
-        #     # Extract slices from the follow-up image
-        #     (
-        #         candidate_processed_slices,
-        #         candidate_summary_image,
-        #         candidate_slicing_pattern_image,
-        #     ) = get_axial_cortex_slices(
-        #         follow_up_img,
-        #         start_offset=30 + search_offset,
-        #         stop_offset=100 + search_offset,
-        #         step=5,
-        #         shape_after_padding=shape_after_padding,
-        #         show_results=show_results,
-        #     )
-        #
-        #     # check SSIM between these and baseline image slices
-        #     mean_ssim_index = ssim_of_sequence(
-        #         processed_slices, candidate_processed_slices
-        #     )
-        #     # print("Search offset: {}, ssim: {}".format(search_offset, mean_ssim_index))
-        #     if mean_ssim_index > best_mean_ssim_index:
-        #         best_mean_ssim_index = mean_ssim_index
-        #         best_offset = search_offset
-        #         # follow_up_processed_slices = candidate_processed_slices
-        #         # follow_up_summary_image = candidate_summary_image
-        #         # follow_up_slicing_pattern_image = candidate_slicing_pattern_image
-
-        # if follow_up_processed_slices is None:
-        #     raise ValueError("follow up processed slices cannot be None")
-
-        # # inspect results
-        # pressed_key = 0
-        # while pressed_key != ord("o"):
-        #     print("Best offset is {}".format(best_offset))
-        #     (
-        #         follow_up_processed_slices,
-        #         follow_up_summary_image,
-        #         follow_up_slicing_pattern_image,
-        #     ) = get_axial_cortex_slices(
-        #         follow_up_img,
-        #         start_offset=start_offset + best_offset,
-        #         stop_offset=stop_offset + best_offset,
-        #         step=step_size,
-        #         shape_after_padding=shape_after_padding,
-        #         show_results=show_results,
-        #     )
-        #
-        #     if inspect_offset:
-        #         cv2.imshow("Baseline slicing pattern", slicing_pattern_image)
-        #         cv2.imshow("Follow-up slicing pattern", follow_up_slicing_pattern_image)
-        #         pressed_key = cv2.waitKey()
-        #
-        #         if pressed_key == ord("q"):
-        #             exit()
-        #         if pressed_key == ord("o"):
-        #             break
-        #         if pressed_key == ord("s"):
-        #             best_offset += 1
-        #         if pressed_key == ord("w"):
-        #             best_offset -= 1
-        #     else:
-        #         break
+        follow_up_img_data = get_numpy_image(follow_up_img)
 
         (
             follow_up_processed_slices,
-            follow_up_summary_image,
             follow_up_slicing_pattern_image,
-            _,
         ) = get_axial_cortex_slices(
-            follow_up_img,
+            follow_up_img_data,
             start_offset=start_offset,
             stop_offset=stop_offset,
             step=step_size,
             shape_after_padding=shape_after_padding,
             show_results=show_results,
-            head_start=head_start,
         )
 
         # Target date dir where slices will be saved
@@ -299,6 +255,5 @@ for idx in range(len(patients)):
             follow_up_processed_slices,
             target_date_dir,
             dtype=saved_image_data_type,
-            summary_image=follow_up_summary_image,
             slicing_pattern_image=follow_up_slicing_pattern_image,
         )

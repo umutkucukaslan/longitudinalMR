@@ -175,13 +175,12 @@ def find_upper_tangent_line_to_head_in_3d_mri(img=None, img_path=None, axis=0):
 
 
 def get_axial_cortex_slices(
-    img,
+    img_data,
     start_offset=30,
     stop_offset=100,
     step=5,
     shape_after_padding=None,
     show_results=False,
-    head_start=None,
 ):
     """
     Slices the 3D MRI volume in the given range and returns list of slices.
@@ -198,31 +197,38 @@ def get_axial_cortex_slices(
              slicing_pattern_image: summary image that shows all slice positions in a sagittal image
     """
 
-    # Index of slice that touches upper part of the head
-    if head_start is None:
-        head_start, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(
-            img=img, axis=0
-        )
-    else:
-        _, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(img=img, axis=0)
+    # # Index of slice that touches upper part of the head
+    # if head_start is None:
+    #     head_start, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(
+    #         img=img, axis=0
+    #     )
+    # else:
+    #     _, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(img=img, axis=0)
 
     # Show range of slicing in a sagittal image
-    summary_image = np.stack((summary_image, summary_image, summary_image), axis=2)
-    summary_image = np.asarray(summary_image, dtype=np.uint8)
-    summary_image[head_start + start_offset, :, 0] = 255
-    summary_image[head_start + stop_offset, :, 0] = 255
+    # summary_image = np.stack((summary_image, summary_image, summary_image), axis=2)
+    # summary_image = np.asarray(summary_image, dtype=np.uint8)
+    # summary_image[head_start + start_offset, :, 0] = 255
+    # summary_image[head_start + stop_offset, :, 0] = 255
 
     # Image to show slice positions
-    slicing_pattern_image = copy.copy(summary_image.astype(np.float))
+    # slicing_pattern_image = copy.copy(summary_image.astype(np.float))
 
     # Image data array
-    img_data = img.get_fdata()
+    # img_data = img.get_fdata()
+
+    # slicing pattern image
+    mid_slice_index = img_data.shape[2] // 2
+    slicing_pattern_image = img_data[:, :, mid_slice_index]
+    slicing_pattern_image = np.stack(
+        (slicing_pattern_image, slicing_pattern_image, slicing_pattern_image), axis=-1
+    )
 
     # Stopping position for slicing
-    slice_index_stop = min(head_start + stop_offset, img_data.shape[0])
+    slice_index_stop = min(stop_offset, img_data.shape[2])
 
     # Calculate mean and std intensity values in the region of interest (sliced region) to specify brightness range
-    roi = img_data[head_start + start_offset : slice_index_stop, :, :]
+    roi = img_data[start_offset:slice_index_stop, :, :]
 
     # Do not include empty areas in mean and std calculation
     threshold_adapted_mean = 20
@@ -233,8 +239,14 @@ def get_axial_cortex_slices(
     # Clip intensity values beyond this
     max_clipping_value = adapted_mean + 1.8 * adapted_std
 
+    slicing_pattern_image = (
+        255 * np.clip(slicing_pattern_image, 0, max_clipping_value) / max_clipping_value
+    )
+    slicing_pattern_image[start_offset, :, 0] = 255
+    slicing_pattern_image[start_offset, :, 0] = 255
+
     processed_slices = []
-    for index in range(head_start + start_offset, slice_index_stop, step):
+    for index in range(start_offset, slice_index_stop, step):
         slice = img_data[index, :, :]
 
         # Clip intensity values beyond the range [0, max_clipping_value]
@@ -272,23 +284,4 @@ def get_axial_cortex_slices(
 
     slicing_pattern_image = np.clip(slicing_pattern_image, 0, 255).astype(np.uint8)
 
-    return processed_slices, summary_image, slicing_pattern_image, head_start
-
-
-def ssim_of_sequence(seq1, seq2):
-    """
-    Computes the mean SSIM index between two sequences of images.
-
-    :param seq1: List of images
-    :param seq2: List of images
-    :return: Mean SSIM index
-    """
-    ssim_indexes = []
-    worst_ssim = float("Inf")
-    for im1, im2 in zip(seq1, seq2):
-        ssim_index = structural_similarity(im1=im1, im2=im2, data_range=255)
-        ssim_indexes.append(ssim_index)
-        if ssim_index < worst_ssim:
-            worst_ssim = ssim_index
-    # overall_ssim = np.mean(ssim_indexes)
-    return worst_ssim
+    return processed_slices, slicing_pattern_image
