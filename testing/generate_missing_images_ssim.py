@@ -10,7 +10,7 @@ import imageio
 from skimage.metrics import structural_similarity
 
 from datasets.longitudinal_dataset import LongitudinalDataset
-from experiments.exp_2020_05_12 import get_encoder_decoder_generator_discriminator
+from experiments.exp_2020_05_29_2 import get_encoder_decoder_generator_discriminator
 from testing.utils import preprocess_image, postprocess_image, mse_float, mse_uint8
 
 
@@ -65,8 +65,8 @@ def generate_statistics(triplets, title):
         generated_img = postprocess_image(decoder(blend_vec))
         ssim1 = structural_similarity(imgs[1], generated_img)    # ssim between original and generated missing images
         ssims_original_generated.append(ssim1)
-        mse1 = mse_uint8(imgs[1], generated_img)     # mse between original and generated missing images
-        mses_original_generated.append(mse1)
+        # mse1 = mse_uint8(imgs[1], generated_img)     # mse between original and generated missing images
+        # mses_original_generated.append(mse1)
 
         # mean_img = blend_images(imgs, days)
         # ssim2 = structural_similarity(imgs[1], mean_img)  # ssim between original and mean missing images
@@ -137,35 +137,46 @@ def generate_statistics(triplets, title):
 
 
 
-
+train_triplets = []
+test_triplets = []
 
 triplets = train_dataset.get_ad_image_triplets()
 random.shuffle(triplets)
 triplets = triplets[:N_SAMPLES]
-generate_statistics(triplets, 'train-ad')
+train_triplets = train_triplets + triplets
+# generate_statistics(triplets, 'train-ad')
 
 triplets = train_dataset.get_mci_image_triplets()
 random.shuffle(triplets)
 triplets = triplets[:N_SAMPLES]
-generate_statistics(triplets, 'train-mci')
+train_triplets = train_triplets + triplets
+# generate_statistics(triplets, 'train-mci')
 
 triplets = train_dataset.get_cn_image_triplets()
 random.shuffle(triplets)
 triplets = triplets[:N_SAMPLES]
-generate_statistics(triplets, 'train-cn')
+train_triplets = train_triplets + triplets
+# generate_statistics(triplets, 'train-cn')
 
 
 triplets = test_dataset.get_ad_image_triplets()
 random.shuffle(triplets)
 triplets = triplets[:N_SAMPLES]
-generate_statistics(triplets, 'test-ad')
+test_triplets = test_triplets + triplets
+# generate_statistics(triplets, 'test-ad')
 
 triplets = test_dataset.get_mci_image_triplets()
 random.shuffle(triplets)
 triplets = triplets[:N_SAMPLES]
-generate_statistics(triplets, 'test-mci')
+test_triplets = test_triplets + triplets
+# generate_statistics(triplets, 'test-mci')
 
 triplets = test_dataset.get_cn_image_triplets()
 random.shuffle(triplets)
 triplets = triplets[:N_SAMPLES]
-generate_statistics(triplets, 'test-cn')
+test_triplets = test_triplets + triplets
+# generate_statistics(triplets, 'test-cn')
+
+
+generate_statistics(train_triplets, 'train-all')
+generate_statistics(test_triplets, 'test-all')

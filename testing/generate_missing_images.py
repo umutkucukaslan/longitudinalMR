@@ -4,7 +4,7 @@ import numpy as np
 import imageio
 
 from datasets.longitudinal_dataset import LongitudinalDataset
-from experiments.exp_2020_05_12 import get_encoder_decoder_generator_discriminator
+from experiments.exp_2020_05_29_2 import get_encoder_decoder_generator_discriminator
 from testing.utils import preprocess_image, postprocess_image, mse_float, mse_uint8
 
 

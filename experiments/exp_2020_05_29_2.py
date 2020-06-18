@@ -27,7 +27,7 @@ maybe add layer normalization as recommended in the paper WGAN-GP
 """
 
 
-RUNTIME = 'colab'   # cloud, colab or none
+RUNTIME = 'none'   # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -198,9 +198,17 @@ def get_encoder_decoder_generator_discriminator(return_experiment_folder=True):
 
     :return: encoder, decoder, generator, discriminator
     """
+    input_shape = (INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL)
+    gen_in = tf.keras.Input(shape=input_shape, name='image_input')
+    latent_std, latent_mean = encoder(gen_in)
+    out_im = decoder(latent_mean)
+
+    inference_generator = tf.keras.Model(inputs=gen_in, outputs=out_im, name='inference_generator')
+    inference_encoder = tf.keras.Model(inputs=gen_in, outputs=latent_mean, name='inference_encoder')
+
     if return_experiment_folder:
-        return encoder, decoder, generator, None, EXPERIMENT_FOLDER
-    return encoder, decoder, generator, None, EXPERIMENT_FOLDER
+        return inference_encoder, decoder, inference_generator, discriminator, EXPERIMENT_FOLDER
+    return inference_encoder, decoder, inference_generator, discriminator, EXPERIMENT_FOLDER
 
 
 if __name__ == "__main__":

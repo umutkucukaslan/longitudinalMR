@@ -16,11 +16,15 @@ This script copies mri files from ADNI folder into folder that has hierarchy
             ...
 '''
 
-dataset_dir = '/Users/umutkucukaslan/Desktop/pmsd/dataset/ADNI'     # ADNI dataset folder
-target_dir =  '/Users/umutkucukaslan/Desktop/pmsd/dataset/data'     # target folder
+dataset_dir = '/Volumes/SAMSUNG/umut/thesis/ADNI'     # ADNI dataset folder
+target_dir =  '/Volumes/SAMSUNG/umut/thesis/adni_15T'     # target folder
 
-patients = glob.glob(os.path.join(dataset_dir, '*'))
+patients = sorted(glob.glob(os.path.join(dataset_dir, '*')))
+
+counter = 1
 for patient in patients:
+    print("Processing {} / {}".format(counter, len(patients)))
+    counter += 1
 
     ptn = os.path.basename(patient)
     print(ptn)

@@ -3,13 +3,18 @@ import copy
 import cv2
 import nibabel as nib
 import numpy as np
-from dipy.align.imaffine import (transform_centers_of_mass,
-                                 AffineMap,
-                                 MutualInformationMetric,
-                                 AffineRegistration)
-from dipy.align.transforms import (TranslationTransform3D,
-                                   RigidTransform3D,
-                                   AffineTransform3D)
+from dipy.align.imaffine import (
+    transform_centers_of_mass,
+    AffineMap,
+    MutualInformationMetric,
+    AffineRegistration,
+)
+from dipy.align.transforms import (
+    TranslationTransform3D,
+    RigidTransform3D,
+    AffineTransform3D,
+)
+from skimage.metrics import structural_similarity
 
 
 def rigid_body_registration(static_image_path, moving_image_path, output_path=None):
@@ -37,7 +42,9 @@ def rigid_body_registration(static_image_path, moving_image_path, output_path=No
     static_grid2world = static_nii.affine
     moving_grid2world = moving_nii.affine
 
-    c_of_mass = transform_centers_of_mass(static, static_grid2world, moving, moving_grid2world)
+    c_of_mass = transform_centers_of_mass(
+        static, static_grid2world, moving, moving_grid2world
+    )
 
     nbins = 32
     sampling_prop = None
@@ -45,24 +52,35 @@ def rigid_body_registration(static_image_path, moving_image_path, output_path=No
     level_iters = [10000, 1000, 100]
     sigmas = [3.0, 1.0, 0.0]
     factors = [4, 2, 1]
-    affreg = AffineRegistration(metric=metric,
-                                level_iters=level_iters,
-                                sigmas=sigmas,
-                                factors=factors)
+    affreg = AffineRegistration(
+        metric=metric, level_iters=level_iters, sigmas=sigmas, factors=factors
+    )
 
     transform = TranslationTransform3D()
     params0 = None
     starting_affine = c_of_mass.affine
-    translation = affreg.optimize(static, moving, transform, params0,
-                                  static_grid2world, moving_grid2world,
-                                  starting_affine=starting_affine)
+    translation = affreg.optimize(
+        static,
+        moving,
+        transform,
+        params0,
+        static_grid2world,
+        moving_grid2world,
+        starting_affine=starting_affine,
+    )
 
     transform = RigidTransform3D()
     params0 = None
     starting_affine = translation.affine
-    rigid = affreg.optimize(static, moving, transform, params0,
-                            static_grid2world, moving_grid2world,
-                            starting_affine=starting_affine)
+    rigid = affreg.optimize(
+        static,
+        moving,
+        transform,
+        params0,
+        static_grid2world,
+        moving_grid2world,
+        starting_affine=starting_affine,
+    )
 
     transformed = rigid.transform(moving)
 
@@ -134,7 +152,6 @@ def find_upper_tangent_line_to_head_in_3d_mri(img=None, img_path=None, axis=0):
 
         if np.sum(slice.flatten() > threshold) > head_threshold:
 
-
             if axis == 0:
                 mid_point = int(img_data_shape[2] / 2)
                 slice = img_data[:, :, mid_point]
@@ -157,7 +174,15 @@ def find_upper_tangent_line_to_head_in_3d_mri(img=None, img_path=None, axis=0):
             return i, image, threshold
 
 
-def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, shape_after_padding=None, show_results=False):
+def get_axial_cortex_slices(
+    img,
+    start_offset=30,
+    stop_offset=100,
+    step=5,
+    shape_after_padding=None,
+    show_results=False,
+    head_start=None,
+):
     """
     Slices the 3D MRI volume in the given range and returns list of slices.
 
@@ -174,13 +199,18 @@ def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, shape
     """
 
     # Index of slice that touches upper part of the head
-    head_start, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(img=img, axis=0)
+    if head_start is None:
+        head_start, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(
+            img=img, axis=0
+        )
+    else:
+        _, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(img=img, axis=0)
 
     # Show range of slicing in a sagittal image
     summary_image = np.stack((summary_image, summary_image, summary_image), axis=2)
     summary_image = np.asarray(summary_image, dtype=np.uint8)
-    summary_image[head_start+start_offset, :, 0] = 255
-    summary_image[head_start+stop_offset, :, 0] = 255
+    summary_image[head_start + start_offset, :, 0] = 255
+    summary_image[head_start + stop_offset, :, 0] = 255
 
     # Image to show slice positions
     slicing_pattern_image = copy.copy(summary_image.astype(np.float))
@@ -215,8 +245,13 @@ def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, shape
             desired_height, desired_width = shape_after_padding
             pad_height = max(0, desired_height - processed_slice.shape[0])
             pad_width = max(0, desired_width - processed_slice.shape[1])
-            processed_slice = np.pad(processed_slice, [(int(pad_height/2), pad_height - int(pad_height/2)),
-                                                       (int(pad_width/2), pad_width - int(pad_width/2))])
+            processed_slice = np.pad(
+                processed_slice,
+                [
+                    (int(pad_height / 2), pad_height - int(pad_height / 2)),
+                    (int(pad_width / 2), pad_width - int(pad_width / 2)),
+                ],
+            )
 
         # Compress intensities in [0, 1] range
         processed_slice = np.asarray(processed_slice / max_clipping_value)
@@ -226,14 +261,34 @@ def get_axial_cortex_slices(img, start_offset=30, stop_offset=100, step=5, shape
         slicing_pattern_image[index, :, 1] += 100
 
         if show_results:
-            cv2.imshow('Slicing pattern', slicing_pattern_image)
-            cv2.imshow('Processed slice', np.asarray(processed_slice * 255, dtype=np.uint8))
+            cv2.imshow("Slicing pattern", slicing_pattern_image)
+            cv2.imshow(
+                "Processed slice", np.asarray(processed_slice * 255, dtype=np.uint8)
+            )
             saturation_image = np.asarray(processed_slice * 255, dtype=np.uint8)
             saturation_image[saturation_image < 254] = 0
-            cv2.imshow('Saturated parts due to clipping', saturation_image)
+            cv2.imshow("Saturated parts due to clipping", saturation_image)
             cv2.waitKey()
 
     slicing_pattern_image = np.clip(slicing_pattern_image, 0, 255).astype(np.uint8)
 
-    return processed_slices, summary_image, slicing_pattern_image
+    return processed_slices, summary_image, slicing_pattern_image, head_start
 
+
+def ssim_of_sequence(seq1, seq2):
+    """
+    Computes the mean SSIM index between two sequences of images.
+
+    :param seq1: List of images
+    :param seq2: List of images
+    :return: Mean SSIM index
+    """
+    ssim_indexes = []
+    worst_ssim = float("Inf")
+    for im1, im2 in zip(seq1, seq2):
+        ssim_index = structural_similarity(im1=im1, im2=im2, data_range=255)
+        ssim_indexes.append(ssim_index)
+        if ssim_index < worst_ssim:
+            worst_ssim = ssim_index
+    # overall_ssim = np.mean(ssim_indexes)
+    return worst_ssim
