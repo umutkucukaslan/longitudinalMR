@@ -12,29 +12,29 @@ import logging
 
 
 # Create a custom logger
-from preprocessing.utils import get_axial_cortex_slices
+from preprocessing.utils import get_axial_cortex_slices, crop_patient_slices
 
-logging.root.setLevel(logging.DEBUG)
-logger = logging.getLogger(__name__)
+# logging.root.setLevel(logging.DEBUG)
+# logger = logging.getLogger(__name__)
 
 
-# Create handlers
-c_handler = logging.StreamHandler()
-f_handler = logging.FileHandler("../logs/log_create_slice_images.log")
-c_handler.setLevel(logging.DEBUG)
-f_handler.setLevel(logging.DEBUG)
-
-# Create formatters and add it to handlers
-c_format = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
-f_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-c_handler.setFormatter(c_format)
-f_handler.setFormatter(f_format)
-
-# Add handlers to the logger
-logger.addHandler(c_handler)
-logger.addHandler(f_handler)
-
-logger.info("merhaba")
+# # Create handlers
+# c_handler = logging.StreamHandler()
+# f_handler = logging.FileHandler("../logs/log_create_slice_images.log")
+# c_handler.setLevel(logging.DEBUG)
+# f_handler.setLevel(logging.DEBUG)
+#
+# # Create formatters and add it to handlers
+# c_format = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+# f_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+# c_handler.setFormatter(c_format)
+# f_handler.setFormatter(f_format)
+#
+# # Add handlers to the logger
+# logger.addHandler(c_handler)
+# logger.addHandler(f_handler)
+#
+# logger.info("merhaba")
 
 
 """
@@ -56,21 +56,25 @@ of intensities in the region of interest.
 """
 
 # Set the following parameters
-# dataset_dir = "/Volumes/SAMSUNG/umut/thesis/adni_15T"
-dataset_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/data"
+dataset_dir = "/Volumes/SAMSUNG/umut/thesis/adni_15T"
+# dataset_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/data"
 dataset_info_pth = (
-    "/Users/umutkucukaslan/Desktop/thesis/dataset/ADNI1_Complete_2Yr_3T_11_25_2019.csv"
+    # "/Users/umutkucukaslan/Desktop/thesis/dataset/ADNI1_Complete_2Yr_3T_11_25_2019.csv"
+    "/Volumes/SAMSUNG/umut/thesis/ADNI1_Complete_2Yr_1.5T_5_24_2020.csv"
+    # "/Volumes/SAMSUNG/umut/thesis/ADNI1_Complete_2Yr_3T_11_25_2019.csv"
 )
-target_dir = "/Volumes/SAMSUNG/umut/thesis/processed_data_3T_256x256_4slices"
+target_dir = "/Volumes/SAMSUNG/umut/thesis/processed_data_15T_192x160_4slices"
+# target_dir = "/Volumes/SAMSUNG/umut/thesis/temp"
 start_offset = 75
 num_slices = 4
 stop_offset = start_offset + num_slices
 step_size = 1
 saved_image_data_type = "uint8"
 show_results = False
-shape_after_padding = (256, 256)
+shape_after_padding = (300, 300)
+shape_after_cropping = (192, 160)
 slicing_index_csv_file = os.path.join(
-    os.path.dirname(target_dir), "slicing_indexes_3T.csv"
+    os.path.dirname(target_dir), "processed_data_15T_192x160_4slices.csv"
 )
 
 # Condition of patients
@@ -87,7 +91,7 @@ if not os.path.isdir(target_dir):
     os.makedirs(target_dir)
 
 
-def save_slices(slices, dir_path, dtype="uint16", slicing_pattern_image=None):
+def save_slices(slices, dir_path, dtype="uint8", slicing_pattern_image=None):
     for i in range(len(slices)):
         pth = os.path.join(dir_path, "slice_{:03d}".format(i) + ".png")
         if dtype == "uint16":
@@ -95,12 +99,12 @@ def save_slices(slices, dir_path, dtype="uint16", slicing_pattern_image=None):
         else:
             slice = np.asarray(slices[i] * (2 ** 8 - 1), dtype=np.uint8)
         imageio.imwrite(pth, slice)
-    logger.info("%d slices were written to %s", len(slices), dir_path)
+    # logger.info("%d slices were written to %s", len(slices), dir_path)
 
     if slicing_pattern_image is not None:
         pth = os.path.join(dir_path, "summary_slicing_pattern.png")
         imageio.imwrite(pth, slicing_pattern_image)
-        logger.info("Slicing pattern image was written to %s", pth)
+        # logger.info("Slicing pattern image was written to %s", pth)
 
 
 def get_numpy_image(img):
@@ -115,14 +119,23 @@ def get_numpy_image(img):
     return img_data
 
 
-def add_row_to_csv_file(patient_name, start_index, stop_index, step_size):
+def add_row_to_csv_file(
+    patient_name, start_index, stop_index, step_size, crop_indexes, crop_shape,
+):
     if os.path.isfile(slicing_index_csv_file):
         with open(slicing_index_csv_file, mode="a") as file:
             csv_writer = csv.writer(
                 file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
             )
             csv_writer.writerow(
-                [patient_name, str(start_index), str(stop_index), str(step_size)]
+                [
+                    patient_name,
+                    str(start_index),
+                    str(stop_index),
+                    str(step_size),
+                    str(crop_indexes),
+                    str(crop_shape),
+                ]
             )
     else:
         with open(slicing_index_csv_file, mode="w") as file:
@@ -130,20 +143,46 @@ def add_row_to_csv_file(patient_name, start_index, stop_index, step_size):
                 file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
             )
             csv_writer.writerow(
-                ["patient_name", "start_index", "stop_index", "step_size",]
+                [
+                    "patient_name",
+                    "start_index",
+                    "stop_index",
+                    "step_size",
+                    "crop_indexes",
+                    "crop_shape",
+                ]
             )
             csv_writer.writerow(
-                [patient_name, str(start_index), str(stop_index), str(step_size)]
+                [
+                    patient_name,
+                    str(start_index),
+                    str(stop_index),
+                    str(step_size),
+                    str(crop_indexes),
+                    str(crop_shape),
+                ]
             )
 
 
-for idx in range(len(patients)):
+def get_voxel_sizes(mri):
+    voxel_sizes = mri.header["pixdim"][1:4]
+    return voxel_sizes
+
+
+def get_resampled_mri_shape(mri_shape, voxel_sizes):
+    resampled_shape = [int(float(x) * float(y)) for x, y in zip(mri_shape, voxel_sizes)]
+    return resampled_shape
+
+
+idx = 349
+while idx < len(patients):
+    # for idx in range(len(patients)):
     patient = patients[idx]
-    print("{} / {}".format(idx + 1, len(patients)))
-    logger.info("Starting slicing for new patient (%s)", os.path.basename(patient))
+    patient_name = os.path.basename(patient)
+    print("{} / {}  {}".format(idx + 1, len(patients), patient_name))
+    # logger.info("Starting slicing for new patient (%s)", os.path.basename(patient))
 
     # Create new patient dir if not exists
-    patient_name = os.path.basename(patient)
     target_patient_dir = os.path.join(
         os.path.join(target_dir, patient_condition[patient_name]), patient_name
     )
@@ -162,19 +201,40 @@ for idx in range(len(patients)):
         os.makedirs(target_date_dir)
 
     if os.listdir(target_date_dir):
-        logger.info(
-            "Already processed this patient {}, continuing".format(patient_name)
+        # logger.info(
+        #     "Already processed this patient {}, continuing".format(patient_name)
+        # )
+        d = input(
+            "Already processed this patient {}, continuing? (y/n)".format(patient_name)
         )
-        continue
+        if d in ["y", "Y", "yes", "Yes"]:
+            idx += 1
+            continue
 
-    logger.info("Working on image from %s", os.path.basename(baseline))
+    # logger.info("Working on image from %s", os.path.basename(baseline))
 
     # Baseline image path
-    baseline_img_pth = glob.glob(os.path.join(baseline, "resampled_*.nii"))[0]
+    baseline_img_pth = glob.glob(os.path.join(baseline, "[!resampled]*.nii"))[0]
 
     # Baseline image
     baseline_img = nib.load(baseline_img_pth)
-    baseline_img_data = get_numpy_image(baseline_img)
+    # baseline_img_data = get_numpy_image(baseline_img)
+    baseline_img_data = baseline_img.get_fdata()
+    voxel_sizes = get_voxel_sizes(baseline_img)
+    mri_shape = baseline_img.shape
+    resampled_mri_shape = get_resampled_mri_shape(
+        mri_shape=mri_shape, voxel_sizes=voxel_sizes
+    )
+    resampled_slice_shape = resampled_mri_shape[1:3]
+    print("resampled shape is {}".format(resampled_slice_shape))
+    print("mri shape: {}".format(mri_shape))
+    print("voxel sizes: {}".format(voxel_sizes))
+
+    cv2.namedWindow("slices")
+    cv2.moveWindow("slices", 20, 20)
+
+    cv2.namedWindow("slicing pattern")
+    cv2.moveWindow("slicing pattern", 500, 400)
 
     pressed_key = 0
     while pressed_key != ord("o"):
@@ -184,6 +244,7 @@ for idx in range(len(patients)):
             start_offset=start_offset,
             stop_offset=stop_offset,
             step=step_size,
+            resampled_slice_shape=resampled_slice_shape,
             shape_after_padding=shape_after_padding,
             show_results=show_results,
         )
@@ -215,23 +276,16 @@ for idx in range(len(patients)):
         slicing_pattern_image=slicing_pattern_image,
     )
 
-    # add the chosen start stop indexes for the patient to the csv file for future use
-    add_row_to_csv_file(
-        patient_name=patient_name,
-        start_index=start_offset,
-        stop_index=stop_offset,
-        step_size=step_size,
-    )
-
     # Follow-up scan folders (other date folders)
     follow_ups = dates[1:]
 
     for follow_up in follow_ups:
-        logger.info("Working on image from %s", os.path.basename(follow_up))
+        # logger.info("Working on image from %s", os.path.basename(follow_up))
 
-        follow_up_img_pth = glob.glob(os.path.join(follow_up, "resampled_*.nii"))[0]
+        follow_up_img_pth = glob.glob(os.path.join(follow_up, "reg*.nii"))[0]
         follow_up_img = nib.load(follow_up_img_pth)
-        follow_up_img_data = get_numpy_image(follow_up_img)
+        # follow_up_img_data = get_numpy_image(follow_up_img)
+        follow_up_img_data = follow_up_img.get_fdata()
 
         (
             follow_up_processed_slices,
@@ -241,6 +295,7 @@ for idx in range(len(patients)):
             start_offset=start_offset,
             stop_offset=stop_offset,
             step=step_size,
+            resampled_slice_shape=resampled_slice_shape,
             shape_after_padding=shape_after_padding,
             show_results=show_results,
         )
@@ -257,3 +312,23 @@ for idx in range(len(patients)):
             dtype=saved_image_data_type,
             slicing_pattern_image=follow_up_slicing_pattern_image,
         )
+
+    crop_indexes, crop_shape = crop_patient_slices(
+        target_patient_dir,
+        target_patient_dir,
+        crop_height=shape_after_cropping[0],
+        crop_width=shape_after_cropping[1],
+        source_image_size=shape_after_padding,
+    )
+
+    # add the chosen start stop indexes for the patient to the csv file for future use
+    add_row_to_csv_file(
+        patient_name=patient_name,
+        start_index=start_offset,
+        stop_index=stop_offset,
+        step_size=step_size,
+        crop_indexes=crop_indexes,
+        crop_shape=crop_shape,
+    )
+
+    idx += 1

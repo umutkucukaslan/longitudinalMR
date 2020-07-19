@@ -1,6 +1,10 @@
 import copy
+import glob
+import os
+import shutil
 
 import cv2
+import imageio
 import nibabel as nib
 import numpy as np
 from dipy.align.imaffine import (
@@ -45,6 +49,8 @@ def rigid_body_registration(static_image_path, moving_image_path, output_path=No
     c_of_mass = transform_centers_of_mass(
         static, static_grid2world, moving, moving_grid2world
     )
+    print("Center of mass is {}".format(c_of_mass))
+    print("Center of mass is {}".format(c_of_mass))
 
     nbins = 32
     sampling_prop = None
@@ -85,7 +91,8 @@ def rigid_body_registration(static_image_path, moving_image_path, output_path=No
     transformed = rigid.transform(moving)
 
     if output_path is not None:
-        new_image = nib.Nifti1Image(transformed, moving_grid2world, moving_nii.header)
+        # new_image = nib.Nifti1Image(transformed, moving_grid2world, moving_nii.header)
+        new_image = nib.Nifti1Image(transformed, static_grid2world, moving_nii.header)
         nib.save(new_image, output_path)
 
     return transformed, rigid
@@ -179,6 +186,7 @@ def get_axial_cortex_slices(
     start_offset=30,
     stop_offset=100,
     step=5,
+    resampled_slice_shape=None,
     shape_after_padding=None,
     show_results=False,
 ):
@@ -204,18 +212,6 @@ def get_axial_cortex_slices(
     #     )
     # else:
     #     _, summary_image, _ = find_upper_tangent_line_to_head_in_3d_mri(img=img, axis=0)
-
-    # Show range of slicing in a sagittal image
-    # summary_image = np.stack((summary_image, summary_image, summary_image), axis=2)
-    # summary_image = np.asarray(summary_image, dtype=np.uint8)
-    # summary_image[head_start + start_offset, :, 0] = 255
-    # summary_image[head_start + stop_offset, :, 0] = 255
-
-    # Image to show slice positions
-    # slicing_pattern_image = copy.copy(summary_image.astype(np.float))
-
-    # Image data array
-    # img_data = img.get_fdata()
 
     # slicing pattern image
     mid_slice_index = img_data.shape[2] // 2
@@ -251,6 +247,9 @@ def get_axial_cortex_slices(
 
         # Clip intensity values beyond the range [0, max_clipping_value]
         processed_slice = np.clip(slice, 0, max_clipping_value)
+        processed_slice = cv2.resize(
+            processed_slice, (resampled_slice_shape[1], resampled_slice_shape[0])
+        )
 
         # Pad with zeros if the shape of the slice is smaller than desired
         if shape_after_padding is not None:
@@ -285,3 +284,129 @@ def get_axial_cortex_slices(
     slicing_pattern_image = np.clip(slicing_pattern_image, 0, 255).astype(np.uint8)
 
     return processed_slices, slicing_pattern_image
+
+
+def crop_patient_slices(
+    source_patient_folder,
+    target_patient_folder,
+    crop_height=256,
+    crop_width=256,
+    source_image_size=(256, 256),
+):
+    # starts GUI for the patient, receives input for the crop, then crops all the slices and saves them in target patient
+    # folder according to the slices
+    """
+    Key presses:
+        w                  up
+     a  s  d        left  down  right
+
+     b  n           previous slice      next slice
+     v  m           previous scan       next scan
+
+     r              reset crop window locations
+     o              okay - process accordingly
+
+    :param source_patient_folder:
+    :param target_patient_folder:
+    :param crop_height:
+    :param crop_width:
+    :param source_image_size:
+    :return:
+    """
+
+    scan_folders = sorted(glob.glob(os.path.join(source_patient_folder, "*")))
+
+    scan_index = 0
+    slice_index = 0
+    image_row_index = int((source_image_size[0] - crop_height) / 2)
+    image_col_index = int((source_image_size[1] - crop_width) / 2)
+    pressed_key = 0
+    while pressed_key != ord("o"):
+        slices = sorted(
+            glob.glob(os.path.join(scan_folders[scan_index], "slice_*.png"))
+        )
+        slice = slices[slice_index]
+        slice_img = imageio.imread(slice)
+        slice_img[image_row_index, :] = 255
+        slice_img[image_row_index + crop_height, :] = 255
+        slice_img[:, image_col_index] = 255
+        slice_img[:, image_col_index + crop_width] = 255
+
+        cv2.imshow("cropping tool", slice_img)
+        pressed_key = cv2.waitKey()
+
+        if pressed_key == ord("s"):
+            # down key pressed
+            image_row_index += 1
+            if image_row_index + crop_height >= source_image_size[0]:
+                image_row_index = source_image_size[0] - crop_height - 1
+
+        if pressed_key == ord("w"):
+            # up key pressed
+            image_row_index -= 1
+            if image_row_index < 0:
+                image_row_index = 0
+
+        if pressed_key == ord("d"):
+            # right key pressed
+            image_col_index += 1
+            if image_col_index + crop_width >= source_image_size[1]:
+                image_col_index = source_image_size[1] - crop_width - 1
+
+        if pressed_key == ord("a"):
+            # left key pressed
+            image_col_index -= 1
+            if image_col_index < 0:
+                image_col_index = 0
+
+        if pressed_key == ord("r"):
+            # reset key
+            image_row_index = int((source_image_size[0] - crop_height) / 2)
+            image_col_index = int((source_image_size[1] - crop_width) / 2)
+
+        if pressed_key == ord("n"):
+            # next slice
+            slice_index = min(len(slices) - 1, slice_index + 1)
+
+        if pressed_key == ord("b"):
+            # previous slice
+            slice_index = max(0, slice_index - 1)
+
+        if pressed_key == ord("m"):
+            # next scan
+            scan_index = min(len(scan_folders) - 1, scan_index + 1)
+
+        if pressed_key == ord("v"):
+            # previous scan
+            scan_index = max(0, scan_index - 1)
+
+        if pressed_key == ord("q"):
+            print("Terminated")
+            exit()
+
+    for scan_folder in scan_folders:
+        scan_folder_name = os.path.basename(scan_folder)
+        target_scan_folder = os.path.join(target_patient_folder, scan_folder_name)
+        if not os.path.isdir(target_scan_folder):
+            os.makedirs(target_scan_folder)
+
+        slices = sorted(glob.glob(os.path.join(scan_folder, "slice_*.png")))
+        for slice in slices:
+            slice_name = os.path.basename(slice)
+            slice_img = imageio.imread(slice)
+            cropped_img = slice_img[
+                image_row_index : image_row_index + crop_height,
+                image_col_index : image_col_index + crop_width,
+            ]
+            target_slice_path = os.path.join(target_scan_folder, slice_name)
+            imageio.imwrite(target_slice_path, cropped_img)
+
+        if source_patient_folder != target_patient_folder:
+            other_files = sorted(glob.glob(os.path.join(scan_folder, "summary*.png")))
+            for file in other_files:
+                target_file_path = os.path.join(
+                    target_scan_folder, os.path.basename(file)
+                )
+                shutil.copy(file, target_file_path)
+
+    return (image_row_index, image_col_index), (crop_height, crop_width)

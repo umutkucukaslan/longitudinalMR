@@ -6571,3 +6571,8 @@
 2020-06-17 07:08:17,036 - __main__ - INFO - Registration done and new image file is written to /Volumes/SAMSUNG/umut/thesis/adni_15T/941_S_1311/2008-09-21_14_41_06/reg_941_S_1311__2008-09-21_14_41_06.nii
 2020-06-17 07:08:17,423 - __main__ - INFO - Starting registration of (941_S_1311__2007-03-02_15_49_04.nii, 941_S_1311__2009-03-31_14_45_23.nii)
 2020-06-17 07:14:15,725 - __main__ - INFO - Registration done and new image file is written to /Volumes/SAMSUNG/umut/thesis/adni_15T/941_S_1311/2009-03-31_14_45_23/reg_941_S_1311__2009-03-31_14_45_23.nii
+2020-07-01 23:01:21,853 - __main__ - INFO - merhaba
+2020-07-01 23:01:21,855 - __main__ - INFO - Starting registrations for new patient (002_S_0413)
+2020-07-01 23:01:21,855 - __main__ - INFO - Starting registration of (002_S_0413__2006-05-19_16_17_47.nii, 002_S_0413__2006-11-15_14_34_44.nii)
+2020-07-01 23:17:57,718 - __main__ - INFO - Registration done and new image file is written to /Users/umutkucukaslan/Desktop/thesis/dataset/data_3t/002_S_0413/2006-11-15_14_34_44/reg_002_S_0413__2006-11-15_14_34_44.nii
+2020-07-01 23:17:57,722 - __main__ - INFO - Starting registration of (002_S_0413__2006-05-19_16_17_47.nii, 002_S_0413__2007-06-01_07_57_43.nii)
