@@ -24,7 +24,7 @@ Loss: L2 loss
 """
 
 
-RUNTIME = "none"  # cloud, colab or none
+RUNTIME = "colab"  # cloud, colab or none
 USE_TPU = False
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
