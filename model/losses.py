@@ -14,6 +14,18 @@ def l2_loss_longitudinal(imgs, generated_imgs, index=1):
     return total_loss, losses[index]
 
 
+def wgan_gp_loss_longitudinal(discriminator, imgs, generated_imgs, lambda_gp):
+    gen_loss, disc_loss, gp_loss = 0, 0, 0
+    for x_real, x_fake in zip(imgs, generated_imgs):
+        gen_loss_inc, disc_loss_inc, gp_loss_inc = wgan_gp_loss(
+            discriminator, x_real, x_fake, lambda_gp
+        )
+        gen_loss += gen_loss_inc
+        disc_loss += disc_loss_inc
+        gp_loss += gp_loss_inc
+    return gen_loss, disc_loss, gp_loss
+
+
 def wgan_gp_loss(f, x_real, x_fake, lambda_gp):
     """
     WGAN-GP loss implementation. Returns disc_loss, gen_loss
