@@ -75,10 +75,7 @@ def get_adni_dataset(
 
 
 def get_triplets_adni_15t_dataset(
-    folder_name="training_data_15T_192x160_4slices",
-    machine="none",
-    return_two_trains=False,
-    return_raw_dataset=False,
+    folder_name="training_data_15T_192x160_4slices", machine="none",
 ):
     if machine == "colab":
         data_dir = os.path.join("/content", folder_name)
