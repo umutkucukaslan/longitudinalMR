@@ -324,6 +324,7 @@ if __name__ == "__main__":
         train_images = iter(train_images)
         val_images = iter(val_images)
         for epoch in range(initial_epoch, num_epochs):
+            print("Epoch: {}".format(epoch))
             start_time = time.time()
             val_input = next(val_images)
             image_name = str(epoch) + "_val.png"
