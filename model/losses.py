@@ -1,6 +1,19 @@
 import tensorflow as tf
 
 
+def ssim_loss(target_img, predicted_img, max_val=1):
+    return -tf.reduce_mean(tf.image.ssim(target_img, predicted_img, max_val=max_val))
+
+
+def ssim_loss_longitudinal(target_img, predicted_img, max_val=1, index=1):
+    # computes average loss of ssim loss for three images
+    losses = [ssim_loss(x, y, max_val) for x, y in zip(target_img, predicted_img)]
+    total_loss = 0
+    for loss in losses:
+        total_loss += loss
+    return total_loss, losses[index]
+
+
 def l2_loss(target_y, predicted_y):
     return tf.reduce_mean(tf.square(target_y - predicted_y))
 
