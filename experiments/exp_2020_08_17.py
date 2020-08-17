@@ -42,7 +42,7 @@ CLIP_BY_NORM = None  # clip gradients to this norm or None
 CLIP_BY_VALUE = None  # clip gradient to this value or None
 
 EPOCHS = 5000
-CHECKPOINT_SAVE_INTERVAL = 10
+CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
 LR = 1e-4
 
