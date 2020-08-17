@@ -13,10 +13,10 @@ from model.autoencoder import build_encoder, build_decoder, build_efficientnet_e
 from model.losses import l2_loss_longitudinal, ssim_loss_longitudinal
 
 """
-Smaller network 3 --> latent size is small, less features based on efficientnet
+Efficientnet B4 encoder -> small size decoder 
 Longitudinal training -> Basic autoencoder structure
 Input:  192x160
-Encoder: Conv(64, 32, 48, 80, 160) + Dense
+Encoder: Efficientnet B4 + Dense
 Decoder: Dense + Deconv(160, 80, 48, 32, 64)
 Latent: 8
 Loss: SSIM loss longitudinal
