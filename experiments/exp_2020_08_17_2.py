@@ -9,18 +9,37 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from datasets.adni_dataset import get_triplets_adni_15t_dataset
-from model.autoencoder import build_decoder, build_efficientnet_encoder
+from model.autoencoder import (
+    build_decoder,
+    build_efficientnet_encoder,
+    build_decoder_deeper,
+    build_encoder_deeper,
+)
 from model.losses import l2_loss_longitudinal, ssim_loss_longitudinal
 
 """
-Efficientnet B4 encoder -> small size decoder 
-Longitudinal training -> Basic autoencoder structure
-Input:  192x160
-Encoder: Efficientnet B4 + Dense
-Decoder: Dense + Deconv(160, 80, 48, 32, 64)
+Deeper encoder and decoder using basic autoencoder structure.
+
+filters = (64, 128, 256, 512)
+latent_vector_size = 16
+kernel_size = 3
+batch_norm = True
+num_repeat = 3
+
+Encoder: filters x ( (num_repeat - 1) x Conv2d + BN + Activation + DepthwiseConv2d + BN + Activation )
+Decoder: reverse_filters x ( (num_repeat - 1) x Conv2d + BN + Activation + DepthwiseConv2d + BN + Activation ) + 
+            Conv2d + Sigmoid
 Latent: 16
+Input:  192x160
+Longitudinal training
 Loss: SSIM loss longitudinal
 """
+
+filters = (64, 128, 256, 512)
+latent_vector_size = 16
+kernel_size = 3
+batch_norm = True
+num_repeat = 3
 
 
 RUNTIME = "colab"  # cloud, colab or none
@@ -111,20 +130,18 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, "figures")):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, "figures"))
 
 # BUILD GENERATOR
-# encoder
-filters = (64, 32, 48, 80, 160)
-latent_vector_size = 16
-kernel_size = 3
-batch_norm = False
 
-encoder = build_efficientnet_encoder(
+encoder = build_encoder_deeper(
     input_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL),
     output_shape=latent_vector_size,
+    filters=filters,
+    kernel_size=kernel_size,
+    batch_normalization=batch_norm,
+    activation=tf.nn.relu,
     name="encoder",
-    weights="imagenet",
-    trainable=True,
+    num_repeat=num_repeat,
 )
-decoder = build_decoder(
+decoder = build_decoder_deeper(
     input_shape=latent_vector_size,
     output_shape=(INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL),
     filters=tuple(reversed(filters)),
@@ -132,6 +149,7 @@ decoder = build_decoder(
     batch_normalization=batch_norm,
     activation=tf.nn.relu,
     name="decoder",
+    num_repeat=num_repeat,
 )
 generator = tf.keras.Sequential(name="generator")
 generator.add(encoder)

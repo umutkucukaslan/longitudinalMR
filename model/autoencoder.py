@@ -234,3 +234,113 @@ def build_efficientnet_encoder(
     out = tf.keras.layers.Dense(output_shape, activation=None)(flattened)
 
     return tf.keras.Model(inputs=inp, outputs=out, name=name)
+
+
+def build_encoder_deeper(
+    input_shape=(128, 128, 3),
+    output_shape=128,
+    filters=(32, 64, 128),
+    kernel_size=3,
+    batch_normalization=False,
+    activation=tf.nn.relu,
+    name="encoder",
+    num_repeat=2,
+):
+
+    inputs = tf.keras.Input(shape=(input_shape[0], input_shape[1], input_shape[2]))
+    x = inputs
+    for i in range(len(filters)):
+        for repeat_iter in range(num_repeat - 1):
+            x = tf.keras.layers.Conv2D(
+                filters=filters[i],
+                kernel_size=kernel_size,
+                padding="same",
+                activation=None,
+            )(x)
+            if batch_normalization:
+                x = tf.keras.layers.BatchNormalization()(x)
+            x = tf.keras.layers.Activation(activation=activation)(x)
+        x = tf.keras.layers.DepthwiseConv2D(
+            kernel_size=kernel_size, padding="same", strides=(2, 2)
+        )(x)
+        if batch_normalization:
+            x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.Activation(activation=activation)(x)
+        # x = tf.keras.layers.MaxPool2D(pool_size=pool_size, padding="same")(x)
+    x = tf.keras.layers.Flatten()(x)
+    outputs = tf.keras.layers.Dense(output_shape, activation=None)(x)
+
+    return tf.keras.Model(inputs=inputs, outputs=outputs, name=name)
+
+
+def build_decoder_deeper(
+    input_shape=128,
+    output_shape=(128, 128, 3),
+    filters=(128, 64, 32),
+    kernel_size=3,
+    batch_normalization=False,
+    activation=tf.nn.relu,
+    name="decoder",
+    num_repeat=2,
+):
+
+    n_upsamplings = len(filters)
+    x_init, y_init = (
+        output_shape[0] // 2 ** n_upsamplings,
+        output_shape[1] // 2 ** n_upsamplings,
+    )
+
+    if (
+        x_init * 2 ** n_upsamplings != output_shape[0]
+        or y_init * 2 ** n_upsamplings != output_shape[1]
+    ):
+        print(
+            "Output image dimensions should be divisible by 2^len(filters). Please set a suitable output_shape"
+        )
+        sys.exit()
+
+    inputs = tf.keras.Input(shape=input_shape)
+    x = tf.keras.layers.Dense(x_init * y_init * filters[0], activation=activation)(
+        inputs
+    )
+    if batch_normalization:
+        x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Reshape((x_init, y_init, filters[0]))(x)
+    for i in range(len(filters)):
+        for repeat_iter in range(num_repeat - 1):
+            x = tf.keras.layers.Conv2D(
+                filters=filters[i],
+                kernel_size=kernel_size,
+                padding="same",
+                activation=None,
+            )(x)
+            if batch_normalization:
+                x = tf.keras.layers.BatchNormalization()(x)
+            x = tf.keras.layers.Activation(activation=activation)(x)
+        x = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding="same")(x)
+        if batch_normalization:
+            x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.Activation(activation=activation)(x)
+        x = tf.keras.layers.UpSampling2D()(x)
+    for repeat_iter in range(num_repeat - 1):
+        x = tf.keras.layers.Conv2D(
+            filters=filters[-1],
+            kernel_size=kernel_size,
+            padding="same",
+            activation=None,
+        )(x)
+        if batch_normalization:
+            x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.Activation(activation=activation)(x)
+    x = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding="same")(x)
+    if batch_normalization:
+        x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Activation(activation=activation)(x)
+    outputs = tf.keras.layers.Conv2D(
+        filters=output_shape[2],
+        kernel_size=kernel_size,
+        padding="same",
+        activation=tf.nn.sigmoid,
+    )(x)
+
+    return tf.keras.Model(inputs=inputs, outputs=outputs, name=name)
