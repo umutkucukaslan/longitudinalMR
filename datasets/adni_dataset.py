@@ -157,7 +157,7 @@ def get_triplets_adni_15t_dataset(
         return {
             "imgs": tuple(imgs),
             "days": tuple(days),
-            "augmented_imgs": augmented_imgs,
+            "augmented_imgs": tuple(augmented_imgs),
         }
 
     train_ds = train_list_ds.map(
