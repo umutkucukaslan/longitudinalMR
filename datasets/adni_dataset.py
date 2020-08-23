@@ -138,12 +138,27 @@ def get_triplets_adni_15t_dataset(
         img = img / 256.0
         return img
 
+    def augment_images(imgs):
+        augmented_imgs = [x for x in imgs]
+        augmented_imgs = [
+            tf.image.random_brightness(x, max_delta=0.2) for x in augmented_imgs
+        ]
+        augmented_imgs = [
+            tf.image.random_contrast(x, lower=0.9, upper=1.1) for x in augmented_imgs
+        ]
+        return augmented_imgs
+
     def process_triplet(triplet):
         imgs, days = triplet["imgs"], triplet["days"]
         imgs = [tf.io.read_file(x) for x in imgs]
         imgs = [decode_img(x) for x in imgs]
+        augmented_imgs = augment_images(imgs)
         days = [tf.cast(x, tf.float32) for x in days]
-        return {"imgs": tuple(imgs), "days": tuple(days)}
+        return {
+            "imgs": tuple(imgs),
+            "days": tuple(days),
+            "augmented_imgs": augmented_imgs,
+        }
 
     train_ds = train_list_ds.map(
         process_triplet, num_parallel_calls=tf.data.experimental.AUTOTUNE
