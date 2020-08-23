@@ -242,6 +242,7 @@ def build_encoder_deeper(
     filters=(32, 64, 128),
     kernel_size=3,
     batch_normalization=False,
+    layer_normalization=False,
     activation=tf.nn.relu,
     name="encoder",
     num_repeat=2,
@@ -259,12 +260,16 @@ def build_encoder_deeper(
             )(x)
             if batch_normalization:
                 x = tf.keras.layers.BatchNormalization()(x)
+            if layer_normalization:
+                x = tf.keras.layers.LayerNormalization()(x)
             x = tf.keras.layers.Activation(activation=activation)(x)
         x = tf.keras.layers.DepthwiseConv2D(
             kernel_size=kernel_size, padding="same", strides=(2, 2)
         )(x)
         if batch_normalization:
             x = tf.keras.layers.BatchNormalization()(x)
+        if layer_normalization:
+            x = tf.keras.layers.LayerNormalization()(x)
         x = tf.keras.layers.Activation(activation=activation)(x)
         # x = tf.keras.layers.MaxPool2D(pool_size=pool_size, padding="same")(x)
     x = tf.keras.layers.Flatten()(x)
@@ -279,6 +284,7 @@ def build_decoder_deeper(
     filters=(128, 64, 32),
     kernel_size=3,
     batch_normalization=False,
+    layer_normalization=False,
     activation=tf.nn.relu,
     name="decoder",
     num_repeat=2,
@@ -305,6 +311,8 @@ def build_decoder_deeper(
     )
     if batch_normalization:
         x = tf.keras.layers.BatchNormalization()(x)
+    if layer_normalization:
+        x = tf.keras.layers.LayerNormalization()(x)
     x = tf.keras.layers.Reshape((x_init, y_init, filters[0]))(x)
     for i in range(len(filters)):
         for repeat_iter in range(num_repeat - 1):
@@ -316,10 +324,14 @@ def build_decoder_deeper(
             )(x)
             if batch_normalization:
                 x = tf.keras.layers.BatchNormalization()(x)
+            if layer_normalization:
+                x = tf.keras.layers.LayerNormalization()(x)
             x = tf.keras.layers.Activation(activation=activation)(x)
         x = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding="same")(x)
         if batch_normalization:
             x = tf.keras.layers.BatchNormalization()(x)
+        if layer_normalization:
+            x = tf.keras.layers.LayerNormalization()(x)
         x = tf.keras.layers.Activation(activation=activation)(x)
         x = tf.keras.layers.UpSampling2D()(x)
     for repeat_iter in range(num_repeat - 1):
@@ -331,10 +343,14 @@ def build_decoder_deeper(
         )(x)
         if batch_normalization:
             x = tf.keras.layers.BatchNormalization()(x)
+        if layer_normalization:
+            x = tf.keras.layers.LayerNormalization()(x)
         x = tf.keras.layers.Activation(activation=activation)(x)
     x = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding="same")(x)
     if batch_normalization:
         x = tf.keras.layers.BatchNormalization()(x)
+    if layer_normalization:
+        x = tf.keras.layers.LayerNormalization()(x)
     x = tf.keras.layers.Activation(activation=activation)(x)
     outputs = tf.keras.layers.Conv2D(
         filters=output_shape[2],
