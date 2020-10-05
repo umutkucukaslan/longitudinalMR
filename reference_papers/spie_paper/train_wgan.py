@@ -188,60 +188,48 @@ if __name__ == "__main__":
         folder_name="training_data_15T_192x160_4slices", machine=RUNTIME
     )
 
-    def merge_latent_vectors(latent0, latent2, a1, a2):
-        # compute mid latent vector given first and last vectors and distances
-        latent_mid = tf.convert_to_tensor(
-            [
-                (latent0[i] * a2[i] + latent2[i] * a1[i]) / (a1[i] + a2[i])
-                for i in range(a1.shape[0])
-            ]
-        )
-        return latent_mid
+    cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
 
-    def calculate_ssim(imgs, generated_imgs):
-        ssims = [
-            tf.image.ssim(img1, img2, max_val=1.0)
-            for img1, img2 in zip(imgs, generated_imgs)
-        ]
-        return tf.reduce_mean([ssims[0], ssims[2]]), tf.reduce_mean(ssims[1])
+    def generator_loss(fake_output):
+        return cross_entropy(tf.ones_like(fake_output), fake_output)
 
-    def train_step(imgs, days):
+    def discriminator_loss(real_output, fake_output):
+        real_loss = cross_entropy(tf.ones_like(real_output), real_output)
+        fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
+        total_loss = real_loss + fake_loss
+        return total_loss
+
+    def train_step(images, train_generator=False, train_discriminator=False):
         # TODO: WGAN necessitates gradient clipping for discriminator to ensure K-Lipschitzness
+        noise = tf.random.normal([BATCH_SIZE, latent_vector_size])
+        with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+            generated_images = generator(noise, training=True)
+            real_output = discriminator(images, training=True)
+            fake_output = discriminator(generated_images, training=True)
 
-        # uses three successive scan images, generates mid scan by combining latent vectors of first and
-        # last scan image, computes loss for all three reconstructed images
-        with tf.GradientTape() as gen_tape:
-            a1 = days[1] - days[0]
-            a2 = days[2] - days[1]
-            latent0 = encoder(imgs[0], training=True)
-            latent2 = encoder(imgs[2], training=True)
-            latent_mid = merge_latent_vectors(latent0, latent2, a1, a2)
-            latents = [latent0, latent_mid, latent2]
-            generated_images = [decoder(x, training=True) for x in latents]
-            ssim_total, ssim_missing_reconst = ssim_loss_longitudinal(
-                imgs, generated_images, index=1, max_val=1.0
+            gen_loss = generator_loss(fake_output)
+            disc_loss = discriminator_loss(real_output, fake_output)
+
+        gradients_of_generator = gen_tape.gradient(
+            gen_loss, generator.trainable_variables
+        )
+        gradients_of_discriminator = disc_tape.gradient(
+            disc_loss, discriminator.trainable_variables
+        )
+
+        if train_generator:
+            generator_optimizer.apply_gradients(
+                zip(gradients_of_generator, generator.trainable_variables)
             )
-        generator_gradients = gen_tape.gradient(
-            ssim_total, generator.trainable_variables
-        )
-        if CLIP_BY_NORM is not None:
-            generator_gradients = [
-                tf.clip_by_norm(t, CLIP_BY_NORM) for t in generator_gradients
+        if train_discriminator:
+            discriminator_optimizer.apply_gradients(
+                zip(gradients_of_discriminator, discriminator.trainable_variables)
+            )
+            discriminator.trainable_variables = [
+                tf.clip_by_value(v, -CLIP_DISC_WEIGHT, CLIP_DISC_WEIGHT)
+                for v in discriminator.trainable_variables
             ]
-        if CLIP_BY_VALUE is not None:
-            generator_gradients = [
-                tf.clip_by_value(t, -CLIP_BY_VALUE, CLIP_BY_VALUE)
-                for t in generator_gradients
-            ]
-        generator_optimizer.apply_gradients(
-            zip(generator_gradients, generator.trainable_variables)
-        )
-        # ssim_direct_reconst, ssim_missing_reconst = calculate_ssim(
-        #     imgs, generated_images
-        # )
-        total_reconst_loss, mid_reconst_loss = l2_loss_longitudinal(
-            imgs, generated_images, index=1
-        )
+
         return total_reconst_loss, mid_reconst_loss, ssim_total, ssim_missing_reconst
 
     def eval_step(imgs, days):
