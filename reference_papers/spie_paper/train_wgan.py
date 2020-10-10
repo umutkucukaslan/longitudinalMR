@@ -209,6 +209,7 @@ if __name__ == "__main__":
             tf.zeros_like(fake_output), fake_output
         )
         loss_per_sample = real_loss + fake_loss
+        weights = tf.convert_to_tensor(weights, dtype=loss_per_sample.dtype)
         total_loss = tf.reduce_mean(loss_per_sample * weights)
 
         return total_loss, loss_per_sample
@@ -345,11 +346,9 @@ if __name__ == "__main__":
             # testing
             log_print("Calculating validation losses...")
             val_losses = [[], []]
-            sil = 0
             for images, info, weights in dataset.get_val_images(
                 batch_size=BATCH_SIZE, shuffle=False
             ):
-                sil += 1
                 gen_loss, disc_loss, loss_per_sample = eval_step(images)
 
                 val_losses[0].append(gen_loss.numpy())
