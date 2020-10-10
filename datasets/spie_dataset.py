@@ -97,11 +97,16 @@ class SPIEDataset:
     def _get_images(self, batch_size=1, shuffle=False, split=None):
         data = self._get_correct_data()
         indices = list(range(len(data)))
+        print("NUM IMAGES: ", len(indices))
         if shuffle:
             random.shuffle(indices)
 
         for i in range(0, len(indices) - batch_size, batch_size):
-            yield self._get_batch(indices[i : i + batch_size], split=split)
+            try:
+                yield self._get_batch(indices[i : i + batch_size], split=split)
+            except Exception as e:
+                print("EXCEPTION OCCURED DURING GETTING DATA: ", e)
+                exit()
 
     def get_training_images(self, batch_size=1, shuffle=False):
         return self._get_images(batch_size, shuffle, split="train")
