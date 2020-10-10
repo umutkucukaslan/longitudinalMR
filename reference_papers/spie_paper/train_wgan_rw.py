@@ -43,7 +43,7 @@ EXPERIMENT_NAME = "ref_spie_wgan_rw"
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
 
-BATCH_SIZE = 128
+BATCH_SIZE = 2
 CLIP_DISC_WEIGHT = 0.01  # clip disc weight
 
 EPOCHS = 2000
@@ -330,13 +330,17 @@ if __name__ == "__main__":
                     counter += 1
 
                 if example_reweighting:
+                    print("updating losses")
                     dataset.update_losses(info, loss_per_sample.numpy())
+                    print("updated losse")
 
                 losses[0].append(gen_loss.numpy())
                 losses[1].append(disc_loss.numpy())
 
             if example_reweighting:
+                print("UPDATING WEIGHTS")
                 dataset.update_training_weights()
+                print("UPDATED WEIGHTS")
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
                 tf.summary.scalar("generator_loss", losses[0], step=epoch)
