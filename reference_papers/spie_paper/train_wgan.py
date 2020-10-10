@@ -360,6 +360,7 @@ if __name__ == "__main__":
                 val_losses[1].append(disc_loss.numpy())
                 print("hey 4")
 
+            print("val losses: ", val_losses)
             val_losses = [statistics.mean(x) for x in val_losses]
             print("hey 5")
             with summary_writer.as_default():
