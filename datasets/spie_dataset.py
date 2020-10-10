@@ -95,7 +95,7 @@ class SPIEDataset:
         return example_images, info, weights
 
     def _get_images(self, batch_size=1, shuffle=False, split=None):
-        data = self._get_correct_data()
+        data = self._get_correct_data(split)
         indices = list(range(len(data)))
         print("NUM IMAGES: ", len(indices))
         if shuffle:
