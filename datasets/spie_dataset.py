@@ -122,6 +122,7 @@ class SPIEDataset:
         for i in range(len(indices)):
             example = data[indices[i]]
             example.loss = losses[i]
+            print("used this for loss update: ", losses[i])
 
     def _update_weights(self, split="train"):
         data = self._get_correct_data(split)
