@@ -312,6 +312,7 @@ if __name__ == "__main__":
             )
 
             log_print("Training epoch {}".format(epoch), add_timestamp=True)
+            print("Training epoch {}".format(epoch))
             losses = [[], []]
             counter = 0
             for images, info, weights in dataset.get_training_images(
@@ -345,16 +346,22 @@ if __name__ == "__main__":
 
             # testing
             log_print("Calculating validation losses...")
+            print("Calculating validation losses")
             val_losses = [[], []]
             for images, info, weights in dataset.get_val_images(
                 batch_size=BATCH_SIZE, shuffle=False
             ):
+                print("hey 1")
                 gen_loss, disc_loss, loss_per_sample = eval_step(images)
+                print("hey 2")
 
                 val_losses[0].append(gen_loss.numpy())
+                print("hey 3")
                 val_losses[1].append(disc_loss.numpy())
+                print("hey 4")
 
             val_losses = [statistics.mean(x) for x in val_losses]
+            print("hey 5")
             with summary_writer.as_default():
                 tf.summary.scalar(
                     "validation_generator_loss", val_losses[0], step=epoch
