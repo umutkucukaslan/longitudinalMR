@@ -349,16 +349,11 @@ if __name__ == "__main__":
             for images, info, weights in dataset.get_val_images(
                 batch_size=BATCH_SIZE, shuffle=False
             ):
-                print("val data")
-                print(images.shape)
                 gen_loss, disc_loss, loss_per_sample = eval_step(images)
-                print(gen_loss, disc_loss)
                 val_losses[0].append(gen_loss.numpy())
                 val_losses[1].append(disc_loss.numpy())
 
-            print("val losses: ", val_losses)
             val_losses = [statistics.mean(x) for x in val_losses]
-            print("hey 5")
             with summary_writer.as_default():
                 tf.summary.scalar(
                     "validation_generator_loss", val_losses[0], step=epoch

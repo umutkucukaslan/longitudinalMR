@@ -97,7 +97,6 @@ class SPIEDataset:
     def _get_images(self, batch_size=1, shuffle=False, split=None):
         data = self._get_correct_data(split)
         indices = list(range(len(data)))
-        print("NUM IMAGES: ", len(indices))
         if shuffle:
             random.shuffle(indices)
 
