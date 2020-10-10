@@ -89,8 +89,10 @@ class SPIEDataset:
         examples = [data[x] for x in indices]
         example_images = [example.get_image() for example in examples]
         example_images = np.stack(example_images, axis=0)
+        weights = [example.weight for example in examples]
+        weights = np.stack(weights, axis=0)
         info = {"split": split, "indices": indices}
-        return example_images, info
+        return example_images, info, weights
 
     def _get_images(self, batch_size=1, shuffle=False, split=None):
         data = self._get_correct_data()

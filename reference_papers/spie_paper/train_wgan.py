@@ -7,9 +7,8 @@ import time
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from datasets.adni_dataset import get_triplets_adni_15t_dataset
-from datasets.spie_dataset import get_spie_dataset
-from model.losses import l2_loss_longitudinal, ssim_loss_longitudinal
+from datasets.spie_dataset import get_spie_dataset, SPIEDataset
+from model.losses import binary_cross_entropy_with_logits
 from model.dcgan import make_dcgan_discriminator_model, make_dcgan_generator_model
 
 """
@@ -17,11 +16,9 @@ SPIE paper implementation using W-GAN (without example re-weighting)
 Latent vector size: 256
 Output image shape: 64 x 64 x 1
 
-192x160 images are resized to 64x64
+PS: 192x160 images are resized to 64x64
 
 n_critic: 5
-
-
 """
 
 # Input latent vector size for generator
@@ -30,6 +27,14 @@ latent_vector_size = 256
 # Kernel size for generator and discriminator conv layers
 kernel_size = 5
 
+# shuffle training images
+shuffle_training_data = True
+
+# num_critic_train_steps / num_generator_train_steps
+n_critic = 5
+
+# use example re-weighting when computing total loss
+example_reweighting = False
 
 RUNTIME = "none"  # cloud, colab or none
 RESTORE_FROM_CHECKPOINT = True
@@ -38,8 +43,7 @@ EXPERIMENT_NAME = "ref_spie_wgan"
 PREFETCH_BUFFER_SIZE = 3
 SHUFFLE_BUFFER_SIZE = 1000
 
-BATCH_SIZE = 256
-DISC_TRAIN_STEPS = 5
+BATCH_SIZE = 2
 CLIP_DISC_WEIGHT = 0.01  # clip disc weight
 
 EPOCHS = 2000
@@ -113,8 +117,8 @@ if not os.path.isdir(os.path.join(EXPERIMENT_FOLDER, "figures")):
     os.makedirs(os.path.join(EXPERIMENT_FOLDER, "figures"))
 
 # generator and discriminator
-generator = make_dcgan_generator_model()
-discriminator = make_dcgan_discriminator_model()
+generator = make_dcgan_generator_model(input_vector_size=latent_vector_size)
+discriminator = make_dcgan_discriminator_model(kernel_size=(kernel_size, kernel_size))
 
 if __name__ == "__main__":
     generator.summary()
@@ -190,25 +194,36 @@ if __name__ == "__main__":
 
     cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
 
-    def generator_loss(fake_output):
-        return cross_entropy(tf.ones_like(fake_output), fake_output)
+    def generator_loss(fake_output, weights):
+        ce = binary_cross_entropy_with_logits(tf.ones_like(fake_output), fake_output)
+        weights = tf.convert_to_tensor(weights, dtype=ce.dtype)
+        gen_loss = tf.reduce_mean(ce * weights)
 
-    def discriminator_loss(real_output, fake_output):
-        real_loss = cross_entropy(tf.ones_like(real_output), real_output)
-        fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
-        total_loss = real_loss + fake_loss
-        return total_loss
+        return gen_loss
 
-    def train_step(images, train_generator=False, train_discriminator=False):
-        # TODO: WGAN necessitates gradient clipping for discriminator to ensure K-Lipschitzness
+    def discriminator_loss(real_output, fake_output, weights):
+        real_loss = binary_cross_entropy_with_logits(
+            tf.ones_like(real_output), real_output
+        )
+        fake_loss = binary_cross_entropy_with_logits(
+            tf.zeros_like(fake_output), fake_output
+        )
+        loss_per_sample = real_loss + fake_loss
+        total_loss = tf.reduce_mean(loss_per_sample * weights)
+
+        return total_loss, loss_per_sample
+
+    def train_step(images, weights, train_generator=False, train_discriminator=False):
         noise = tf.random.normal([BATCH_SIZE, latent_vector_size])
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             generated_images = generator(noise, training=True)
             real_output = discriminator(images, training=True)
             fake_output = discriminator(generated_images, training=True)
 
-            gen_loss = generator_loss(fake_output)
-            disc_loss = discriminator_loss(real_output, fake_output)
+            gen_loss = generator_loss(fake_output, weights)
+            disc_loss, loss_per_sample = discriminator_loss(
+                real_output, fake_output, weights
+            )
 
         gradients_of_generator = gen_tape.gradient(
             gen_loss, generator.trainable_variables
@@ -225,43 +240,49 @@ if __name__ == "__main__":
             discriminator_optimizer.apply_gradients(
                 zip(gradients_of_discriminator, discriminator.trainable_variables)
             )
-            discriminator.trainable_variables = [
-                tf.clip_by_value(v, -CLIP_DISC_WEIGHT, CLIP_DISC_WEIGHT)
-                for v in discriminator.trainable_variables
-            ]
+            # enforces K-Lipschitzness for WGAN
+            for variable in discriminator.trainable_variables:
+                variable.assign(
+                    tf.clip_by_value(variable, -CLIP_DISC_WEIGHT, CLIP_DISC_WEIGHT)
+                )
 
-        return total_reconst_loss, mid_reconst_loss, ssim_total, ssim_missing_reconst
+        return gen_loss, disc_loss, loss_per_sample
 
-    def eval_step(imgs, days):
-        a1 = days[1] - days[0]
-        a2 = days[2] - days[1]
-        latent0 = encoder(imgs[0], training=True)
-        latent2 = encoder(imgs[2], training=True)
-        latent_mid = merge_latent_vectors(latent0, latent2, a1, a2)
-        latents = [latent0, latent_mid, latent2]
-        generated_images = [decoder(x, training=True) for x in latents]
-        total_reconst_loss, mid_reconst_loss = l2_loss_longitudinal(
-            imgs, generated_images, index=1
+    def eval_step(images):
+        noise = tf.random.normal([BATCH_SIZE, latent_vector_size])
+        weights = tf.ones([images.shape[0]])
+        generated_images = generator(noise, training=False)
+        real_output = discriminator(images, training=False)
+        fake_output = discriminator(generated_images, training=False)
+        gen_loss = generator_loss(fake_output, weights)
+        disc_loss, loss_per_sample = discriminator_loss(
+            real_output, fake_output, weights
         )
-        ssim_total, ssim_missing_reconst = ssim_loss_longitudinal(
-            imgs, generated_images, index=1, max_val=1.0
-        )
-        return total_reconst_loss, mid_reconst_loss, ssim_total, ssim_missing_reconst
 
-    def generate_images(encoder, decoder, imgs, days, path=None, show=False):
-        a1 = days[1] - days[0]
-        a2 = days[2] - days[1]
-        latent0 = encoder(imgs[0], training=True)
-        latent2 = encoder(imgs[2], training=True)
-        latent_mid = merge_latent_vectors(latent0, latent2, a1, a2)
-        latents = [latent0, latent_mid, latent2]
-        generated_images = [decoder(x, training=True) for x in latents]
-        upper_display_list = [x.numpy()[0, :, :, 0] for x in imgs]
-        lower_display_list = [x.numpy()[0, :, :, 0] for x in generated_images]
-        title = ["Time 0", "Time 1", "Time 2"]
+        return gen_loss, disc_loss, loss_per_sample
+
+    def generate_images(
+        noise: tf.Tensor, generator: tf.keras.Model, path=None, show=False
+    ):
+        """
+        Generates images from given noise and saves/plots them as specified.
+        Noise batch should have at least 6 samples.
+
+        :param noise:
+        :param generator:
+        :param path:
+        :param show:
+        :return:
+        """
+        generated_images = generator(noise, training=False)
+        images = [
+            generated_images[i, :, :, 0].numpy()
+            for i in range(generated_images.shape[0])
+        ]
+        upper_display_list = images[0:3]
+        lower_display_list = images[3:6]
         for i in range(3):
             plt.subplot(2, 3, i + 1)
-            plt.title(title[i])
             plt.imshow(upper_display_list[i], cmap=plt.get_cmap("gray"))
             plt.axis("off")
             plt.subplot(2, 3, i + 4)
@@ -272,81 +293,74 @@ if __name__ == "__main__":
         if show:
             plt.show()
 
-    def fit(train_ds, val_ds, train_images, val_images, num_epochs, initial_epoch=0):
-
+    def fit(dataset: SPIEDataset, num_epochs, initial_epoch=0):
+        sample_noise = tf.random.normal(
+            [6, latent_vector_size]
+        )  # used for images plotted
         assert initial_epoch < num_epochs
-        train_images = iter(train_images)
-        val_images = iter(val_images)
         for epoch in range(initial_epoch, num_epochs):
             print("Epoch: {}".format(epoch))
             start_time = time.time()
-            val_input = next(val_images)
-            image_name = str(epoch) + "_val.png"
+
+            image_name = str(epoch) + "_images.png"
             generate_images(
-                encoder,
-                decoder,
-                val_input["imgs"],
-                val_input["days"],
-                os.path.join(EXPERIMENT_FOLDER, "figures", image_name),
-                show=False,
-            )
-            train_input = next(train_images)
-            image_name = str(epoch) + "_train.png"
-            generate_images(
-                encoder,
-                decoder,
-                train_input["imgs"],
-                train_input["days"],
+                sample_noise,
+                generator,
                 path=os.path.join(EXPERIMENT_FOLDER, "figures", image_name),
                 show=False,
             )
 
-            # training
             log_print("Training epoch {}".format(epoch), add_timestamp=True)
-            losses = [[], [], [], []]
-            for n, inputs in train_ds.enumerate():
-                imgs = inputs["imgs"]
-                days = inputs["days"]
-                (
-                    total_reconst_loss,
-                    mid_reconst_loss,
-                    ssim_total,
-                    ssim_missing_reconst,
-                ) = train_step(imgs, days)
-                losses[0].append(total_reconst_loss.numpy())
-                losses[1].append(mid_reconst_loss.numpy())
-                losses[2].append(ssim_total.numpy())
-                losses[3].append(ssim_missing_reconst.numpy())
+            losses = [[], []]
+            counter = 0
+            for images, info, weights in dataset.get_training_images(
+                batch_size=BATCH_SIZE, shuffle=shuffle_training_data
+            ):
+                if counter == n_critic:
+                    counter = 0
+                    gen_loss, disc_loss, loss_per_sample = train_step(
+                        images, weights, train_generator=True, train_discriminator=False
+                    )
+                else:
+                    gen_loss, disc_loss, loss_per_sample = train_step(
+                        images, weights, train_generator=False, train_discriminator=True
+                    )
+
+                    counter += 1
+
+                if example_reweighting:
+                    dataset.update_losses(info, loss_per_sample.numpy())
+
+                losses[0].append(gen_loss.numpy())
+                losses[1].append(disc_loss.numpy())
+
+            if example_reweighting:
+                dataset.update_training_weights()
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
-                tf.summary.scalar("total_reconst_loss", losses[0], step=epoch)
-                tf.summary.scalar("mid_reconst_loss", losses[1], step=epoch)
-                tf.summary.scalar("ssim_total", losses[2], step=epoch)
-                tf.summary.scalar("ssim_missing_reconst", losses[3], step=epoch)
+                tf.summary.scalar("generator_loss", losses[0], step=epoch)
+                tf.summary.scalar("critic_loss", losses[1], step=epoch)
             summary_writer.flush()
 
             # testing
             log_print("Calculating validation losses...")
-            val_losses = [[], [], [], []]
-            for inputs in val_ds:
-                imgs = inputs["imgs"]
-                days = inputs["days"]
-                (
-                    total_reconst_loss,
-                    mid_reconst_loss,
-                    ssim_total,
-                    ssim_missing_reconst,
-                ) = eval_step(imgs, days)
-                val_losses[0].append(total_reconst_loss.numpy())
-                val_losses[1].append(mid_reconst_loss.numpy())
-                val_losses[2].append(ssim_total.numpy())
-                val_losses[3].append(ssim_missing_reconst.numpy())
+            val_losses = [[], []]
+            sil = 0
+            for images, info, weights in dataset.get_val_images(
+                batch_size=BATCH_SIZE, shuffle=False
+            ):
+                sil += 1
+                gen_loss, disc_loss, loss_per_sample = eval_step(images)
+
+                val_losses[0].append(gen_loss.numpy())
+                val_losses[1].append(disc_loss.numpy())
+
             val_losses = [statistics.mean(x) for x in val_losses]
             with summary_writer.as_default():
-                tf.summary.scalar("val_total_reconst_loss", val_losses[0], step=epoch)
-                tf.summary.scalar("val_mid_reconst_loss", val_losses[1], step=epoch)
-                tf.summary.scalar("val_ssim_total", val_losses[2], step=epoch)
-                tf.summary.scalar("val_ssim_missing_reconst", val_losses[3], step=epoch)
+                tf.summary.scalar(
+                    "validation_generator_loss", val_losses[0], step=epoch
+                )
+                tf.summary.scalar("validation_critic_loss", val_losses[1], step=epoch)
             summary_writer.flush()
 
             end_time = time.time()
@@ -355,14 +369,10 @@ if __name__ == "__main__":
                     epoch, round(end_time - start_time)
                 )
             )
-            log_print("     total_reconst_loss       {:1.4f}".format(losses[0]))
-            log_print("     mid_reconst_loss         {:1.4f}".format(losses[1]))
-            log_print("     ssim_total               {:1.4f}".format(losses[2]))
-            log_print("     ssim_missing_reconst     {:1.4f}".format(losses[3]))
-            log_print("     val_total_reconst_loss   {:1.4f}".format(val_losses[0]))
-            log_print("     val_mid_reconst_loss     {:1.4f}".format(val_losses[1]))
-            log_print("     val_ssim_total           {:1.4f}".format(val_losses[2]))
-            log_print("     val_ssim_missing_reconst {:1.4f}".format(val_losses[3]))
+            log_print("     generator loss       {:1.4f}".format(losses[0]))
+            log_print("     discriminator loss   {:1.4f}".format(losses[1]))
+            log_print("     val generator loss   {:1.4f}".format(val_losses[0]))
+            log_print("     val critic loss      {:1.4f}".format(val_losses[1]))
 
             checkpoint.epoch.assign(epoch)
             if int(checkpoint.epoch) % CHECKPOINT_SAVE_INTERVAL == 0:
@@ -381,48 +391,23 @@ if __name__ == "__main__":
         log_print("Batch size: " + str(BATCH_SIZE))
         log_print("Epochs: " + str(EPOCHS))
         log_print("Restore from checkpoint: " + str(RESTORE_FROM_CHECKPOINT))
-        log_print("Chechpoint save interval: " + str(CHECKPOINT_SAVE_INTERVAL))
+        log_print("Checkpoint save interval: " + str(CHECKPOINT_SAVE_INTERVAL))
         log_print("Max number of checkpoints kept: " + str(MAX_TO_KEEP))
         log_print("Runtime: " + str(RUNTIME))
         log_print("Use TPU: " + str(USE_TPU))
-        log_print("Prefetch buffer size: " + str(PREFETCH_BUFFER_SIZE))
-        log_print("Shuffle buffer size: " + str(SHUFFLE_BUFFER_SIZE))
-        log_print(
-            "Input shape: ( "
-            + str(INPUT_HEIGHT)
-            + ", "
-            + str(INPUT_WIDTH)
-            + ", "
-            + str(INPUT_CHANNEL)
-            + " )"
-        )
-        log_print("Clip by norm: " + str(CLIP_BY_NORM))
-        log_print("Clip by value: " + str(CLIP_BY_VALUE))
+        log_print("Input shape: ( " + str(64) + ", " + str(64) + ", " + str(1) + " )")
         log_print(" ")
         log_print("Initial epoch: {}".format(initial_epoch))
-
-        train_images, val_images, _ = get_triplets_adni_15t_dataset(
-            folder_name="training_data_15T_192x160_4slices", machine=RUNTIME
-        )
-        train_images = train_images.batch(1)
-        val_images = val_images.batch(1)
+        log_print("----------------")
+        log_print("n_critic: {}".format(n_critic))
+        log_print("Example re-weighting: {}".format(example_reweighting))
+        log_print("Conv kernel size: {}".format(kernel_size))
+        log_print("Critic variable clip value: {}".format(CLIP_DISC_WEIGHT))
+        log_print("Learning rate: {}".format(LEARNING_RATE))
 
         fit(
-            train_ds,
-            val_ds,
-            train_images,
-            val_images,
-            EPOCHS,
-            initial_epoch=initial_epoch,
+            spie_dataset, EPOCHS, initial_epoch=initial_epoch,
         )
-        # fit(
-        #     train_ds.take(5),
-        #     val_ds.take(2),
-        #     train_images,
-        #     val_images,
-        #     EPOCHS,
-        #     initial_epoch=initial_epoch,
-        # )
 
         # save last checkpoint
         save_path = manager.save()
