@@ -195,7 +195,9 @@ if __name__ == "__main__":
     cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=False)
 
     def generator_loss(fake_output, weights):
-        ce = binary_cross_entropy_with_logits(tf.ones_like(fake_output), fake_output)
+        ce = binary_cross_entropy_with_logits(
+            tf.ones_like(fake_output), fake_output, from_logits=False
+        )
         weights = tf.convert_to_tensor(weights, dtype=ce.dtype)
         gen_loss = tf.reduce_mean(ce * weights)
 
@@ -203,10 +205,10 @@ if __name__ == "__main__":
 
     def discriminator_loss(real_output, fake_output, weights):
         real_loss = binary_cross_entropy_with_logits(
-            tf.ones_like(real_output), real_output
+            tf.ones_like(real_output), real_output, from_logits=False
         )
         fake_loss = binary_cross_entropy_with_logits(
-            tf.zeros_like(fake_output), fake_output
+            tf.zeros_like(fake_output), fake_output, from_logits=False
         )
         loss_per_sample = real_loss + fake_loss
         weights = tf.convert_to_tensor(weights, dtype=loss_per_sample.dtype)

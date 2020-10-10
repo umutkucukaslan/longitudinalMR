@@ -147,7 +147,11 @@ def vae_loss(x_real, x_fake, latent_mean, latent_std, normal_std=1):
     return total_loss, reconst_loss, kl_loss
 
 
-def binary_cross_entropy_with_logits(y_true, y_pred):
+def logit(x):
+    return tf.math.log(x - (1 - x))
+
+
+def binary_cross_entropy_with_logits(y_true, y_pred, from_logits=True):
     """
     Computes binary cross entropy loss with logits for each sample in the batch
 
@@ -155,6 +159,9 @@ def binary_cross_entropy_with_logits(y_true, y_pred):
     :param y_pred: [B, ...]
     :return: [B]
     """
+    if not from_logits:
+        y_true = logit(y_true)
+        y_pred = logit(y_pred)
     y_true = tf.reshape(y_true, [y_true.shape[0], -1])
     y_pred = tf.reshape(y_pred, [y_true.shape[0], -1])
     ce = tf.nn.sigmoid_cross_entropy_with_logits(
