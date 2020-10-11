@@ -44,7 +44,7 @@ class SPIEDataset:
             self.train.append(
                 Example(
                     id=i,
-                    weight=1 / len(train_ims),
+                    weight=1,
                     loss=0.0,
                     path=train_ims[i],
                     preprocess_fn=preprocess_fn,
@@ -55,7 +55,7 @@ class SPIEDataset:
             self.val.append(
                 Example(
                     id=i,
-                    weight=1 / len(val_ims),
+                    weight=1,
                     loss=0.0,
                     path=val_ims[i],
                     preprocess_fn=preprocess_fn,
@@ -66,7 +66,7 @@ class SPIEDataset:
             self.test.append(
                 Example(
                     id=i,
-                    weight=1 / len(test_ims),
+                    weight=1,
                     loss=0.0,
                     path=test_ims[i],
                     preprocess_fn=preprocess_fn,
@@ -124,23 +124,31 @@ class SPIEDataset:
             example.loss = losses[i]
             print("used this for loss update: ", losses[i])
 
-    def _update_weights(self, split="train"):
+    def _update_weights(self, split="train", logic="paper"):
         data = self._get_correct_data(split)
-        mean_loss = 0.0
-        for example in data:
-            mean_loss += example.get_weighted_loss()
-        alpha = 0.5 * log((1 - mean_loss) / (mean_loss + 1e-9))
-        for example in data:
-            example.update(alpha)
+        if logic == "paper":
+            mean_loss = 0.0
+            for example in data:
+                mean_loss += example.get_weighted_loss()
+            alpha = 0.5 * log((1 - mean_loss) / (mean_loss + 1e-9))
+            for example in data:
+                example.update(alpha)
+        elif logic == "simple":
+            mean_loss = 0.0
+            for example in data:
+                mean_loss += example.loss
+            mean_loss = mean_loss / len(data)
+            for example in data:
+                example.weight = example.loss / mean_loss
 
-    def update_training_weights(self):
-        self._update_weights("train")
+    def update_training_weights(self, logic="paper"):
+        self._update_weights("train", logic=logic)
 
-    def update_val_weights(self):
-        self._update_weights("val")
+    def update_val_weights(self, logic="paper"):
+        self._update_weights("val", logic=logic)
 
-    def update_test_weights(self):
-        self._update_weights("test")
+    def update_test_weights(self, logic="paper"):
+        self._update_weights("test", logic=logic)
 
 
 def get_spie_dataset(

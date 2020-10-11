@@ -332,16 +332,14 @@ if __name__ == "__main__":
                     counter += 1
 
                 if example_reweighting:
-                    print("updating losses")
                     dataset.update_losses(info, loss_per_sample.numpy())
-                    print("updated losse")
 
                 losses[0].append(gen_loss.numpy())
                 losses[1].append(disc_loss.numpy())
 
             if example_reweighting:
                 print("UPDATING WEIGHTS")
-                dataset.update_training_weights()
+                dataset.update_training_weights(logic="simple")
                 print("UPDATED WEIGHTS")
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
