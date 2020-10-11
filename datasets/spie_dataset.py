@@ -139,7 +139,6 @@ class SPIEDataset:
             mean_loss = mean_loss / len(data)
             for example in data:
                 example.weight = example.loss / mean_loss
-                print("new weight: ", example.weight)
 
     def update_training_weights(self, logic="paper"):
         self._update_weights("train", logic=logic)

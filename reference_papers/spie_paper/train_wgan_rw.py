@@ -338,9 +338,7 @@ if __name__ == "__main__":
                 losses[1].append(disc_loss.numpy())
 
             if example_reweighting:
-                print("UPDATING WEIGHTS")
                 dataset.update_training_weights(logic="simple")
-                print("UPDATED WEIGHTS")
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
                 tf.summary.scalar("generator_loss", losses[0], step=epoch)
