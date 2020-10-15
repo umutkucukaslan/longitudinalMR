@@ -10,24 +10,34 @@ class Patient:
         self.patient_type = patient_type
         self.folder_path = patient_folder_path
         self.patient_name = os.path.basename(patient_folder_path)
-        self.scan_folders = sorted(glob.glob(os.path.join(patient_folder_path, '*')))
+        self.scan_folders = sorted(glob.glob(os.path.join(patient_folder_path, "*")))
 
-        self.dates_str = [os.path.basename(x) for x in self.scan_folders]  # dates of scans in str format
-        dates = [datetime.strptime(x, '%Y-%m-%d_%H_%M_%S') for x in self.dates_str]
+        self.dates_str = [
+            os.path.basename(x) for x in self.scan_folders
+        ]  # dates of scans in str format
+        dates = [datetime.strptime(x, "%Y-%m-%d_%H_%M_%S") for x in self.dates_str]
         relative_dates = [x - dates[0] for x in dates]
-        self.relative_dates = [x.days for x in relative_dates]  # scan ages in days relative to first scan
+        self.relative_dates = [
+            x.days for x in relative_dates
+        ]  # scan ages in days relative to first scan
 
         images = []
         for scan_folder in self.scan_folders:
-            slice_paths = sorted(glob.glob(os.path.join(scan_folder, 'slice_*.png')))
+            slice_paths = sorted(glob.glob(os.path.join(scan_folder, "*slice_*.png")))
             images.append(slice_paths)
 
         self.images = list(zip(*images))
         self.n_slices = len(self.images)
         self.n_scans = len(dates)
-        self.scan_pairs = [(i, j) for i in range(self.n_scans) for j in range(i + 1, self.n_scans)]
-        self.scan_triplets = [(i, j, k) for i in range(self.n_scans) for j in range(i + 1, self.n_scans) for k in
-                              range(j + 1, self.n_scans)]
+        self.scan_pairs = [
+            (i, j) for i in range(self.n_scans) for j in range(i + 1, self.n_scans)
+        ]
+        self.scan_triplets = [
+            (i, j, k)
+            for i in range(self.n_scans)
+            for j in range(i + 1, self.n_scans)
+            for k in range(j + 1, self.n_scans)
+        ]
 
     def get_image(self, slice_index=None, scan_index=None):
         """
@@ -54,8 +64,11 @@ class Patient:
 
         :return:
         """
-        all_images = [self.images[index_slice][index_scan] for index_slice in range(self.n_slices) for index_scan in
-                      range(self.n_scans)]
+        all_images = [
+            self.images[index_slice][index_scan]
+            for index_slice in range(self.n_slices)
+            for index_scan in range(self.n_scans)
+        ]
 
         return all_images
 
@@ -89,8 +102,13 @@ class Patient:
         assert slice_index < self.n_slices
         assert scan_pair in self.scan_pairs
 
-        return (self.images[slice_index][scan_pair[0]], self.images[slice_index][scan_pair[1]]), self.relative_dates[
-            scan_pair[1]] - self.relative_dates[scan_pair[0]]
+        return (
+            (
+                self.images[slice_index][scan_pair[0]],
+                self.images[slice_index][scan_pair[1]],
+            ),
+            self.relative_dates[scan_pair[1]] - self.relative_dates[scan_pair[0]],
+        )
 
     def get_all_image_pairs(self):
         """
@@ -137,13 +155,17 @@ class Patient:
         assert scan_triplet in self.scan_triplets
 
         return (
-                   self.images[slice_index][scan_triplet[0]],
-                   self.images[slice_index][scan_triplet[1]],
-                   self.images[slice_index][scan_triplet[2]]
-               ), (self.relative_dates[scan_triplet[0]],
-                   self.relative_dates[scan_triplet[1]],
-                   self.relative_dates[scan_triplet[2]]
-               )
+            (
+                self.images[slice_index][scan_triplet[0]],
+                self.images[slice_index][scan_triplet[1]],
+                self.images[slice_index][scan_triplet[2]],
+            ),
+            (
+                self.relative_dates[scan_triplet[0]],
+                self.relative_dates[scan_triplet[1]],
+                self.relative_dates[scan_triplet[2]],
+            ),
+        )
 
     def get_all_image_triplets(self, slice_index=None):
         """
@@ -155,10 +177,14 @@ class Patient:
         if slice_index is None:
             for slice_index in range(self.n_slices):
                 for scan_triplet in self.scan_triplets:
-                    all_image_triplets.append(self.get_image_triplet(slice_index, scan_triplet))
+                    all_image_triplets.append(
+                        self.get_image_triplet(slice_index, scan_triplet)
+                    )
         else:
             for scan_triplet in self.scan_triplets:
-                all_image_triplets.append(self.get_image_triplet(slice_index, scan_triplet))
+                all_image_triplets.append(
+                    self.get_image_triplet(slice_index, scan_triplet)
+                )
         return all_image_triplets
 
     def get_image_triplet_generator(self, repeat=False):
@@ -203,24 +229,39 @@ class LongitudinalDataset:
     def __init__(self, data_dir):
         self.data_dir = data_dir
 
-        ad_patient_folder_paths = glob.glob(os.path.join(self.data_dir, 'ad_*'))
-        mci_patient_folder_paths = glob.glob(os.path.join(self.data_dir, 'mci_*'))
-        cn_patient_folder_paths = glob.glob(os.path.join(self.data_dir, 'cn_*'))
+        ad_patient_folder_paths = glob.glob(os.path.join(self.data_dir, "ad_*"))
+        mci_patient_folder_paths = glob.glob(os.path.join(self.data_dir, "mci_*"))
+        cn_patient_folder_paths = glob.glob(os.path.join(self.data_dir, "cn_*"))
 
-        self.ad_patients = [Patient(patient_folder_path=x, patient_type='ad') for x in ad_patient_folder_paths]
-        self.mci_patients = [Patient(patient_folder_path=x, patient_type='ad') for x in mci_patient_folder_paths]
-        self.cn_patients = [Patient(patient_folder_path=x, patient_type='ad') for x in cn_patient_folder_paths]
+        self.ad_patients = [
+            Patient(patient_folder_path=x, patient_type="ad")
+            for x in ad_patient_folder_paths
+        ]
+        self.mci_patients = [
+            Patient(patient_folder_path=x, patient_type="ad")
+            for x in mci_patient_folder_paths
+        ]
+        self.cn_patients = [
+            Patient(patient_folder_path=x, patient_type="ad")
+            for x in cn_patient_folder_paths
+        ]
 
     def get_image(self, patient_type=None, slice_index=None, scan_index=None):
         if patient_type is None:
-            patient_type = random.choice(['ad', 'mci', 'cn'])
+            patient_type = random.choice(["ad", "mci", "cn"])
 
-        if patient_type == 'ad':
-            return random.choice(self.ad_patients).get_image(slice_index=slice_index, scan_index=scan_index)
-        elif patient_type == 'mci':
-            return random.choice(self.mci_patients).get_image(slice_index=slice_index, scan_index=scan_index)
-        elif patient_type == 'cn':
-            return random.choice(self.cn_patients).get_image(slice_index=slice_index, scan_index=scan_index)
+        if patient_type == "ad":
+            return random.choice(self.ad_patients).get_image(
+                slice_index=slice_index, scan_index=scan_index
+            )
+        elif patient_type == "mci":
+            return random.choice(self.mci_patients).get_image(
+                slice_index=slice_index, scan_index=scan_index
+            )
+        elif patient_type == "cn":
+            return random.choice(self.cn_patients).get_image(
+                slice_index=slice_index, scan_index=scan_index
+            )
 
     def get_ad_images(self):
         all_images = []
@@ -261,19 +302,25 @@ class LongitudinalDataset:
     def get_ad_image_triplets(self, slice_index=None):
         all_image_triplets = []
         for patient in self.ad_patients:
-            all_image_triplets += patient.get_all_image_triplets(slice_index=slice_index)
+            all_image_triplets += patient.get_all_image_triplets(
+                slice_index=slice_index
+            )
         return all_image_triplets
 
     def get_mci_image_triplets(self, slice_index=None):
         all_image_triplets = []
         for patient in self.mci_patients:
-            all_image_triplets += patient.get_all_image_triplets(slice_index=slice_index)
+            all_image_triplets += patient.get_all_image_triplets(
+                slice_index=slice_index
+            )
         return all_image_triplets
 
     def get_cn_image_triplets(self, slice_index=None):
         all_image_triplets = []
         for patient in self.cn_patients:
-            all_image_triplets += patient.get_all_image_triplets(slice_index=slice_index)
+            all_image_triplets += patient.get_all_image_triplets(
+                slice_index=slice_index
+            )
         return all_image_triplets
 
     def get_ad_longitudinal_sequences(self):
@@ -295,11 +342,15 @@ class LongitudinalDataset:
         return all_sequences
 
     def get_all_longitudinal_sequences(self):
-        return self.get_ad_longitudinal_sequences() + self.get_mci_longitudinal_sequences() + self.get_cn_longitudinal_sequences()
+        return (
+            self.get_ad_longitudinal_sequences()
+            + self.get_mci_longitudinal_sequences()
+            + self.get_cn_longitudinal_sequences()
+        )
 
 
 if __name__ == "__main__":
-    data_dir = '/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data/test'
+    data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/processed_data/test"
     longitudinal_dataset = LongitudinalDataset(data_dir=data_dir)
 
     # print(longitudinal_dataset.get_ad_image_pairs())
