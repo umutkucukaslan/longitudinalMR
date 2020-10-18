@@ -9,7 +9,8 @@ from reference_papers.spie_paper.image_encoding import encode_image
 from reference_papers.spie_paper.train_wgan_rw import get_generator_discriminator
 
 
-data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/train"
+# data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/train"
+data_dir = "/content/training_data_15T_192x160_4slices/train"
 longitudinal_dataset = LongitudinalDataset(data_dir=data_dir)
 
 paths = (
