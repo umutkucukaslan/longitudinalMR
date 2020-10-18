@@ -46,6 +46,9 @@ for p in paths:
     write_to = os.path.join(target_dir, patient_name, scan_name)
     image_name = os.path.basename(p)
 
+    print("write to: ", write_to)
+    exit()
+
     if not os.path.exists(write_to):
         os.makedirs(write_to)
 
