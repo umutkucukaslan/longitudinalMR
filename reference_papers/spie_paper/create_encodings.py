@@ -72,6 +72,6 @@ for p in paths:
     np.save(encoding_path, encoding)
     end_time = time.time()
     print(f"Processed scan {c} at {p} in {end_time - start_time} seconds")
-    print((patient_name, scan_name), "  ", p)
+    # print((patient_name, scan_name), "  ", p)
 
     c += 1
