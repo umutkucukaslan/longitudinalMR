@@ -6,12 +6,10 @@ import numpy as np
 
 from datasets.longitudinal_dataset import LongitudinalDataset
 from reference_papers.spie_paper.image_encoding import encode_image
-from reference_papers.spie_paper.train_wgan2 import get_generator_discriminator
+from reference_papers.spie_paper.train_wgan_rw import get_generator_discriminator
 
 
-data_dir = (
-    "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/val"
-)
+data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/train"
 longitudinal_dataset = LongitudinalDataset(data_dir=data_dir)
 
 paths = (
@@ -25,7 +23,7 @@ paths = sorted(paths)
 generator, discriminator, experiment_folder = get_generator_discriminator()
 del discriminator
 
-target_dir = os.path.join(experiment_folder, "val")
+target_dir = os.path.join(experiment_folder, "train")
 
 
 def imtoshow(image):
@@ -49,6 +47,7 @@ for p in paths:
     res_image_path = os.path.join(write_to, "res_" + image_name)
     if os.path.exists(res_image_path):
         print("Already exists")
+        c += 1
         continue
 
     image = cv2.imread(p)
