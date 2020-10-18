@@ -46,10 +46,11 @@ for p in paths:
     image_name = os.path.basename(p)
 
     print("write to: ", write_to)
-    exit()
+    print("os.path.exists(write_to): ".os.path.exists(write_to))
 
     if not os.path.exists(write_to):
         os.makedirs(write_to)
+    exit()
 
     res_image_path = os.path.join(write_to, "res_" + image_name)
     if os.path.exists(res_image_path):
