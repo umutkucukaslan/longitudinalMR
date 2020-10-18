@@ -28,7 +28,6 @@ target_dir = os.path.join(experiment_folder, "train")
 
 print("TARGET DIR: ", target_dir)
 print("Experiment folder: ", experiment_folder)
-exit()
 
 
 def imtoshow(image):
