@@ -36,7 +36,7 @@ n_critic = 5
 # use example re-weighting when computing total loss
 example_reweighting = False
 
-RUNTIME = "none"  # cloud, colab or none
+RUNTIME = "colab"  # cloud, colab or none
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = "ref_spie_wgan_2"
 
