@@ -26,7 +26,8 @@ from reference_papers.spie_paper.train_wgan_rw import get_generator_discriminato
 generator, discriminator, experiment_folder = get_generator_discriminator()
 del discriminator, generator
 
-encodings_dir = os.path.join(experiment_folder, "val")
+encodings_dir = os.path.join(experiment_folder, "train")
+# print('encodings dir: ', encodings_dir)
 
 all_ad_encodings = glob.glob(os.path.join(encodings_dir, "ad_*", "*", "*.npy"))
 all_cn_encodings = glob.glob(os.path.join(encodings_dir, "cn_*", "*", "*.npy"))
