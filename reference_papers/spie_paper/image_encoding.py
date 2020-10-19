@@ -7,6 +7,18 @@ def loss(y, y2):
 
 
 def encode_image(generator, image, num_steps=1000, verbose=False):
+    """
+    Given an input image and generator network, this function finds the optimal input vector of the generator
+    that results in the given image at the output of the generator.
+
+    It is used to generate latent vectors corresponding to an image for a given generator network.
+
+    :param generator: Generator model: latent vector -> image
+    :param image: 4D image (batch_size=1, height, width, channels)
+    :param num_steps: 1000 epochs usually gives good results
+    :param verbose: Prints loss at each step
+    :return: Latent vector of shape (1, latent_size)
+    """
     latent_vector_size = generator.input.shape[1]
     x = tf.Variable(np.random.random((1, latent_vector_size)))
 
