@@ -9,8 +9,18 @@ from reference_papers.spie_paper.image_encoding import encode_image
 from reference_papers.spie_paper.train_wgan_rw import get_generator_discriminator
 
 
-# data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/train"
-data_dir = "/content/training_data_15T_192x160_4slices/train"
+if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
+    MACHINE = "macbook"
+elif __file__.startswith("/content/thesis"):
+    MACHINE = "colab"
+else:
+    raise ValueError("Unknown machine type")
+
+if MACHINE == "macbook":
+    data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/train"
+elif MACHINE == "colab":
+    data_dir = "/content/training_data_15T_192x160_4slices/train"
+
 longitudinal_dataset = LongitudinalDataset(data_dir=data_dir)
 
 paths = (

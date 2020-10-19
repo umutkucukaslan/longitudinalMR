@@ -8,9 +8,17 @@ from datasets.longitudinal_dataset import LongitudinalDataset
 from reference_papers.spie_paper.image_encoding import encode_image
 from reference_papers.spie_paper.train_wgan2 import get_generator_discriminator
 
+if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
+    MACHINE = "macbook"
+elif __file__.startswith("/content/thesis"):
+    MACHINE = "colab"
+else:
+    raise ValueError("Unknown machine type")
 
-# data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/train"
-data_dir = "/content/training_data_15T_192x160_4slices/train"
+if MACHINE == "macbook":
+    data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/train"
+elif MACHINE == "colab":
+    data_dir = "/content/training_data_15T_192x160_4slices/train"
 longitudinal_dataset = LongitudinalDataset(data_dir=data_dir)
 
 paths = (
