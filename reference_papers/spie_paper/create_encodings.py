@@ -9,6 +9,11 @@ from reference_papers.spie_paper.image_encoding import encode_image
 from reference_papers.spie_paper.train_wgan_rw import get_generator_discriminator
 
 
+"""
+Finds latent encoding and corresponding image for each image in the given dataset for a given generator network.
+It saves them in a folder in experiment_folder such as experiment_folder/train or experiment_folder/val
+"""
+
 if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
     MACHINE = "macbook"
 elif __file__.startswith("/content/thesis"):
