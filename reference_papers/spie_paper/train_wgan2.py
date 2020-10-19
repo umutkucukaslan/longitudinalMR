@@ -36,7 +36,13 @@ n_critic = 5
 # use example re-weighting when computing total loss
 example_reweighting = False
 
-RUNTIME = "colab"  # cloud, colab or none
+if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
+    RUNTIME = "none"
+elif __file__.startswith("/content/thesis"):
+    RUNTIME = "colab"
+else:
+    raise ValueError("Unknown machine type, no machine RUNTIME")
+# RUNTIME = "colab"  # cloud, colab or none
 RESTORE_FROM_CHECKPOINT = True
 EXPERIMENT_NAME = "ref_spie_wgan_2"
 

@@ -25,12 +25,14 @@ from datasets.longitudinal_dataset import LongitudinalDataset
 
 print("FILE: ")
 print(__file__)
+
 if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
-    print("macbook")
+    RUNTIME = "none"
 elif __file__.startswith("/content/thesis"):
-    print("colab")
+    RUNTIME = "colab"
 else:
-    print("runtime unknown")
+    raise ValueError("Unknown machine type, no machine RUNTIME")
+
 print("---")
 exit()
 
