@@ -7,8 +7,8 @@ import numpy as np
 
 from datasets.longitudinal_dataset import LongitudinalDataset
 
-# from reference_papers.spie_paper.image_encoding import encode_image
-# from reference_papers.spie_paper.train_wgan_rw import get_generator_discriminator
+from reference_papers.spie_paper.image_encoding import encode_image
+from reference_papers.spie_paper.train_wgan_rw import get_generator_discriminator
 
 
 # data_dir = "/Users/umutkucukaslan/Desktop/thesis/dataset/training_data_15T_192x160_4slices/train"
@@ -22,19 +22,6 @@ from datasets.longitudinal_dataset import LongitudinalDataset
 # )
 #
 # paths = sorted(paths)
-
-print("FILE: ")
-print(__file__)
-
-if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
-    RUNTIME = "none"
-elif __file__.startswith("/content/thesis"):
-    RUNTIME = "colab"
-else:
-    raise ValueError("Unknown machine type, no machine RUNTIME")
-
-print("---")
-exit()
 
 generator, discriminator, experiment_folder = get_generator_discriminator()
 del discriminator, generator
