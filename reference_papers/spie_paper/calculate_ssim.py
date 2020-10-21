@@ -16,6 +16,9 @@ def imtoshow(image):
     return image[0, :, :, 0]
 
 
+print("something here")
+print("something here")
+
 generator, discriminator, experiment_folder = get_generator_discriminator()
 del discriminator
 
