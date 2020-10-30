@@ -179,6 +179,7 @@ if __name__ == "__main__":
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
         os.makedirs(os.path.join(args.save_dir, "checkpoint"))
+        os.makedirs(os.path.join(args.save_dir, "sample"))
 
     model_single = Glow(
         3, args.n_flow, args.n_block, affine=args.affine, conv_lu=not args.no_lu
