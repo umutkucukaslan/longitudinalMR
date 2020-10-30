@@ -177,6 +177,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(args)
     if not os.path.exists(args.save_dir):
+        print("making dirs")
         os.makedirs(args.save_dir)
         os.makedirs(os.path.join(args.save_dir, "checkpoint"))
         os.makedirs(os.path.join(args.save_dir, "sample"))
