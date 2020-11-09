@@ -109,7 +109,7 @@ def train(args, model, optimizer, initial_iter=0):
         z_new = torch.randn(args.n_sample, *z) * args.temp
         z_sample.append(z_new.to(device))
 
-    with tqdm(range(args.iter)) as pbar:
+    with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
             image, _ = next(dataset)
             image = image.to(device)
