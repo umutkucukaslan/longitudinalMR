@@ -1,3 +1,4 @@
+import glob
 import os
 
 from tqdm import tqdm
@@ -98,7 +99,7 @@ def calc_loss(log_p, logdet, image_size, n_bins):
     )
 
 
-def train(args, model, optimizer):
+def train(args, model, optimizer, initial_iter=0):
     dataset = iter(sample_data(args.path, args.batch, args.img_size))
     n_bins = 2.0 ** args.n_bits
 
@@ -191,4 +192,22 @@ if __name__ == "__main__":
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    train(args, model, optimizer)
+    # load trained model to resume training
+    model_paths = sorted(
+        glob.glob(os.path.join(args.save_dir, "checkpoint/model_*.pt"))
+    )
+    if model_paths:
+        model_path = model_paths[-1]
+        optim_path = sorted(
+            glob.glob(os.path.join(args.save_dir, "checkpoint/optim_*.pt"))
+        )[-1]
+        loaded_state_dict = torch.load(model_path)
+        model.load_state_dict(loaded_state_dict)
+        loaded_state_dict = torch.load(optim_path)
+        optimizer.load_state_dict(loaded_state_dict)
+        initial_iter = int(model_path[-9:-3])
+        print(f"loaded trained model to resume training from iter {initial_iter}")
+    else:
+        initial_iter = 0
+
+    train(args, model, optimizer, initial_iter=initial_iter)
