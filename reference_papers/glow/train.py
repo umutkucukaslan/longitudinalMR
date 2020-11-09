@@ -206,7 +206,9 @@ if __name__ == "__main__":
         loaded_state_dict = torch.load(optim_path)
         optimizer.load_state_dict(loaded_state_dict)
         initial_iter = int(model_path[-9:-3])
-        print(f"loaded trained model to resume training from iter {initial_iter}")
+        print(
+            f"loaded trained model from {model_path} to resume training from iter {initial_iter}"
+        )
     else:
         initial_iter = 0
 
