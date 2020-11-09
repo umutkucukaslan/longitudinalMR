@@ -111,6 +111,7 @@ def train(args, model, optimizer, initial_iter=0):
 
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
+            print(f"i: {i}")
             image, _ = next(dataset)
             image = image.to(device)
 
