@@ -173,11 +173,15 @@ def create_future_z_sample(days, z1_list, z2_list):
     return z_new
 
 
-def model_output_to_image(image_tensor):
+def model_output_to_image(image_tensor, logic="experimental"):
     x = image_tensor.numpy()[0]
-    x = x - np.min(x.flatten())
-    x = x / np.max(x.flatten())
-    x = x * 255.0
+    # print(f"min: {np.min(x.flatten())}, max: {np.max(x.flatten())}")
+    if logic == "experimental":
+        x = x - np.min(x.flatten())
+        x = x / np.max(x.flatten())
+        x = x * 255.0
+    else:
+        x = np.clip(x * 127 + 128.0, 0, 255)
     x = x.transpose((1, 2, 0)).astype(np.uint8)
     return x
 
@@ -206,7 +210,9 @@ def calculate_ssim_for_triplets(triplet_list, model, type="missing"):
                 _, _, z2 = model(images[2][0])
                 z_missing = create_middle_z_sample(days=days, z1_list=z0, z2_list=z2)
                 im_missing = model.reverse(z_missing, reconstruct=True)
-            im_missing = model_output_to_image(im_missing)  # tensor to uint8 image
+            im_missing = model_output_to_image(
+                im_missing, logic="new"
+            )  # tensor to uint8 image
             im_original = images[1][1]
             ssim = structural_similarity(
                 im1=cv2.cvtColor(im_original, cv2.COLOR_RGB2GRAY),
@@ -214,6 +220,9 @@ def calculate_ssim_for_triplets(triplet_list, model, type="missing"):
                 data_range=255,
             )
             ssims.append(ssim)
+            # cv2.imshow("original", cv2.cvtColor(im_original, cv2.COLOR_RGB2GRAY))
+            # cv2.imshow("missing", cv2.cvtColor(im_missing, cv2.COLOR_RGB2GRAY))
+            # cv2.waitKey(5)
             print(f"{counter} / {len(triplet_list)} : {ssim}")
         elif type == "future":
             with torch.no_grad():
@@ -221,7 +230,9 @@ def calculate_ssim_for_triplets(triplet_list, model, type="missing"):
                 _, _, z1 = model(images[1][0])
                 z_missing = create_future_z_sample(days=days, z1_list=z0, z2_list=z1)
                 im_missing = model.reverse(z_missing, reconstruct=True)
-            im_missing = model_output_to_image(im_missing)  # tensor to uint8 image
+            im_missing = model_output_to_image(
+                im_missing, logic="new"
+            )  # tensor to uint8 image
             im_original = images[2][1]
             ssim = structural_similarity(
                 im1=cv2.cvtColor(im_original, cv2.COLOR_RGB2GRAY),
@@ -241,32 +252,32 @@ def print_ssims(ssims, title=""):
     print("---")
 
 
-# ad_ssims = calculate_ssim_for_triplets(
-#     longitudinal_dataset.get_ad_image_triplets(), model_single, type="missing"
-# )
-# print_ssims(ad_ssims, "AD")
-# cn_ssims = calculate_ssim_for_triplets(
-#     longitudinal_dataset.get_cn_image_triplets(), model_single, type="missing"
-# )
-# print_ssims(cn_ssims, "CN")
-# mci_ssims = calculate_ssim_for_triplets(
-#     longitudinal_dataset.get_mci_image_triplets(), model_single, type="missing"
-# )
-# print_ssims(mci_ssims, "MCI")
-
-
 ad_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_ad_image_triplets(), model_single, type="future"
+    longitudinal_dataset.get_ad_image_triplets(), model_single, type="missing"
 )
 print_ssims(ad_ssims, "AD")
 cn_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_cn_image_triplets(), model_single, type="future"
+    longitudinal_dataset.get_cn_image_triplets(), model_single, type="missing"
 )
 print_ssims(cn_ssims, "CN")
 mci_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_mci_image_triplets(), model_single, type="future"
+    longitudinal_dataset.get_mci_image_triplets(), model_single, type="missing"
 )
 print_ssims(mci_ssims, "MCI")
+
+
+# ad_ssims = calculate_ssim_for_triplets(
+#     longitudinal_dataset.get_ad_image_triplets(), model_single, type="future"
+# )
+# print_ssims(ad_ssims, "AD")
+# cn_ssims = calculate_ssim_for_triplets(
+#     longitudinal_dataset.get_cn_image_triplets(), model_single, type="future"
+# )
+# print_ssims(cn_ssims, "CN")
+# mci_ssims = calculate_ssim_for_triplets(
+#     longitudinal_dataset.get_mci_image_triplets(), model_single, type="future"
+# )
+# print_ssims(mci_ssims, "MCI")
 
 
 # for data in longitudinal_dataset.get_ad_image_triplets():
