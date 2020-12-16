@@ -56,6 +56,48 @@ class ActNorm(tf.keras.layers.Layer):
         return config
 
 
+class Invertible1x1Conv(tf.keras.layers.Layer):
+    def __init__(self, in_channels, **kwargs):
+        """
+        1x1 conv layer with random rotation matrix initialization
+        :param in_channels:
+        :param kwargs:
+        """
+        super(Invertible1x1Conv, self).__init__(**kwargs)
+        self.in_channels = in_channels
+        W = tf.random.normal((in_channels, in_channels), dtype=tf.float32)
+        q, r = tf.linalg.qr(W)
+        self.kernel = tf.Variable(initial_value=q, trainable=True, name="1x1_kernel")
+
+    def call(self, inputs, training=None, **kwargs):
+        if training:
+            height = tf.cast(tf.shape(inputs)[1], dtype=tf.float32)
+            width = tf.cast(tf.shape(inputs)[2], dtype=tf.float32)
+            logdet = height * width * tf.linalg.slogdet(self.kernel)[1]
+            self.add_loss(logdet)
+        return tf.nn.conv2d(
+            input=inputs,
+            filters=tf.reshape(self.kernel, (1, 1, self.in_channels, self.in_channels)),
+            strides=1,
+            padding="SAME",
+        )
+
+    def reverse(self, inputs):
+        inv_kernel = tf.linalg.inv(self.kernel)
+        return tf.nn.conv2d(
+            input=inputs,
+            filters=tf.reshape(inv_kernel, (1, 1, self.in_channels, self.in_channels)),
+            strides=1,
+            padding="SAME",
+        )
+
+
+class Invertible1x1ConvLU(tf.keras.layers.Layer):
+    def __init__(self, in_channels, **kwargs):
+        super().__init__(**kwargs)
+        self.in_channels = in_channels
+
+
 class MyModel(tf.keras.Model):
     def __init__(self, inp_shape, **kwargs):
         super(MyModel, self).__init__(**kwargs)
@@ -83,6 +125,16 @@ class MyModel(tf.keras.Model):
 
 
 if __name__ == "__main__":
+    l = Invertible1x1Conv(in_channels=3)
+    input_tensor = tf.convert_to_tensor(np.random.rand(1, 2, 2, 3), dtype=tf.float32)
+    outputs = l(input_tensor, training=True)
+    print("losses collected: ", l.losses)
+    print("input tensor: ", input_tensor)
+    print("outputs: ", outputs)
+    back = l.reverse(outputs)
+    print("back: ", back)
+
+    exit()
 
     save_dir = "/Users/umutkucukaslan/Desktop/sil"
     if not os.path.isdir(save_dir):
