@@ -2,23 +2,18 @@ import os
 
 import tensorflow as tf
 import numpy as np
+from scipy.linalg import lu as lu_decomposition
 
 
 class ActNorm(tf.keras.layers.Layer):
-    def __init__(self, inp_shape, **kwargs):
+    def __init__(self, in_channels, **kwargs):
         super(ActNorm, self).__init__(**kwargs)
-        self.inp_shape = inp_shape
+        self.in_channels = in_channels
         self.scale = self.add_weight(
-            shape=(1, 1, inp_shape[-1]),
-            trainable=True,
-            initializer="ones",
-            name="scale",
+            shape=(1, 1, in_channels), trainable=True, initializer="ones", name="scale",
         )
         self.bias = self.add_weight(
-            shape=(1, 1, inp_shape[-1]),
-            trainable=True,
-            initializer="zeros",
-            name="bias",
+            shape=(1, 1, in_channels), trainable=True, initializer="zeros", name="bias",
         )
         self.initialized = False
 
@@ -52,7 +47,7 @@ class ActNorm(tf.keras.layers.Layer):
 
     def get_config(self):
         config = super(ActNorm, self).get_config()
-        config.update({"inp_shape": self.inp_shape})
+        config.update({"in_channels": self.in_channels})
         return config
 
 
@@ -91,11 +86,221 @@ class Invertible1x1Conv(tf.keras.layers.Layer):
             padding="SAME",
         )
 
+    def get_config(self):
+        config = super(Invertible1x1Conv, self).get_config()
+        config.update({"in_channels": self.in_channels})
+        return config
+
 
 class Invertible1x1ConvLU(tf.keras.layers.Layer):
     def __init__(self, in_channels, **kwargs):
         super().__init__(**kwargs)
         self.in_channels = in_channels
+        W = np.random.rand(in_channels, in_channels)
+        q, r = np.linalg.qr(W)
+        p, l, u = lu_decomposition(q)
+        u_mask = np.triu(np.ones_like(u)) - np.eye(in_channels)
+        l_mask = np.transpose(u_mask)
+        s = np.diag(u)
+        self.s = tf.Variable(
+            initial_value=s, dtype=tf.float32, name="s", trainable=True
+        )
+        self.u = tf.Variable(
+            initial_value=u, dtype=tf.float32, name="u", trainable=True
+        )
+        self.l = tf.Variable(
+            initial_value=l, dtype=tf.float32, name="l", trainable=True
+        )
+        self.u_mask = tf.Variable(
+            initial_value=u_mask, dtype=tf.float32, name="u_mask", trainable=False
+        )
+        self.l_mask = tf.Variable(
+            initial_value=l_mask, dtype=tf.float32, name="l_mask", trainable=False
+        )
+        self.p = tf.Variable(
+            initial_value=p, dtype=tf.float32, name="p", trainable=False
+        )
+        self.eye = tf.Variable(
+            initial_value=np.eye(in_channels),
+            dtype=tf.float32,
+            name="eye",
+            trainable=False,
+        )
+
+    def calc_kernel(self):
+        return (
+            self.p
+            @ (self.l * self.l_mask + self.eye)
+            @ (self.u * self.u_mask + tf.linalg.diag(self.s))
+        )
+
+    def call(self, inputs, training=None, **kwargs):
+        kernel = self.calc_kernel()
+        if training:
+            height = tf.cast(tf.shape(inputs)[1], dtype=tf.float32)
+            width = tf.cast(tf.shape(inputs)[2], dtype=tf.float32)
+            logdet = height * width * tf.reduce_sum(tf.math.log(tf.abs(self.s)))
+            self.add_loss(logdet)
+        return tf.nn.conv2d(
+            input=inputs,
+            filters=tf.reshape(kernel, (1, 1, self.in_channels, self.in_channels)),
+            strides=1,
+            padding="SAME",
+        )
+
+    def reverse(self, inputs):
+        kernel = self.calc_kernel()
+        inv_kernel = tf.linalg.inv(kernel)
+        return tf.nn.conv2d(
+            input=inputs,
+            filters=tf.reshape(inv_kernel, (1, 1, self.in_channels, self.in_channels)),
+            strides=1,
+            padding="SAME",
+        )
+
+    def get_config(self):
+        config = super(Invertible1x1ConvLU, self).get_config()
+        config.update({"in_channels": self.in_channels})
+        return config
+
+
+class AffineCouling(tf.keras.layers.Layer):
+    def __init__(self, num_filters, in_channels, affine=True, **kwargs):
+        super(AffineCouling, self).__init__(**kwargs)
+        self.affine = affine
+        self.num_filters = num_filters
+        self.in_channels = in_channels
+        self.net = tf.keras.models.Sequential(
+            [
+                tf.keras.layers.Conv2D(
+                    filters=num_filters,
+                    kernel_size=3,
+                    padding="same",
+                    activation="relu",
+                    use_bias=True,
+                    kernel_initializer="random_normal",
+                ),
+                tf.keras.layers.Conv2D(
+                    filters=num_filters,
+                    kernel_size=1,
+                    padding="same",
+                    activation="relu",
+                    use_bias=True,
+                    kernel_initializer="random_normal",
+                ),
+                tf.keras.layers.Conv2D(
+                    filters=in_channels // 2,
+                    kernel_size=3,
+                    padding="same",
+                    activation=None,
+                    use_bias=True,
+                    kernel_initializer="zeros",
+                    bias_initializer="zeros",
+                ),
+            ]
+        )
+
+    def call(self, inputs, training=None):
+        x_a, x_b = tf.split(inputs, num_or_size_splits=2, axis=-1)
+        if self.affine:
+            logs, t = tf.split(
+                self.net(x_b, training=training), num_or_size_splits=2, axis=-1
+            )
+            s = tf.exp(logs)
+            y_a = s * x_a + t
+            y_b = x_b
+            y = tf.concat([y_a, y_b], axis=-1)
+            if training:
+                self.add_loss(tf.reduce_sum(logs))
+            return y
+        else:
+            logs, t = tf.split(
+                self.net(x_b, training=training), num_or_size_splits=2, axis=-1
+            )
+            y_a = x_a + t
+            y_b = x_b
+            y = tf.concat([y_a, y_b], axis=-1)
+            return y
+
+    def reverse(self, inputs):
+        x_a, x_b = tf.split(inputs, num_or_size_splits=2, axis=-1)
+        if self.affine:
+            logs, t = tf.split(
+                self.net(x_b, training=False), num_or_size_splits=2, axis=-1
+            )
+            s = tf.exp(logs)
+            y_a = (x_a - t) / s
+            y_b = x_b
+            y = tf.concat([y_a, y_b], axis=-1)
+            return y
+        else:
+            logs, t = tf.split(
+                self.net(x_b, training=False), num_or_size_splits=2, axis=-1
+            )
+            y_a = x_a - t
+            y_b = x_b
+            y = tf.concat([y_a, y_b], axis=-1)
+            return y
+
+    def get_config(self):
+        config = super(AffineCouling, self).get_config()
+        config.update(
+            {
+                "num_filters": self.num_filters,
+                "in_channels": self.in_channels,
+                "affine": self.affine,
+            }
+        )
+        return config
+
+
+class Flow(tf.keras.layers.Layer):
+    def __init__(
+        self, in_channels, num_filters=512, use_lu_decom=True, affine=True, **kwargs
+    ):
+        super(Flow, self).__init__(**kwargs)
+        self.affine = affine
+        self.use_lu_decom = use_lu_decom
+        self.num_filters = num_filters
+        self.in_channels = in_channels
+        self.actnorm = ActNorm(in_channels)
+        if use_lu_decom:
+            self.invertible_conv = Invertible1x1ConvLU(in_channels)
+        else:
+            self.invertible_conv = Invertible1x1Conv(in_channels)
+        self.affine_coupling = AffineCouling(
+            num_filters=num_filters, in_channels=in_channels, affine=affine
+        )
+
+    def call(self, inputs, training=None, **kwargs):
+        x = self.actnorm(inputs, training=training)
+        x = self.invertible_conv(x, training=training)
+        x = self.affine_coupling(x, training=training)
+        return x
+
+    def reverse(self, inputs):
+        x = self.affine_coupling.reverse(inputs)
+        x = self.invertible_conv.reverse(x)
+        x = self.actnorm.reverse(x)
+        return x
+
+    def get_config(self):
+        config = super(Flow, self).get_config()
+        config.update(
+            {
+                "in_channels": self.in_channels,
+                "num_filters": self.num_filters,
+                "use_lu_decom": self.use_lu_decom,
+                "affine": self.affine,
+            }
+        )
+
+
+class FlowBlock(tf.keras.layers.Layer):
+    def __init__(self, in_channels, num_flows, **kwargs):
+        super(FlowBlock, self).__init__(**kwargs)
+        self.in_channels = in_channels
+        self.num_flows = num_flows
 
 
 class MyModel(tf.keras.Model):
@@ -125,7 +330,21 @@ class MyModel(tf.keras.Model):
 
 
 if __name__ == "__main__":
-    l = Invertible1x1Conv(in_channels=3)
+
+    flow = Flow(in_channels=4, num_filters=512, use_lu_decom=True, affine=True)
+
+    input_tensor = tf.convert_to_tensor(np.random.rand(1, 2, 2, 4), dtype=tf.float32)
+    outputs = flow(input_tensor)
+    print("inputs: ", input_tensor)
+    print("output: ", outputs)
+    back = flow.reverse(outputs)
+    print("back: ", back)
+
+    exit()
+    l = Invertible1x1ConvLU(in_channels=3)
+    print("")
+
+    exit()
     input_tensor = tf.convert_to_tensor(np.random.rand(1, 2, 2, 3), dtype=tf.float32)
     outputs = l(input_tensor, training=True)
     print("losses collected: ", l.losses)
