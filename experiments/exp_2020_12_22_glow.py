@@ -147,6 +147,10 @@ if RESTORE_FROM_CHECKPOINT:
     checkpoint.restore(manager.latest_checkpoint)
 
 if manager.latest_checkpoint:
+    input_tensor = tf.convert_to_tensor(
+        np.random.rand(1, INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL), dtype=tf.float32
+    )
+    _ = model(input_tensor)
     log_print("Restored from {}".format(manager.latest_checkpoint))
     initialized_from_scratch = False
 else:
