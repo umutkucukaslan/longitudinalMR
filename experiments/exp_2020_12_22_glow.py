@@ -316,8 +316,12 @@ if __name__ == "__main__":
                     )
                 )
             print(
-                "Epoch {} completed in {} seconds".format(
-                    epoch, round(end_time - start_time)
+                "Epoch {} completed in {} seconds. Loss: {}, likelihood: {}, val_likelihood: {}".format(
+                    epoch,
+                    round(end_time - start_time),
+                    losses[0],
+                    losses[1],
+                    val_losses[0],
                 )
             )
 
