@@ -207,7 +207,8 @@ if __name__ == "__main__":
         with tf.GradientTape() as gen_tape:
             z_list = model(image_batch, training=True)
             likelihood = sum(model.losses) / BATCH_SIZE
-            loss = -likelihood
+            loss = -1.0 * likelihood
+            print("loss: ", loss.numpy())
 
         grads = gen_tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
