@@ -172,3 +172,76 @@ def get_triplets_adni_15t_dataset(
     )
 
     return train_ds, val_ds, test_ds
+
+
+def get_images_adni_15t_dataset(
+    folder_name="training_data_15T_192x160_4slices",
+    machine="none",
+    target_shape=None,
+    channels=1,
+):
+    if machine == "colab":
+        data_dir = os.path.join("/content", folder_name)
+    elif machine == "cloud":
+        data_dir = os.path.join("/home/umutkucukaslan/data", folder_name)
+    else:
+        data_dir = os.path.join(
+            "/Users/umutkucukaslan/Desktop/thesis/dataset", folder_name
+        )
+    train_data_dir = os.path.join(data_dir, "train")
+    val_data_dir = os.path.join(data_dir, "val")
+    test_data_dir = os.path.join(data_dir, "test")
+
+    train_long = LongitudinalDataset(data_dir=train_data_dir)
+    val_long = LongitudinalDataset(data_dir=val_data_dir)
+    test_long = LongitudinalDataset(data_dir=test_data_dir)
+
+    train_images = (
+        train_long.get_ad_images()
+        + train_long.get_mci_images()
+        + train_long.get_cn_images()
+    )
+    val_images = (
+        val_long.get_ad_images() + val_long.get_mci_images() + val_long.get_cn_images()
+    )
+    test_images = (
+        test_long.get_ad_images()
+        + test_long.get_mci_images()
+        + test_long.get_cn_images()
+    )
+
+    train_list_ds = tf.data.Dataset.from_tensor_slices(train_images)
+    val_list_ds = tf.data.Dataset.from_tensor_slices(val_images)
+    test_list_ds = tf.data.Dataset.from_tensor_slices(test_images)
+
+    def decode_img(img, num_channel=1):
+        img = tf.io.decode_png(img, channels=num_channel)
+        img = tf.cast(img, tf.float32)
+        img = img / 256.0
+        return img
+
+    def augment_images(img):
+        img = tf.image.random_brightness(img, max_delta=0.2)
+        img = tf.image.random_contrast(img, lower=0.9, upper=1.1)
+        return img
+
+    def process_image_path(image_path):
+        img = tf.io.read_file(image_path)
+        img = decode_img(img, num_channel=channels)
+        if target_shape:
+            img = tf.image.resize(img, target_shape)
+        # img = augment_images(img)
+        return img
+
+    train_ds = train_list_ds.map(
+        process_image_path, num_parallel_calls=tf.data.experimental.AUTOTUNE
+    )
+
+    val_ds = val_list_ds.map(
+        process_image_path, num_parallel_calls=tf.data.experimental.AUTOTUNE
+    )
+    test_ds = test_list_ds.map(
+        process_image_path, num_parallel_calls=tf.data.experimental.AUTOTUNE
+    )
+
+    return train_ds, val_ds, test_ds

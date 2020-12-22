@@ -189,7 +189,7 @@ class AffineCouling(tf.keras.layers.Layer):
                     kernel_initializer="random_normal",
                 ),
                 tf.keras.layers.Conv2D(
-                    filters=in_channels // 2,
+                    filters=in_channels,
                     kernel_size=3,
                     padding="same",
                     activation=None,
@@ -294,59 +294,367 @@ class Flow(tf.keras.layers.Layer):
                 "affine": self.affine,
             }
         )
+        return config
 
 
-class FlowBlock(tf.keras.layers.Layer):
-    def __init__(self, in_channels, num_flows, **kwargs):
-        super(FlowBlock, self).__init__(**kwargs)
+def gaussian_log_p(z, mean, log_sd):
+    # compute prior probability given mean and log std of gaussian with sample
+    return (
+        -0.5 * tf.math.log(2 * np.pi)
+        - log_sd
+        - 0.5 * tf.pow(z - mean, 2) / tf.exp(2 * log_sd)
+    )
+
+
+class Block(tf.keras.layers.Layer):
+    def __init__(
+        self,
+        in_channels,
+        num_flows,
+        num_filters=512,
+        use_lu_decom=True,
+        affine=True,
+        split=True,
+        **kwargs,
+    ):
+        super(Block, self).__init__(**kwargs)
         self.in_channels = in_channels
         self.num_flows = num_flows
+        self.squeeze_dim = in_channels * 4
+        self.num_filters = num_filters
+        self.use_lu_decom = use_lu_decom
+        self.affine = affine
+        self.split = split
+        self.flows = [
+            Flow(
+                in_channels=self.squeeze_dim,
+                num_filters=num_filters,
+                use_lu_decom=use_lu_decom,
+                affine=affine,
+            )
+            for _ in range(num_flows)
+        ]
+        if split:
+            self.prior = tf.keras.layers.Conv2D(
+                filters=self.squeeze_dim,
+                kernel_size=3,
+                padding="same",
+                use_bias=True,
+                activation=None,
+                kernel_initializer="zeros",
+                bias_initializer="zeros",
+            )
+            self.out_channels = self.squeeze_dim // 2
+        else:
+            self.prior = tf.keras.layers.Conv2D(
+                filters=self.squeeze_dim * 2,
+                kernel_size=3,
+                padding="same",
+                use_bias=True,
+                activation=None,
+                kernel_initializer="zeros",
+                bias_initializer="zeros",
+            )
+            self.out_channels = self.squeeze_dim
+            self.out_shape = None
 
+    def build(self, input_shape):
+        self.out_shape = [input_shape[1] // 2, input_shape[2] // 2, self.out_channels]
 
-class MyModel(tf.keras.Model):
-    def __init__(self, inp_shape, **kwargs):
-        super(MyModel, self).__init__(**kwargs)
-        self.inp_shape = inp_shape
-        self.actnormlayers = [ActNorm(inp_shape=inp_shape) for x in range(3)]
-        self.const = tf.Variable(
-            initial_value=5, dtype=tf.float32, trainable=False, name="model_const"
-        )
+    def call(self, inputs, training=None):
+        batch_size, height, width, channels = tf.shape(inputs).numpy()
+        x = tf.reshape(inputs, [batch_size, height // 2, 2, width // 2, 2, channels])
+        x = tf.transpose(x, [0, 1, 3, 2, 4, 5])
+        x = tf.reshape(x, [batch_size, height // 2, width // 2, channels * 4])
+        for flow in self.flows:
+            x = flow(x, training=training)
+        if self.split:
+            out, new_z = tf.split(x, num_or_size_splits=2, axis=-1)
+            if training:
+                mean, log_sd = tf.split(
+                    self.prior(out, training=training), num_or_size_splits=2, axis=-1
+                )
+                log_p = gaussian_log_p(new_z, mean, log_sd)
+                self.add_loss(tf.reduce_sum(log_p))
+        else:
+            new_z = x
+            out = x
+            if training:
+                mean, log_sd = tf.split(
+                    self.prior(tf.zeros_like(new_z), training=training),
+                    num_or_size_splits=2,
+                    axis=-1,
+                )
+                log_p = gaussian_log_p(new_z, mean, log_sd)
+                self.add_loss(tf.reduce_sum(log_p))
+        return out, new_z
 
-    def call(self, inputs, training=None, mask=None):
-        x = inputs
-        for l in self.actnormlayers:
-            x = l(x, training=training)
+    def reverse(self, inputs, z=None, reconstruct=True):
+        if self.split:
+            if z is None:
+                raise ValueError("z cannot be None when split is True")
+            if not reconstruct:
+                z = self.sample_z_vector(inputs, z)
+            x = tf.concat([inputs, z], axis=-1)
+        else:
+            x = inputs
+        for flow in reversed(self.flows):
+            x = flow.reverse(x)
+        batch_size, height, width, channels = tf.shape(x).numpy()
+        x = tf.reshape(x, [batch_size, height, width, 2, 2, channels // 4])
+        x = tf.transpose(x, [0, 1, 3, 2, 4, 5])
+        x = tf.reshape(x, [batch_size, height * 2, width * 2, channels // 4])
         return x
 
-    @tf.function
-    def reverse(self, inputs):
-        x = inputs
-        for l in reversed(self.actnormlayers):
-            x = l.reverse(x)
-        return x
+    def get_apriori_distribution(self, inputs):
+        """
+        Computes mean/stf of the learned a priori gaussian distribution for given inputs
+        :param inputs: tensor corresponding to the block's output
+        :return: mean, log_sd
+        """
+        if self.split:
+            prior_input = inputs
+        else:
+            prior_input = tf.zeros_like(inputs)
+        mean, log_sd = tf.split(self.prior(prior_input), num_or_size_splits=2, axis=-1)
+        return mean, log_sd
+
+    def sample_z_vector(self, inputs, random_sample=None):
+        """
+        Random sample from the learned a priori gaussian distribution for given inputs
+        :param inputs: tensor corresponding to the block's output
+        :param random_sample: random variable from N(0,1) to generate sample, if None generates itself
+        :return: random sample that has the same shape as inputs
+        """
+        if random_sample is None:
+            random_sample = tf.random.normal(
+                tf.shape(inputs), mean=0, stddev=1, dtype=tf.float32
+            )
+        mean, log_sd = self.get_apriori_distribution(inputs)
+        return mean + tf.exp(log_sd) * random_sample
 
     def get_config(self):
-        return {"inp_shape": self.inp_shape}
+        config = super(Block, self).get_config()
+        config.update(
+            {
+                "in_channels": self.in_channels,
+                "num_flows": self.num_flows,
+                "num_filters": self.num_filters,
+                "use_lu_decom": self.use_lu_decom,
+                "affine": self.affine,
+                "split": self.split,
+            }
+        )
+        return config
+
+
+class Glow(tf.keras.Model):
+    def __init__(
+        self,
+        in_channels,
+        num_blocks,
+        num_flows,
+        num_filters=512,
+        use_lu_decom=True,
+        affine=True,
+        split=True,
+        **kwargs,
+    ):
+        super(Glow, self).__init__(**kwargs)
+        self.in_channels = in_channels
+        self.num_blocks = num_blocks
+        self.num_flows = num_flows
+        self.num_filters = num_filters
+        self.use_lu_decom = use_lu_decom
+        self.affine = affine
+        self.split = split
+        self.blocks = []
+        self.block_in_channels = []
+        self.block_output_shapes = []
+        for i in range(num_blocks - 1):
+            block = Block(
+                in_channels=in_channels,
+                num_flows=num_flows,
+                num_filters=num_filters,
+                use_lu_decom=use_lu_decom,
+                affine=affine,
+                split=split,
+            )
+            self.blocks.append(block)
+            self.block_in_channels.append(in_channels)
+            in_channels = in_channels * 2 if split else in_channels * 4
+        block = Block(
+            in_channels=in_channels,
+            num_flows=num_flows,
+            num_filters=num_filters,
+            use_lu_decom=use_lu_decom,
+            affine=affine,
+            split=False,
+        )
+        self.blocks.append(block)
+        self.block_in_channels.append(in_channels)
+
+    def call(self, inputs, training=None, mask=None):
+        out = inputs
+        z_outs = []
+        for block in self.blocks:
+            out, new_z = block(out, training=training)
+            if block.split:
+                z_outs.append(new_z)
+        z_outs.append(out)
+        return z_outs
+
+    def reverse(self, z_list, reconstruct=True):
+        out = z_list[-1]
+        idx = -2
+        for block in reversed(self.blocks):
+            z = None
+            if block.split:
+                z = z_list[idx]
+                idx -= 1
+            out = block.reverse(inputs=out, z=z, reconstruct=reconstruct)
+        return out
+
+    def flatten_z_list(self, z_list):
+        flattened = []
+        for z in z_list:
+            flattened.append(tf.reshape(z, [tf.shape(z)[0], -1]))
+        flattened = tf.concat(flattened, axis=-1)
+        return flattened
+
+    def unflatten_z_list(self, z):
+        z_shapes = [block.out_shape for block in self.blocks if block.split] + [
+            self.blocks[-1].out_shape
+        ]
+        z_sizes = [s[0] * s[1] * s[2] for s in z_shapes]
+        batch_size, z_size = tf.shape(z).numpy()
+        assert z_size == sum(z_sizes)
+        z_list = tf.split(z, num_or_size_splits=z_sizes, axis=-1)
+        for i in range(len(z_list)):
+            z_list[i] = tf.reshape(z_list[i], [batch_size] + z_shapes[i])
+        return z_list
+
+    def get_config(self):
+        return {
+            "in_channels": self.in_channels,
+            "num_blocks": self.num_blocks,
+            "num_flows": self.num_flows,
+            "num_filters": self.num_filters,
+            "use_lu_decom": self.use_lu_decom,
+            "affine": self.affine,
+            "split": self.split,
+        }
 
 
 if __name__ == "__main__":
+    # block = Block(
+    #     in_channels=1,
+    #     num_flows=32,
+    #     num_filters=512,
+    #     use_lu_decom=True,
+    #     affine=True,
+    #     split=True,
+    # )
+    # input_tensor = tf.convert_to_tensor(np.random.rand(1, 4, 4, 1), dtype=tf.float32)
+    # outputs = block(input_tensor, training=True)
+    # out, z = block(input_tensor, training=True)
+    # back = block.reverse(out, z)
+    # N = 25
+    # for i in range(N):
+    #     input_tensor = tf.convert_to_tensor(
+    #         np.random.rand(1, 4, 4, 1), dtype=tf.float32
+    #     )
+    #     out, z = block(input_tensor, training=True)
+    #     back = block.reverse(out, z)
+    #     inp = input_tensor.numpy()
+    #     b = back.numpy()
+    #     d = np.abs(inp - b)
+    #     rtol = np.max((d / inp).flatten())
+    #     atol = np.max(d.flatten())
+    #
+    #     print(
+    #         f"block reverse equality: {np.allclose(input_tensor.numpy(), back.numpy(), rtol=1e-4, atol=1e-8)}    ->  "
+    #         f"atol: {atol}    rtol:{rtol}"
+    #     )
+    # print("input: ", input_tensor)
+    # print("back: ", back)
+    # print("output: ", out)
+    # print("z: ", z)
+    # exit()
 
-    flow = Flow(in_channels=4, num_filters=512, use_lu_decom=True, affine=True)
+    glow = Glow(
+        in_channels=1,
+        num_blocks=4,
+        num_flows=32,
+        num_filters=512,
+        use_lu_decom=True,
+        affine=True,
+        split=True,
+    )
 
-    input_tensor = tf.convert_to_tensor(np.random.rand(1, 2, 2, 4), dtype=tf.float32)
-    outputs = flow(input_tensor)
+    input_tensor = tf.convert_to_tensor(
+        np.random.rand(1, 64, 64, 1) * 127 + 127, dtype=tf.float32
+    )
+    outputs = glow(input_tensor, training=True)
+    outputs = glow(input_tensor, training=True)
+    print("losses collected: ")
+    for l in glow.losses:
+        print(l)
+    print("")
     print("inputs: ", input_tensor)
     print("output: ", outputs)
-    back = flow.reverse(outputs)
-    print("back: ", back)
+    print("flattened output: ", glow.flatten_z_list(outputs))
+    reshaped_outputs = glow.unflatten_z_list(glow.flatten_z_list(outputs))
+    print("reshaped outputs: ", reshaped_outputs)
+    for o, r in zip(outputs, reshaped_outputs):
+        print(
+            f"is flattening equal: {np.allclose(o.numpy(), r.numpy())}  shape: {tf.shape(o).numpy()}"
+        )
+    print("")
+    print("input - reverse(output) equality")
+    back = glow.reverse(outputs)
+    print(
+        f"is equal: {np.allclose(input_tensor.numpy(), back.numpy())}  ->  shape of back: {tf.shape(back).numpy()}"
+    )
+    inp = input_tensor.numpy()
+    b = back.numpy()
+    d = np.abs(inp - b)
+    rtol = np.max((d / inp).flatten())
+    atol = np.max(d.flatten())
+    print(f"rtol: {rtol} ,    atol: {atol}")
+    print("")
+    print(f"trainable vars: {len(glow.trainable_variables)}")
+    # for var in glow.trainable_variables:
+    #     print(var)
+    print(f"non-trainable vars: {len(glow.non_trainable_variables)}")
+    # for var in glow.non_trainable_variables:
+    #     print(var)
+    # print("z new: ", z_new)
+    # glow.summary()
+    # save_dir = "/Users/umutkucukaslan/Desktop/sil"
+    # if not os.path.isdir(save_dir):
+    #     os.makedirs(save_dir)
+    # model_path = os.path.join(save_dir, "my_model_disco")
+    # model_plot_path = os.path.join(model_path, "plot.jpg")
+    # tf.keras.utils.plot_model(
+    #     glow, to_file=model_plot_path, show_shapes=True, expand_nested=True, dpi=150
+    # )
+    # print("model plot done")
+    # back = block.reverse(outputs, z_new)
+    # print("back: ", back)
+    # print("is equal: ", np.allclose(input_tensor.numpy(), back.numpy()))
+    # sample = block.sample_z_vector(outputs)
+    # print("sample: ", sample)
 
     exit()
+    flow = Flow(in_channels=4, num_filters=512, use_lu_decom=True, affine=True)
     l = Invertible1x1ConvLU(in_channels=3)
     print("")
 
     exit()
     input_tensor = tf.convert_to_tensor(np.random.rand(1, 2, 2, 3), dtype=tf.float32)
     outputs = l(input_tensor, training=True)
+
     print("losses collected: ", l.losses)
     print("input tensor: ", input_tensor)
     print("outputs: ", outputs)
