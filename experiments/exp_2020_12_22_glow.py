@@ -316,6 +316,7 @@ if __name__ == "__main__":
                         int(checkpoint.epoch), save_path
                     )
                 )
+            print(f"completed epoch {epoch}")
 
     try:
         log_print("Fitting to the data set", add_timestamp=True)
