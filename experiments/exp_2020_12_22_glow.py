@@ -5,6 +5,7 @@ import statistics
 import sys
 import time
 
+import cv2
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,7 +56,7 @@ INPUT_HEIGHT = 64
 INPUT_WIDTH = 64
 INPUT_CHANNEL = 1
 
-BATCH_SIZE = 256
+BATCH_SIZE = 5
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
@@ -146,8 +147,10 @@ if RESTORE_FROM_CHECKPOINT:
 
 if manager.latest_checkpoint:
     log_print("Restored from {}".format(manager.latest_checkpoint))
+    initialized_from_scratch = False
 else:
     log_print("Initializing from scratch.")
+    initialized_from_scratch = True
 
 initial_epoch = checkpoint.epoch.numpy() + 1
 
@@ -190,6 +193,7 @@ if __name__ == "__main__":
         ]
         return tf.reduce_mean([ssims[0], ssims[2]]), tf.reduce_mean(ssims[1])
 
+    # @tf.function
     def train_step(image_batch):
         image_batch = image_batch * 255
 
@@ -219,12 +223,13 @@ if __name__ == "__main__":
         images = tf.split(images, num_images, axis=0)
         images = [x.numpy().squeeze() for x in images]
         images = [np.clip(x + 0.5, 0, 1) for x in images]
-        for i in range(num_images):
-            plt.subplot(2, num_images // 2, i + 1)
-            plt.imshow(images[i], cmap=plt.get_cmap("gray"))
-            plt.axis("off")
+        images = [images[: num_images // 2], images[num_images // 2 :]]
+        images = [np.hstack(x) for x in images]
+        images = np.vstack(images)
+        images = np.clip(images * 255, 0, 255).astype(np.uint8)
         if path is not None:
-            plt.savefig(path)
+            cv2.imwrite(path, images)
+            # plt.savefig(path)
         if show:
             plt.show()
 
@@ -234,12 +239,12 @@ if __name__ == "__main__":
 
         # z_list sample for training progress images
         z_shapes = []
-        in_shape = INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL
+        in_shape = [INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL]
         for block in model.blocks:
             if block.split:
-                in_shape = [in_shape[0] * 2, in_shape[1] * 2, in_shape[2] * 2]
+                in_shape = [in_shape[0] // 2, in_shape[1] // 2, in_shape[2] * 2]
             else:
-                in_shape = [in_shape[0] * 2, in_shape[1] * 2, in_shape[2] * 4]
+                in_shape = [in_shape[0] // 2, in_shape[1] // 2, in_shape[2] * 4]
             z_shapes.append(in_shape)
         z_sample_list = [
             tf.random.normal(
@@ -247,6 +252,12 @@ if __name__ == "__main__":
             )
             for s in z_shapes
         ]
+
+        # initialize act norm layer if model is not restored
+        if initialized_from_scratch:
+            for image_batch in train_ds:
+                outputs = model(image_batch)
+                break
 
         for epoch in range(initial_epoch, num_epochs):
             print("Epoch: {}".format(epoch))
@@ -264,7 +275,7 @@ if __name__ == "__main__":
             for n, image_batch in train_ds.enumerate():
                 loss, likelihood = train_step(image_batch)
                 losses[0].append(loss.numpy())
-                losses[0].append(likelihood.numpy())
+                losses[1].append(likelihood.numpy())
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
                 tf.summary.scalar("loss", losses[0], step=epoch)
@@ -280,9 +291,6 @@ if __name__ == "__main__":
             val_losses = [statistics.mean(x) for x in val_losses]
             with summary_writer.as_default():
                 tf.summary.scalar("val_likelihood", val_losses[0], step=epoch)
-                tf.summary.scalar("val_mid_reconst_loss", val_losses[1], step=epoch)
-                tf.summary.scalar("val_ssim_total", val_losses[2], step=epoch)
-                tf.summary.scalar("val_ssim_missing_reconst", val_losses[3], step=epoch)
             summary_writer.flush()
 
             end_time = time.time()
@@ -329,9 +337,9 @@ if __name__ == "__main__":
         log_print(" ")
         log_print("Initial epoch: {}".format(initial_epoch))
 
-        fit(
-            train_ds, val_ds, num_epochs=EPOCHS, initial_epoch=initial_epoch,
-        )
+        # fit(
+        #     train_ds, val_ds, num_epochs=EPOCHS, initial_epoch=initial_epoch,
+        # )
         fit(
             train_ds.take(5),
             val_ds.take(2),
