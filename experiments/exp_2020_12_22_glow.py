@@ -193,7 +193,7 @@ if __name__ == "__main__":
         ]
         return tf.reduce_mean([ssims[0], ssims[2]]), tf.reduce_mean(ssims[1])
 
-    # @tf.function
+    @tf.function
     def train_step(image_batch):
         image_batch = image_batch * 255
 
