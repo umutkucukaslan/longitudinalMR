@@ -362,34 +362,21 @@ class Block(tf.keras.layers.Layer):
         self.out_shape = [input_shape[1] // 2, input_shape[2] // 2, self.out_channels]
 
     def call(self, inputs, training=None):
-        print("inside call 1")
-        print("inputs: ", inputs)
-        print("inputs shape: ", tf.shape(inputs))
         batch_size, height, width, channels = tf.shape(inputs).numpy()
-        # batch_size, height, width, channels = tf.shape(inputs)
-        print("inside call 2")
         x = tf.reshape(inputs, [batch_size, height // 2, 2, width // 2, 2, channels])
-        print("inside call 3")
         x = tf.transpose(x, [0, 1, 3, 2, 4, 5])
         x = tf.reshape(x, [batch_size, height // 2, width // 2, channels * 4])
-        print("inside call 4")
         for flow in self.flows:
             x = flow(x, training=training)
-        print("inside call 5")
         if self.split:
-            print("inside call 6")
             out, new_z = tf.split(x, num_or_size_splits=2, axis=-1)
-            print("inside call 7")
             if training:
                 mean, log_sd = tf.split(
                     self.prior(out, training=training), num_or_size_splits=2, axis=-1
                 )
-                print("inside call 8")
                 log_p = gaussian_log_p(new_z, mean, log_sd)
                 self.add_loss(tf.reduce_sum(log_p))
-                print("inside call 9")
         else:
-            print("inside call 10")
             new_z = x
             out = x
             if training:
@@ -400,7 +387,6 @@ class Block(tf.keras.layers.Layer):
                 )
                 log_p = gaussian_log_p(new_z, mean, log_sd)
                 self.add_loss(tf.reduce_sum(log_p))
-                print("inside call 11")
         return out, new_z
 
     def reverse(self, inputs, z=None, reconstruct=True):
@@ -511,18 +497,11 @@ class Glow(tf.keras.Model):
     def call(self, inputs, training=None, mask=None):
         out = inputs
         z_outs = []
-        print("starting block calls")
         for block in self.blocks:
-            print("1")
             out, new_z = block(out, training=training)
-            print("2")
             if block.split:
-                print("3 inside if split")
                 z_outs.append(new_z)
-                print("3 inside appended")
-        print("block calls done")
         z_outs.append(out)
-        print("out append")
         return z_outs
 
     def reverse(self, z_list, reconstruct=True):
