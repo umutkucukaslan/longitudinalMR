@@ -194,6 +194,9 @@ if __name__ == "__main__":
         return tf.reduce_mean([ssims[0], ssims[2]]), tf.reduce_mean(ssims[1])
 
     def train_step(image_batch):
+        image_batch = image_batch + tf.random.normal(
+            tf.shape(image_batch), mean=0.5, stddev=1
+        )
         image_batch = image_batch * 255
 
         if N_BITS < 8:
