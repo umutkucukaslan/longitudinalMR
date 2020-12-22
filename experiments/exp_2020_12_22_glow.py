@@ -219,7 +219,9 @@ if __name__ == "__main__":
 
     def eval_step(image_batch):
         z_list = model(image_batch, training=True)
-        likelihood = sum(model.losses) / BATCH_SIZE
+        likelihood = sum(model.losses) / (
+            BATCH_SIZE * INPUT_HEIGHT * INPUT_WIDTH * INPUT_CHANNEL
+        )
         return likelihood
 
     def generate_images(z_list, path=None, show=False):
