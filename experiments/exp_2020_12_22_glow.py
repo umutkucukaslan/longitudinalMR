@@ -211,7 +211,7 @@ if __name__ == "__main__":
                 BATCH_SIZE * INPUT_HEIGHT * INPUT_WIDTH * INPUT_CHANNEL
             )
             loss = -1.0 * likelihood
-            print("loss: ", loss.numpy())
+            # print("loss: ", loss.numpy())
 
         grads = gen_tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
