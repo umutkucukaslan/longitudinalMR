@@ -299,6 +299,11 @@ if __name__ == "__main__":
                     epoch, round(end_time - start_time)
                 )
             )
+            print(
+                "Epoch {} completed in {} seconds".format(
+                    epoch, round(end_time - start_time)
+                )
+            )
             log_print("     loss               {:1.4f}".format(losses[0]))
             log_print("     likelihood         {:1.4f}".format(losses[1]))
             log_print("     val_likelihood     {:1.4f}".format(val_losses[0]))
@@ -337,15 +342,15 @@ if __name__ == "__main__":
         log_print(" ")
         log_print("Initial epoch: {}".format(initial_epoch))
 
-        # fit(
-        #     train_ds, val_ds, num_epochs=EPOCHS, initial_epoch=initial_epoch,
-        # )
         fit(
-            train_ds.take(5),
-            val_ds.take(2),
-            num_epochs=EPOCHS,
-            initial_epoch=initial_epoch,
+            train_ds, val_ds, num_epochs=EPOCHS, initial_epoch=initial_epoch,
         )
+        # fit(
+        #     train_ds.take(5),
+        #     val_ds.take(2),
+        #     num_epochs=EPOCHS,
+        #     initial_epoch=initial_epoch,
+        # )
 
         # save last checkpoint
         save_path = manager.save()
