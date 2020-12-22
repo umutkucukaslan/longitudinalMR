@@ -215,7 +215,7 @@ if __name__ == "__main__":
                 BATCH_SIZE * INPUT_HEIGHT * INPUT_WIDTH * INPUT_CHANNEL
             )
             loss = -1.0 * likelihood
-            # print("loss: ", loss.numpy())
+            print("loss: ", loss.numpy())
 
         grads = gen_tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
@@ -284,15 +284,15 @@ if __name__ == "__main__":
             # training
             log_print("Training epoch {}".format(epoch), add_timestamp=True)
             losses = [[], []]
-            with tqdm() as pbar:
-                for n, image_batch in train_ds.enumerate():
-                    pbar.update(n)
-                    loss, likelihood = train_step(image_batch)
-                    losses[0].append(loss.numpy())
-                    losses[1].append(likelihood.numpy())
-                    pbar.set_description(
-                        f"Loss: {loss.numpy():.5f}; log_likelihood: {likelihood.numpy():.5f}"
-                    )
+            # with tqdm() as pbar:
+            for n, image_batch in train_ds.enumerate():
+                # pbar.update(n)
+                loss, likelihood = train_step(image_batch)
+                losses[0].append(loss.numpy())
+                losses[1].append(likelihood.numpy())
+                # pbar.set_description(
+                #     f"Loss: {loss.numpy():.5f}; log_likelihood: {likelihood.numpy():.5f}"
+                # )
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
                 tf.summary.scalar("loss", losses[0], step=epoch)
