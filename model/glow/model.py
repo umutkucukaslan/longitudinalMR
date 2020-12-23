@@ -39,6 +39,10 @@ class ActNorm(tf.keras.layers.Layer):
             width = tf.cast(tf.shape(inputs)[2], dtype=tf.float32)
             logdet = height * width * tf.reduce_sum(tf.math.log(tf.abs(self.scale)))
             self.add_loss(logdet)
+            if tf.math.is_nan(logdet).numpy():
+                print(
+                    f"NAN in ActNorm layer!  height: {height.numpy()}, width: {width.numpy()}, scale: {self.scale.numpy()}"
+                )
 
         return self.scale * (inputs + self.bias)
 
@@ -70,6 +74,11 @@ class Invertible1x1Conv(tf.keras.layers.Layer):
             width = tf.cast(tf.shape(inputs)[2], dtype=tf.float32)
             logdet = height * width * tf.linalg.slogdet(self.kernel)[1]
             self.add_loss(logdet)
+            if any(tf.math.is_nan(logdet).numpy()):
+                print(
+                    f"NAN in Invertible1x1Conv layer!  height: {height.numpy()}, width: {width.numpy()}, kernel: {self.kernel.numpy()}"
+                )
+
         return tf.nn.conv2d(
             input=inputs,
             filters=tf.reshape(self.kernel, (1, 1, self.in_channels, self.in_channels)),
@@ -141,6 +150,11 @@ class Invertible1x1ConvLU(tf.keras.layers.Layer):
             width = tf.cast(tf.shape(inputs)[2], dtype=tf.float32)
             logdet = height * width * tf.reduce_sum(tf.math.log(tf.abs(self.s)))
             self.add_loss(logdet)
+            if tf.math.is_nan(logdet).numpy():
+                print(
+                    f"NAN in Invertible1x1ConvLU layer!  height: {height.numpy()}, width: {width.numpy()}, scale: {self.s.numpy()}"
+                )
+
         return tf.nn.conv2d(
             input=inputs,
             filters=tf.reshape(kernel, (1, 1, self.in_channels, self.in_channels)),
@@ -212,6 +226,9 @@ class AffineCouling(tf.keras.layers.Layer):
             y = tf.concat([y_a, y_b], axis=-1)
             if training:
                 self.add_loss(tf.reduce_sum(logs))
+                if any(tf.math.is_nan(logs).numpy().flatten()):
+                    print(f"NAN in AffineCoupling layer!  logs: {logs.numpy()}")
+
             return y
         else:
             logs, t = tf.split(
@@ -376,6 +393,9 @@ class Block(tf.keras.layers.Layer):
                 )
                 log_p = gaussian_log_p(new_z, mean, log_sd)
                 self.add_loss(tf.reduce_sum(log_p))
+                if any(tf.math.is_nan(log_p).numpy().flatten()):
+                    print(f"NAN in Block layer!  logp: {log_p.numpy()}")
+
         else:
             new_z = x
             out = x
@@ -387,6 +407,9 @@ class Block(tf.keras.layers.Layer):
                 )
                 log_p = gaussian_log_p(new_z, mean, log_sd)
                 self.add_loss(tf.reduce_sum(log_p))
+                if any(tf.math.is_nan(log_p).numpy().flatten()):
+                    print(f"NAN in Block layer!  height: {log_p.numpy()}")
+
         return out, new_z
 
     def reverse(self, inputs, z=None, reconstruct=True):
@@ -600,6 +623,7 @@ if __name__ == "__main__":
     print("losses collected: ")
     for l in glow.losses:
         print(l)
+    exit()
     print("")
     print("inputs: ", input_tensor)
     print("output: ", outputs)
