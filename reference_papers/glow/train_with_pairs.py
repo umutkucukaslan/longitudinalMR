@@ -122,6 +122,7 @@ def train(args, model, optimizer, initial_iter=0):
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
             pair, _ = next(dataset)
+            print("pair: ", pair)
             pair = [x.to(device) for x in pair]
             pair = [x * 255 for x in pair]
 
