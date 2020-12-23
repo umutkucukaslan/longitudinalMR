@@ -94,6 +94,10 @@ def calc_loss(log_p, logdet, image_size, n_bins):
 
     loss = -log(n_bins) * n_pixel
     loss = loss + logdet + log_p
+    print("log_p shape: ", log_p.shape)
+    print("logdet shape: ", logdet.shape)
+    print("image size: ", image_size)
+    print("n_bins: ", n_bins)
 
     return (
         (-loss / (log(2) * n_pixel)).mean(),
