@@ -122,12 +122,12 @@ def train(args, model, optimizer, initial_iter=0):
 
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
-            batch, x = next(dataset)
+            # batch, x = next(dataset)
+            batch = next(dataset)
 
             # pair = [pair["img1"], pair["img2"]]
             print("------")
             print(batch)
-            print(x)
             print("------")
             print(batch["img1"])
 
