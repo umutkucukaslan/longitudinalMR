@@ -329,7 +329,7 @@ def gaussian_log_p(z, mean, log_sd):
     return (
         -0.5 * tf.math.log(2 * np.pi)
         - log_sd
-        - 0.5 * tf.pow(z - mean, 2) / tf.exp(2 * log_sd)
+        - 0.5 * tf.math.square(z - mean) / tf.exp(2 * log_sd)
     )
 
 
