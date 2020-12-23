@@ -43,6 +43,7 @@ class ActNorm(tf.keras.layers.Layer):
                 print(
                     f"NAN in ActNorm layer!  height: {height.numpy()}, width: {width.numpy()}, scale: {self.scale.numpy()}"
                 )
+                exit()
 
         return self.scale * (inputs + self.bias)
 
@@ -78,6 +79,7 @@ class Invertible1x1Conv(tf.keras.layers.Layer):
                 print(
                     f"NAN in Invertible1x1Conv layer!  height: {height.numpy()}, width: {width.numpy()}, kernel: {self.kernel.numpy()}"
                 )
+                exit()
 
         return tf.nn.conv2d(
             input=inputs,
@@ -154,6 +156,7 @@ class Invertible1x1ConvLU(tf.keras.layers.Layer):
                 print(
                     f"NAN in Invertible1x1ConvLU layer!  height: {height.numpy()}, width: {width.numpy()}, scale: {self.s.numpy()}"
                 )
+                exit()
 
         return tf.nn.conv2d(
             input=inputs,
@@ -228,6 +231,7 @@ class AffineCouling(tf.keras.layers.Layer):
                 self.add_loss(tf.reduce_sum(logs))
                 if any(tf.math.is_nan(logs).numpy().flatten()):
                     print(f"NAN in AffineCoupling layer!  logs: {logs.numpy()}")
+                    exit()
 
             return y
         else:
@@ -395,6 +399,7 @@ class Block(tf.keras.layers.Layer):
                 self.add_loss(tf.reduce_sum(log_p))
                 if any(tf.math.is_nan(log_p).numpy().flatten()):
                     print(f"NAN in Block layer!  logp: {log_p.numpy()}")
+                    exit()
 
         else:
             new_z = x
@@ -409,6 +414,7 @@ class Block(tf.keras.layers.Layer):
                 self.add_loss(tf.reduce_sum(log_p))
                 if any(tf.math.is_nan(log_p).numpy().flatten()):
                     print(f"NAN in Block layer!  height: {log_p.numpy()}")
+                    exit()
 
         return out, new_z
 
