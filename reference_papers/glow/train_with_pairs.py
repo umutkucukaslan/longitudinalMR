@@ -54,7 +54,6 @@ def sample_data(path, batch_size, image_size):
         machine="colab",
         target_shape=[64, 64, 3],
     )
-    print("dataset: ", dataset)
 
     loader = DataLoader(dataset, shuffle=True, batch_size=batch_size, num_workers=4)
     loader = iter(loader)
