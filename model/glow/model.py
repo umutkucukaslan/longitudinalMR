@@ -12,6 +12,9 @@ class ActNorm(tf.keras.layers.Layer):
         self.scale = self.add_weight(
             shape=(1, 1, in_channels), trainable=True, initializer="ones", name="scale",
         )
+        self.scale_sign = self.add_weight(
+            shape=(1, 1, in_channels), trainable=True, initializer="ones", name="scale",
+        )
         self.bias = self.add_weight(
             shape=(1, 1, in_channels), trainable=True, initializer="zeros", name="bias",
         )
@@ -29,6 +32,8 @@ class ActNorm(tf.keras.layers.Layer):
                 shape=(1, 1, inputs.shape[-1]),
             )
         )
+        self.scale_sign.assign(tf.sign(self.scale))
+        self.scale.assign(tf.math.log(tf.abs(self.scale)))
         self.initialized = True
 
     def call(self, inputs, training=False, **kwargs):
@@ -37,7 +42,7 @@ class ActNorm(tf.keras.layers.Layer):
         if training:
             height = tf.cast(tf.shape(inputs)[1], dtype=tf.float32)
             width = tf.cast(tf.shape(inputs)[2], dtype=tf.float32)
-            logdet = height * width * tf.reduce_sum(tf.math.log(tf.abs(self.scale)))
+            logdet = height * width * tf.reduce_sum(self.scale)
             self.add_loss(logdet)
             if tf.math.is_nan(logdet).numpy():
                 print(
@@ -45,10 +50,10 @@ class ActNorm(tf.keras.layers.Layer):
                 )
                 exit()
 
-        return self.scale * (inputs + self.bias)
+        return self.scale_sign * tf.exp(self.scale) * (inputs + self.bias)
 
     def reverse(self, inputs):
-        return inputs / self.scale - self.bias
+        return inputs / (self.scale_sign * tf.exp(self.scale)) - self.bias
 
     def get_config(self):
         config = super(ActNorm, self).get_config()
