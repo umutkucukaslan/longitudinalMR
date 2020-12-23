@@ -128,6 +128,7 @@ def train(args, model, optimizer, initial_iter=0):
             # pair = [pair["img1"], pair["img2"]]
             print("------")
             print(batch["img1"].shape)
+            exit()
             print("------")
             print(batch)
             print(batch["img1"])
