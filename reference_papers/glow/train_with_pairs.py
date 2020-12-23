@@ -123,6 +123,8 @@ def train(args, model, optimizer, initial_iter=0):
         for i in pbar:
             pair, _ = next(dataset)
             # pair = [pair["img1"], pair["img2"]]
+            print("len of pair: ", len(pair))
+            print(pair)
             pair = [x.to(device) for x in pair]
             pair = [x * 255 for x in pair]
 
