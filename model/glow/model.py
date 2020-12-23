@@ -207,6 +207,7 @@ class AffineCouling(tf.keras.layers.Layer):
                     activation="relu",
                     use_bias=True,
                     kernel_initializer="random_normal",
+                    bias_initializer="zeros",
                 ),
                 tf.keras.layers.Conv2D(
                     filters=num_filters,
@@ -215,6 +216,7 @@ class AffineCouling(tf.keras.layers.Layer):
                     activation="relu",
                     use_bias=True,
                     kernel_initializer="random_normal",
+                    bias_initializer="zeros",
                 ),
                 tf.keras.layers.Conv2D(
                     filters=in_channels,
