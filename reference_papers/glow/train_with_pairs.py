@@ -54,6 +54,7 @@ def sample_data(path, batch_size, image_size):
         machine="colab",
         target_shape=[64, 64, 3],
     )
+    print("dataset: ", dataset)
 
     loader = DataLoader(dataset, shuffle=True, batch_size=batch_size, num_workers=4)
     loader = iter(loader)
@@ -121,8 +122,13 @@ def train(args, model, optimizer, initial_iter=0):
 
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
-            batch, _ = next(dataset)
+            batch, x = next(dataset)
+
             # pair = [pair["img1"], pair["img2"]]
+            print("------")
+            print(batch)
+            print(x)
+            print("------")
             print(batch["img1"])
 
             exit()
