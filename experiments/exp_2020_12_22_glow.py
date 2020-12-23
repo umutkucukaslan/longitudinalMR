@@ -61,7 +61,7 @@ BATCH_SIZE = 5
 EPOCHS = 5000
 CHECKPOINT_SAVE_INTERVAL = 5
 MAX_TO_KEEP = 5
-LR = 1e-4
+LR = 1e-5
 
 
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
