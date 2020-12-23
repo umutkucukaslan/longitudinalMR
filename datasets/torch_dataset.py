@@ -59,16 +59,19 @@ def get_images_adni_15t_dataset_torch(
         + train_long.get_mci_image_pairs()
         + train_long.get_cn_image_pairs()
     )
+    train_pairs = [x[0] for x in train_pairs]
     val_pairs = (
         val_long.get_ad_image_pairs()
         + val_long.get_mci_image_pairs()
         + val_long.get_cn_image_pairs()
     )
+    val_pairs = [x[0] for x in val_pairs]
     test_pairs = (
         test_long.get_ad_image_pairs()
         + test_long.get_mci_image_pairs()
         + test_long.get_cn_image_pairs()
     )
+    test_pairs = [x[0] for x in test_pairs]
 
     train_ds = PairDataset(train_pairs, target_shape=target_shape)
     val_ds = PairDataset(val_pairs, target_shape=target_shape)
