@@ -5,35 +5,34 @@ import numpy as np
 from scipy.linalg import lu as lu_decomposition
 
 
+def logabs(x):
+    return tf.math.log(tf.abs(x))
+
+
 class ActNorm(tf.keras.layers.Layer):
     def __init__(self, in_channels, **kwargs):
         super(ActNorm, self).__init__(**kwargs)
         self.in_channels = in_channels
         self.scale = self.add_weight(
-            shape=(1, 1, in_channels), trainable=True, initializer="ones", name="scale",
-        )
-        self.scale_sign = self.add_weight(
-            shape=(1, 1, in_channels), trainable=True, initializer="ones", name="scale",
+            shape=(1, 1, 1, in_channels), trainable=True, initializer="ones", name="scale",
         )
         self.bias = self.add_weight(
-            shape=(1, 1, in_channels), trainable=True, initializer="zeros", name="bias",
+            shape=(1, 1, 1, in_channels), trainable=True, initializer="zeros", name="bias",
         )
         self.initialized = False
 
     def initialize(self, inputs: tf.Tensor) -> None:
         self.bias.assign(
             -tf.reshape(
-                tf.reduce_mean(inputs, axis=[0, 1, 2]), shape=(1, 1, inputs.shape[-1])
+                tf.reduce_mean(inputs, axis=[0, 1, 2]), shape=(1, 1, 1, inputs.shape[-1])
             )
         )
         self.scale.assign(
             tf.reshape(
                 1 / (tf.math.reduce_std(inputs, axis=[0, 1, 2]) + 1e-6),
-                shape=(1, 1, inputs.shape[-1]),
+                shape=(1, 1, 1, inputs.shape[-1]),
             )
         )
-        self.scale_sign.assign(tf.sign(self.scale))
-        self.scale.assign(tf.math.log(tf.abs(self.scale)))
         self.initialized = True
 
     def call(self, inputs, training=False, **kwargs):
@@ -42,7 +41,7 @@ class ActNorm(tf.keras.layers.Layer):
         if training:
             height = tf.cast(tf.shape(inputs)[1], dtype=tf.float32)
             width = tf.cast(tf.shape(inputs)[2], dtype=tf.float32)
-            logdet = height * width * tf.reduce_sum(self.scale)
+            logdet = height * width * tf.reduce_sum(logabs(self.scale))
             self.add_loss(logdet)
             if tf.math.is_nan(logdet).numpy():
                 print(
@@ -50,10 +49,10 @@ class ActNorm(tf.keras.layers.Layer):
                 )
                 exit()
 
-        return self.scale_sign * tf.exp(self.scale) * (inputs + self.bias)
+        return self.scale * (inputs + self.bias)
 
     def reverse(self, inputs):
-        return inputs / (self.scale_sign * tf.exp(self.scale)) - self.bias
+        return inputs / self.scale - self.bias
 
     def get_config(self):
         config = super(ActNorm, self).get_config()
