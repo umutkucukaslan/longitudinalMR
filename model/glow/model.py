@@ -229,8 +229,10 @@ class AffineCouling(tf.keras.layers.Layer):
             logs, t = tf.split(
                 self.net(x_b, training=training), num_or_size_splits=2, axis=-1
             )
-            s = tf.exp(logs)
-            y_a = s * x_a + t
+            # s = tf.exp(logs)
+            # y_a = s * x_a + t
+            s = tf.sigmoid(logs + 2)
+            y_a = s * (x_a + t)
             y_b = x_b
             y = tf.concat([y_a, y_b], axis=-1)
             if training:
@@ -255,8 +257,10 @@ class AffineCouling(tf.keras.layers.Layer):
             logs, t = tf.split(
                 self.net(x_b, training=False), num_or_size_splits=2, axis=-1
             )
-            s = tf.exp(logs)
-            y_a = (x_a - t) / s
+            # s = tf.exp(logs)
+            # y_a = (x_a - t) / s
+            s = tf.sigmoid(logs + 2)
+            y_a = x_a / s - t
             y_b = x_b
             y = tf.concat([y_a, y_b], axis=-1)
             return y
