@@ -113,8 +113,14 @@ class Invertible1x1ConvLU(tf.keras.layers.Layer):
         u_mask = np.triu(np.ones_like(u)) - np.eye(in_channels)
         l_mask = np.transpose(u_mask)
         s = np.diag(u)
-        self.s = tf.Variable(
-            initial_value=s, dtype=tf.float32, name="s", trainable=True
+        self.s_sign = tf.Variable(
+            initial_value=tf.sign(s), dtype=tf.float, trainable=False, name="s_sign"
+        )
+        self.log_s = tf.Variable(
+            initial_value=tf.math.log(tf.abs(s)),
+            dtype=tf.float32,
+            trainable=True,
+            name="log_s",
         )
         self.u = tf.Variable(
             initial_value=u, dtype=tf.float32, name="u", trainable=True
@@ -142,7 +148,7 @@ class Invertible1x1ConvLU(tf.keras.layers.Layer):
         return (
             self.p
             @ (self.l * self.l_mask + self.eye)
-            @ (self.u * self.u_mask + tf.linalg.diag(self.s))
+            @ (self.u * self.u_mask + tf.linalg.diag(self.s_sign * tf.exp(self.log_s)))
         )
 
     def call(self, inputs, training=None, **kwargs):
