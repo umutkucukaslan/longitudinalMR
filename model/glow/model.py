@@ -156,7 +156,7 @@ class Invertible1x1ConvLU(tf.keras.layers.Layer):
         if training:
             height = tf.cast(tf.shape(inputs)[1], dtype=tf.float32)
             width = tf.cast(tf.shape(inputs)[2], dtype=tf.float32)
-            logdet = height * width * tf.reduce_sum(tf.math.log(tf.abs(self.s)))
+            logdet = height * width * tf.reduce_sum(self.log_s)
             self.add_loss(logdet)
             if tf.math.is_nan(logdet).numpy():
                 print(
