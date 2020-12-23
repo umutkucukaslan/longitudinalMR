@@ -14,6 +14,7 @@ from torch.autograd import Variable, grad
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, utils
 
+from datasets.torch_dataset import get_images_adni_15t_dataset_torch
 from reference_papers.glow.model import Glow
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -48,16 +49,12 @@ parser.add_argument(
 
 
 def sample_data(path, batch_size, image_size):
-    transform = transforms.Compose(
-        [
-            transforms.Resize(image_size),
-            transforms.CenterCrop(image_size),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-        ]
+    dataset, _, _ = get_images_adni_15t_dataset_torch(
+        folder_name="training_data_15T_192x160_4slices",
+        machine="colab",
+        target_shape=[64, 64, 3],
     )
 
-    dataset = datasets.ImageFolder(path, transform=transform)
     loader = DataLoader(dataset, shuffle=True, batch_size=batch_size, num_workers=4)
     loader = iter(loader)
 
@@ -102,6 +99,16 @@ def calc_loss(log_p, logdet, image_size, n_bins):
     )
 
 
+mse_loss = torch.nn.MSELoss()
+
+
+def calc_loss_pair(z1_list, z2_list):
+    loss = 0
+    for z1, z2 in zip(z1_list[:-1], z2_list[:-1]):
+        loss += mse_loss(z1, z2)
+    return loss
+
+
 def train(args, model, optimizer, initial_iter=0):
     dataset = iter(sample_data(args.path, args.batch, args.img_size))
     n_bins = 2.0 ** args.n_bits
@@ -114,30 +121,32 @@ def train(args, model, optimizer, initial_iter=0):
 
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
-            image, _ = next(dataset)
-            image = image.to(device)
-
-            image = image * 255
+            pair, _ = next(dataset)
+            pair = [x.to(device) for x in pair]
+            pair = [x * 255 for x in pair]
 
             if args.n_bits < 8:
-                image = torch.floor(image / 2 ** (8 - args.n_bits))
+                pair = [torch.floor(image / 2 ** (8 - args.n_bits)) for image in pair]
 
-            image = image / n_bins - 0.5
+            pair = [image / n_bins - 0.5 for image in pair]
 
             if i == 0:
                 with torch.no_grad():
                     log_p, logdet, _ = model.module(
-                        image + torch.rand_like(image) / n_bins
+                        pair[0] + torch.rand_like(pair[0]) / n_bins
                     )
 
                     continue
 
             else:
-                log_p, logdet, _ = model(image + torch.rand_like(image) / n_bins)
+                log_p1, logdet1, z1 = model(pair[0] + torch.rand_like(pair[0]) / n_bins)
+                log_p2, logdet2, z2 = model(pair[1] + torch.rand_like(pair[1]) / n_bins)
 
-            logdet = logdet.mean()
-
+            logdet = (logdet1.mean() + logdet2.mean()) / 2
+            log_p = torch.cat([log_p1, log_p2])
             loss, log_p, log_det = calc_loss(log_p, logdet, args.img_size, n_bins)
+            pair_loss = calc_loss_pair(z1, z2)
+            loss += pair_loss
             model.zero_grad()
             loss.backward()
             # warmup_lr = args.lr * min(1, i * batch_size / (50000 * 10))

@@ -14,17 +14,24 @@ class ActNorm(tf.keras.layers.Layer):
         super(ActNorm, self).__init__(**kwargs)
         self.in_channels = in_channels
         self.scale = self.add_weight(
-            shape=(1, 1, 1, in_channels), trainable=True, initializer="ones", name="scale",
+            shape=(1, 1, 1, in_channels),
+            trainable=True,
+            initializer="ones",
+            name="scale",
         )
         self.bias = self.add_weight(
-            shape=(1, 1, 1, in_channels), trainable=True, initializer="zeros", name="bias",
+            shape=(1, 1, 1, in_channels),
+            trainable=True,
+            initializer="zeros",
+            name="bias",
         )
         self.initialized = False
 
     def initialize(self, inputs: tf.Tensor) -> None:
         self.bias.assign(
             -tf.reshape(
-                tf.reduce_mean(inputs, axis=[0, 1, 2]), shape=(1, 1, 1, inputs.shape[-1])
+                tf.reduce_mean(inputs, axis=[0, 1, 2]),
+                shape=(1, 1, 1, inputs.shape[-1]),
             )
         )
         self.scale.assign(
@@ -49,7 +56,7 @@ class ActNorm(tf.keras.layers.Layer):
                 )
                 exit()
 
-        return self.scale * (inputs + self.bias)
+        return self.scale * (inputs + self.bias), logdet
 
     def reverse(self, inputs):
         return inputs / self.scale - self.bias
@@ -592,6 +599,39 @@ class Glow(tf.keras.Model):
 
 
 if __name__ == "__main__":
+
+    layer = ActNorm(in_channels=1)
+    input_tensor = tf.convert_to_tensor(np.random.rand(1, 4, 4, 1), dtype=tf.float32)
+    outputs, logdet = layer(input_tensor, training=True)
+    print("first pass")
+    print("logdet: ", logdet)
+    print("losses collected: ", layer.losses)
+    outputs, logdet = layer(input_tensor, training=True)
+    print("second pass")
+    print("logdet: ", logdet)
+    print("losses collected: ", layer.losses)
+    back = layer.reverse(outputs)
+    # print("inputs: ", input_tensor.numpy())
+    # print("outputs: ", outputs.numpy())
+    # print("back: ", back)
+    # print("div: ", input_tensor.numpy() / outputs.numpy())
+    # print("-------")
+    input_tensor = tf.convert_to_tensor(np.random.rand(1, 4, 4, 1), dtype=tf.float32)
+    outputs, logdet = layer(input_tensor, training=True)
+    print("third pass")
+    print("logdet: ", logdet)
+    print("losses collected: ", layer.losses)
+    back = layer.reverse(outputs)
+    # print("inputs: ", input_tensor.numpy())
+    # print("outputs: ", outputs.numpy())
+    # print("back: ", back)
+    # print("div: ", input_tensor.numpy() / outputs.numpy())
+    print("")
+    print("")
+    print("scale: ", layer.scale.numpy())
+    print("bias: ", layer.bias.numpy())
+    exit()
+
     # block = Block(
     #     in_channels=1,
     #     num_flows=32,
