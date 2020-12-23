@@ -31,8 +31,8 @@ class PairDataset(Dataset):
             if channels == 3 and pair[0].ndim == 3 and pair[0].shape[2] == 1:
                 pair = [cv2.cvtColor(x, cv2.COLOR_GRAY2RGB) for x in pair]
         pair = [self.to_tensor(x) for x in pair]
-        return pair
-        # return {"img1": pair[0], "img2": pair[1]}
+        # return pair
+        return {"img1": pair[0], "img2": pair[1]}
 
 
 def get_images_adni_15t_dataset_torch(
