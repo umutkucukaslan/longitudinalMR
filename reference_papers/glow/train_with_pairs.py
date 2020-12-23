@@ -123,8 +123,8 @@ def train(args, model, optimizer, initial_iter=0):
         for i in pbar:
             batch, _ = next(dataset)
             # pair = [pair["img1"], pair["img2"]]
-            print(batch)
-            print(batch[0])
+            print(batch["img1"])
+
             exit()
             print("len batch: ", len(batch))
             print("len batch[0]", len(batch[0]))
