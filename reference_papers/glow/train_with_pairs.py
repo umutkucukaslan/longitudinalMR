@@ -121,10 +121,11 @@ def train(args, model, optimizer, initial_iter=0):
 
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
-            pair, _ = next(dataset)
+            batch, _ = next(dataset)
             # pair = [pair["img1"], pair["img2"]]
-            print("len of pair: ", len(pair))
-            print(pair)
+            img1 = torch.cat([x[0] for x in batch])
+            img2 = torch.cat([x[1] for x in batch])
+            pair = [img1, img2]
             pair = [x.to(device) for x in pair]
             pair = [x * 255 for x in pair]
 
