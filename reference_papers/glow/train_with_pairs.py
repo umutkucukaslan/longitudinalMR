@@ -124,21 +124,7 @@ def train(args, model, optimizer, initial_iter=0):
         for i in pbar:
             # batch, x = next(dataset)
             batch = next(dataset)
-
-            # pair = [pair["img1"], pair["img2"]]
-            print("------")
-            print(batch["img1"].shape)
-            exit()
-            print("------")
-            print(batch)
-            print(batch["img1"])
-
-            exit()
-            print("len batch: ", len(batch))
-            print("len batch[0]", len(batch[0]))
-            img1 = torch.cat([torch.unsqueeze(x[0], 0) for x in batch])
-            img2 = torch.cat([torch.unsqueeze(x[1], 0) for x in batch])
-            pair = [img1, img2]
+            pair = [batch["img1"], batch["img2"]]
             pair = [x.to(device) for x in pair]
             pair = [x * 255 for x in pair]
 
