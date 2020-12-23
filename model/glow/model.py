@@ -114,7 +114,10 @@ class Invertible1x1ConvLU(tf.keras.layers.Layer):
         l_mask = np.transpose(u_mask)
         s = np.diag(u)
         self.s_sign = tf.Variable(
-            initial_value=tf.sign(s.astype(np.float32)), dtype=tf.float32, trainable=False, name="s_sign"
+            initial_value=tf.sign(s.astype(np.float32)),
+            dtype=tf.float32,
+            trainable=False,
+            name="s_sign",
         )
         self.log_s = tf.Variable(
             initial_value=tf.math.log(tf.abs(s)),
