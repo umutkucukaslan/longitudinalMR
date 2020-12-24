@@ -109,7 +109,9 @@ def calc_loss_pair(z1_list, z2_list):
     return loss
 
 
-def train(args, model, optimizer, initial_iter=0):
+def train(
+    args, model, optimizer, initial_iter=0, restore=None, loaded_state_dict_model=None
+):
     dataset = iter(sample_data(args.path, args.batch, args.img_size))
     n_bins = 2.0 ** args.n_bits
 
@@ -138,7 +140,12 @@ def train(args, model, optimizer, initial_iter=0):
                         pair[0] + torch.rand_like(pair[0]) / n_bins
                     )
 
-                    continue
+                if restore:
+                    print(
+                        "RESTORE is true, loading state dict of model again due to the first initialization probably broke things"
+                    )
+                    model.load_state_dict(loaded_state_dict_model)
+                continue
 
             else:
                 log_p1, logdet1, z1 = model(pair[0] + torch.rand_like(pair[0]) / n_bins)
@@ -210,13 +217,16 @@ if __name__ == "__main__":
     model_paths = sorted(
         glob.glob(os.path.join(args.save_dir, "checkpoint/model_*.pt"))
     )
+    restore = None
+    loaded_state_dict_model = None
     if model_paths:
+        restore = True
         model_path = model_paths[-1]
         optim_path = sorted(
             glob.glob(os.path.join(args.save_dir, "checkpoint/optim_*.pt"))
         )[-1]
-        loaded_state_dict = torch.load(model_path)
-        model.load_state_dict(loaded_state_dict)
+        loaded_state_dict_model = torch.load(model_path)
+        model.load_state_dict(loaded_state_dict_model)
         loaded_state_dict = torch.load(optim_path)
         optimizer.load_state_dict(loaded_state_dict)
         initial_iter = int(model_path[-9:-3])
@@ -226,5 +236,12 @@ if __name__ == "__main__":
     else:
         initial_iter = 0
 
-    train(args, model, optimizer, initial_iter=initial_iter)
+    train(
+        args,
+        model,
+        optimizer,
+        initial_iter=initial_iter,
+        restore=restore,
+        loaded_state_dict_model=loaded_state_dict_model,
+    )
     model()
