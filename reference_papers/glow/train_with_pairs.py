@@ -155,6 +155,7 @@ def train(
             log_p = torch.cat([log_p1, log_p2])
             loss, log_p, log_det = calc_loss(log_p, logdet, args.img_size, n_bins)
             pair_loss = calc_loss_pair(z1, z2)
+            pair_loss *= 10
             loss += pair_loss
             model.zero_grad()
             loss.backward()
