@@ -164,7 +164,7 @@ def train(
             optimizer.step()
 
             pbar.set_description(
-                f"Loss: {loss.item():.5f}; logP: {log_p.item():.5f}; logdet: {log_det.item():.5f}; lr: {warmup_lr:.7f}"
+                f"Loss: {loss.item():.5f}; logP: {log_p.item():.5f}; logdet: {log_det.item():.5f}; pair_loss: {pair_loss.item()}; lr: {warmup_lr:.7f}"
             )
 
             if i % 100 == 0:
