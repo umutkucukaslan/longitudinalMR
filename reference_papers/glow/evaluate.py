@@ -85,7 +85,9 @@ with torch.no_grad():
     _ = model_single(rand_img.float())
 print("model initialized")
 model = torch.nn.DataParallel(model_single)
-loaded_state_dict = torch.load(model_path, map_location=torch.device("cpu"))
+# loaded_state_dict = torch.load(model_path, map_location=torch.device("cpu"))
+if MACHINE == "colab":
+    loaded_state_dict = torch.load(model_path)
 model.load_state_dict(loaded_state_dict)
 model.eval()  # model in eval mode
 
