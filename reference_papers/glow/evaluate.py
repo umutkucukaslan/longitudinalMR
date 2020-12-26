@@ -37,7 +37,7 @@ elif MACHINE == "colab":
     data_dir = os.path.join("/content/training_data_15T_192x160_4slices", data_folder)
     relative_model_path = "glow_pair_finetune/checkpoint/model_115001.pt"
     model_path = os.path.join(
-        "/content/drive/My\ Drive/experiments", relative_model_path
+        "/content/drive/My Drive/experiments", relative_model_path
     )
 
 # create longitudinal data set object
