@@ -10,7 +10,9 @@ from reference_papers.glow.model import Glow
 from reference_papers.glow.train import calc_z_shapes
 from reference_papers.glow.utils import read_image
 
-relative_model_path = "exp_2020_10_30_glow/checkpoint/model_030001.pt"
+
+# relative_model_path = "exp_2020_10_30_glow/checkpoint/model_030001.pt"
+relative_model_path = "exp_2020_12_23_glow_pair_finetune/checkpoint/model_115001.pt"
 
 # running device
 if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
@@ -33,6 +35,7 @@ if MACHINE == "macbook":
     )
 elif MACHINE == "colab":
     data_dir = os.path.join("/content/training_data_15T_192x160_4slices", data_folder)
+    relative_model_path = "glow_pair_finetune/checkpoint/model_115001.pt"
     model_path = os.path.join(
         "/content/drive/My\ Drive/experiments", relative_model_path
     )
@@ -76,6 +79,11 @@ args = Namespace(
 model_single = Glow(
     3, args.n_flow, args.n_block, affine=args.affine, conv_lu=not args.no_lu
 )
+print("initializing model")
+rand_img = torch.from_numpy(np.random.rand(1, 3, 64, 64))
+with torch.no_grad():
+    _ = model_single(rand_img.float())
+print("model initialized")
 model = torch.nn.DataParallel(model_single)
 loaded_state_dict = torch.load(model_path, map_location=torch.device("cpu"))
 model.load_state_dict(loaded_state_dict)
