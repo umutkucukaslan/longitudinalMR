@@ -87,7 +87,7 @@ print("model initialized")
 model = torch.nn.DataParallel(model_single)
 # loaded_state_dict = torch.load(model_path, map_location=torch.device("cpu"))
 if MACHINE == "colab":
-    loaded_state_dict = torch.load(model_path)
+    loaded_state_dict = torch.load(model_path, map_location=torch.device("cuda:0"))
 model.load_state_dict(loaded_state_dict)
 model.eval()  # model in eval mode
 
