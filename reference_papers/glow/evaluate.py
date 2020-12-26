@@ -263,15 +263,24 @@ def print_ssims(ssims, title=""):
 
 
 ad_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_ad_image_triplets(), model_single, type="missing"
+    # longitudinal_dataset.get_ad_image_triplets(), model_single, type="missing"
+    longitudinal_dataset.get_ad_image_triplets(),
+    model,
+    type="missing",
 )
 print_ssims(ad_ssims, "AD")
 cn_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_cn_image_triplets(), model_single, type="missing"
+    # longitudinal_dataset.get_cn_image_triplets(), model_single, type="missing"
+    longitudinal_dataset.get_cn_image_triplets(),
+    model,
+    type="missing",
 )
 print_ssims(cn_ssims, "CN")
 mci_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_mci_image_triplets(), model_single, type="missing"
+    # longitudinal_dataset.get_mci_image_triplets(), model_single, type="missing"
+    longitudinal_dataset.get_mci_image_triplets(),
+    model,
+    type="missing",
 )
 print_ssims(mci_ssims, "MCI")
 
