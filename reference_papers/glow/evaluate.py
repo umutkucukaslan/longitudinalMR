@@ -192,7 +192,7 @@ def create_future_z_sample(days, z1_list, z2_list):
 
 
 def model_output_to_image(image_tensor, logic="experimental"):
-    x = image_tensor.numpy()[0]
+    x = image_tensor.cpu().numpy()[0]
     # print(f"min: {np.min(x.flatten())}, max: {np.max(x.flatten())}")
     if logic == "experimental":
         x = x - np.min(x.flatten())
@@ -219,13 +219,14 @@ def calculate_ssim_for_triplets(triplet_list, model, type="missing"):
                 as_torch_tensor=True,
                 normalize=True,
                 return_original=True,
+                to_device=device,
             )
             for image_path in image_paths
         ]
         if type == "missing":
             with torch.no_grad():
-                _, _, z0 = model(images[0][0].to(device))
-                _, _, z2 = model(images[2][0].to(device))
+                _, _, z0 = model(images[0][0])
+                _, _, z2 = model(images[2][0])
                 z_missing = create_middle_z_sample(days=days, z1_list=z0, z2_list=z2)
                 im_missing = model.reverse(z_missing, reconstruct=True)
             im_missing = model_output_to_image(
@@ -244,8 +245,8 @@ def calculate_ssim_for_triplets(triplet_list, model, type="missing"):
             print(f"{counter} / {len(triplet_list)} : {ssim}")
         elif type == "future":
             with torch.no_grad():
-                _, _, z0 = model(images[0][0].to(device))
-                _, _, z1 = model(images[1][0].to(device))
+                _, _, z0 = model(images[0][0])
+                _, _, z1 = model(images[1][0])
                 z_missing = create_future_z_sample(days=days, z1_list=z0, z2_list=z1)
                 im_missing = model.reverse(z_missing, reconstruct=True)
             im_missing = model_output_to_image(

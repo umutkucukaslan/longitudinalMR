@@ -13,6 +13,7 @@ def read_image(
     as_torch_tensor=True,
     normalize=False,
     return_original=False,
+    to_device=None,
 ):
     image = cv2.imread(image_path)
     if size:
@@ -26,6 +27,8 @@ def read_image(
         image = np.expand_dims(image, axis=0)
     if as_torch_tensor:
         image = torch.from_numpy(image)
+    if to_device:
+        image = image.to(device=to_device)
     if return_original:
         return image, image_original
     return image
