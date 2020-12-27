@@ -85,6 +85,7 @@ if __name__ == "__main__":
     # d = nn.DataParallel(d_single)
     # d = d.to(device)
     img_tensor = img_tensor.to(device)
+    print("image tensor to devicee")
     d_single = d_single.to(device)
     outputs = d_single(img_tensor.float())
     # outputs = d(img_tensor.float())
