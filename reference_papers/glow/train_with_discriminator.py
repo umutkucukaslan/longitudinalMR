@@ -158,7 +158,7 @@ def generate_predictions(model, imgs, days):
         log_p, logdet, z = model(img)
         z_vectors.append(z)
     blended_z_vectors = blend_vectors(z_vectors, days)
-    predictions = [model.reverse(x, reconstruct=True) for x in blended_z_vectors]
+    predictions = [model.module.reverse(x, reconstruct=True) for x in blended_z_vectors]
 
     return predictions
 
