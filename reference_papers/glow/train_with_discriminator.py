@@ -119,10 +119,10 @@ def weighted_z(z1_list, z2_list, w1, w2):
     w1 = w1.view(-1, 1, 1, 1)
     w2 = w2.view(-1, 1, 1, 1)
     for z1, z2 in zip(z1_list, z2_list):
-        print("z1: ", z1.shape)
-        print("z2: ", z2.shape)
-        print("w1: ", w1)
-        print("w2: ", w2)
+        # print("z1: ", z1.shape)
+        # print("z2: ", z2.shape)
+        # print("w1: ", w1)
+        # print("w2: ", w2)
         z_w.append(z1 * w1 + z2 * w2)
     return z_w
 
