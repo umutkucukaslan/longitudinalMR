@@ -122,6 +122,8 @@ def weighted_z(z1_list, z2_list, w1, w2):
 
 
 def blend_vectors(z_vecs, t):
+    print("t[0]: ", t[0])
+    exit()
 
     z0 = weighted_z(
         z_vecs[1],
@@ -187,7 +189,7 @@ def train(
             imgs = [batch["img1"], batch["img2"], batch["img3"]]
             days = batch["days"]
             print("days: ", days)
-            exit()
+
             imgs = [x.to(device) for x in imgs]
             imgs = [x * 255 for x in imgs]
 
