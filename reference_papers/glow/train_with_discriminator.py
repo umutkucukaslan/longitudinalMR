@@ -215,7 +215,8 @@ def train(
                     model.load_state_dict(loaded_state_dict_model)
                 continue
 
-            predicted_imgs = generate_predictions(model, imgs, days)
+            with torch.no_grad():
+                predicted_imgs = generate_predictions(model, imgs, days)
 
             # train discriminator
             discriminator.zero_grad()
