@@ -91,7 +91,7 @@ if __name__ == "__main__":
     print("i used tokyo command")
     print("i used tokyo command")
     d_single = d_single.to(device)
-    outputs = d_single(img_tensor)
+    outputs = d_single(img_tensor.float())
     # outputs = d(img_tensor.float())
     print("outputs: ", outputs)
     print("outputs device: ", outputs.device)
