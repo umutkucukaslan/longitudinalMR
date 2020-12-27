@@ -75,7 +75,7 @@ if __name__ == "__main__":
     img_tensor = torch.from_numpy(img)
     # img_tensor.to("cpu")
 
-    d_single = Discriminator(nc=3, ndf=128)
+    d_single = Discriminator(nc=3, ndf=64)
     count_parameters(d_single)
 
     # summary(d_single, input_size=(3, 64, 64))
@@ -95,3 +95,4 @@ if __name__ == "__main__":
     # outputs = d(img_tensor.float())
     print("outputs: ", outputs)
     print("outputs device: ", outputs.device)
+    print("--------")
