@@ -102,7 +102,10 @@ def infer(model, image):
     """
     with torch.no_grad():
         log_p_sum, logdet, z_outs = model(image)
-        gen_im = model.reverse(z_outs, reconstruct=True)
+        if MACHINE == "colab":
+            gen_im = model.module.reverse(z_outs, reconstruct=True)
+        else:
+            gen_im = model.reverse(z_outs, reconstruct=True)
     return z_outs, gen_im
 
 
@@ -114,7 +117,10 @@ def sample(model, z_list):
     :return:
     """
     with torch.no_grad():
-        gen_im = model.reverse(z_list, reconstruct=True)
+        if MACHINE == "colab":
+            gen_im = model.module.reverse(z_list, reconstruct=True)
+        else:
+            gen_im = model.reverse(z_list, reconstruct=True)
         print("[sample function] gen_im.shape: ", gen_im.shape)
         print("[sample function] gen_im.dtype: ", gen_im.dtype)
         log_p_sum, logdet, z_outs = model(gen_im)
