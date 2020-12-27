@@ -84,6 +84,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # d = nn.DataParallel(d_single)
     # d = d.to(device)
+    img_tensor = img_tensor.to(device)
     d_single = d_single.to(device)
     outputs = d_single(img_tensor.float())
     # outputs = d(img_tensor.float())
