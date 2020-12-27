@@ -116,6 +116,8 @@ def calc_loss_pair(z1_list, z2_list):
 
 def weighted_z(z1_list, z2_list, w1, w2):
     z_w = []
+    w1 = w1.view(-1, 1, 1, 1)
+    w2 = w2.view(-1, 1, 1, 1)
     for z1, z2 in zip(z1_list, z2_list):
         print("z1: ", z1.shape)
         print("z2: ", z2.shape)
