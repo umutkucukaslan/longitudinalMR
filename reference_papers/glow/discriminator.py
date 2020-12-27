@@ -74,13 +74,12 @@ if __name__ == "__main__":
     img = np.random.rand(7, 3, 64, 64)
     img_tensor = torch.from_numpy(img)
     # img_tensor.to("cpu")
-    print(img_tensor)
 
     d_single = Discriminator(nc=3, ndf=128)
     count_parameters(d_single)
 
-    summary(d_single, input_size=(3, 64, 64))
-    print("summary printed")
+    # summary(d_single, input_size=(3, 64, 64))
+    # print("summary printed")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # d = nn.DataParallel(d_single)
