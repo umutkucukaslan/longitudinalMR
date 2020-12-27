@@ -192,7 +192,7 @@ def train(
             batch = next(dataset)
             imgs = [batch["img1"], batch["img2"], batch["img3"]]
             days = batch["days"]
-            print("days: ", days)
+            print("days : ", days)
 
             imgs = [x.to(device) for x in imgs]
 
