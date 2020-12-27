@@ -117,6 +117,10 @@ def calc_loss_pair(z1_list, z2_list):
 def weighted_z(z1_list, z2_list, w1, w2):
     z_w = []
     for z1, z2 in zip(z1_list, z2_list):
+        print("z1: ", z1)
+        print("z2: ", z2)
+        print("w1: ", w1)
+        print("w2: ", w2)
         z_w.append(z1 * w1 + z2 * w2)
     return z_w
 
