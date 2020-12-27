@@ -88,3 +88,4 @@ if __name__ == "__main__":
     outputs = d_single(img_tensor.float())
     # outputs = d(img_tensor.float())
     print("outputs: ", outputs)
+    print("outputs device: ", outputs.device)
