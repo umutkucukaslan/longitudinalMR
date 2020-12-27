@@ -10,6 +10,7 @@ from reference_papers.glow.model import Glow
 from reference_papers.glow.train import calc_z_shapes
 from reference_papers.glow.utils import read_image
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # relative_model_path = "exp_2020_10_30_glow/checkpoint/model_030001.pt"
 relative_model_path = "exp_2020_12_23_glow_pair_finetune/checkpoint/model_115001.pt"
@@ -86,8 +87,8 @@ with torch.no_grad():
 print("model initialized")
 model = torch.nn.DataParallel(model_single)
 loaded_state_dict = torch.load(model_path, map_location=torch.device("cpu"))
-# if MACHINE == "colab":
-#     loaded_state_dict = torch.load(model_path, map_location=torch.device("cuda:0"))
+if MACHINE == "colab":
+    loaded_state_dict = torch.load(model_path)
 model.load_state_dict(loaded_state_dict)
 # model_single.load_state_dict(loaded_state_dict)
 model.eval()  # model in eval mode
@@ -223,8 +224,8 @@ def calculate_ssim_for_triplets(triplet_list, model, type="missing"):
         ]
         if type == "missing":
             with torch.no_grad():
-                _, _, z0 = model(images[0][0])
-                _, _, z2 = model(images[2][0])
+                _, _, z0 = model(images[0][0].to(device))
+                _, _, z2 = model(images[2][0].to(device))
                 z_missing = create_middle_z_sample(days=days, z1_list=z0, z2_list=z2)
                 im_missing = model.reverse(z_missing, reconstruct=True)
             im_missing = model_output_to_image(
@@ -243,8 +244,8 @@ def calculate_ssim_for_triplets(triplet_list, model, type="missing"):
             print(f"{counter} / {len(triplet_list)} : {ssim}")
         elif type == "future":
             with torch.no_grad():
-                _, _, z0 = model(images[0][0])
-                _, _, z1 = model(images[1][0])
+                _, _, z0 = model(images[0][0].to(device))
+                _, _, z1 = model(images[1][0].to(device))
                 z_missing = create_future_z_sample(days=days, z1_list=z0, z2_list=z1)
                 im_missing = model.reverse(z_missing, reconstruct=True)
             im_missing = model_output_to_image(
