@@ -89,7 +89,7 @@ loaded_state_dict = torch.load(model_path, map_location=torch.device("cpu"))
 # if MACHINE == "colab":
 #     loaded_state_dict = torch.load(model_path, map_location=torch.device("cuda:0"))
 model.load_state_dict(loaded_state_dict)
-model_single.load_state_dict(loaded_state_dict)
+# model_single.load_state_dict(loaded_state_dict)
 model.eval()  # model in eval mode
 
 
@@ -263,32 +263,32 @@ def print_ssims(ssims, title=""):
     print("---")
 
 
-ad_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_ad_image_triplets(), model_single, type="missing"
-)
-print_ssims(ad_ssims, "AD")
-cn_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_cn_image_triplets(), model_single, type="missing"
-)
-print_ssims(cn_ssims, "CN")
-mci_ssims = calculate_ssim_for_triplets(
-    longitudinal_dataset.get_mci_image_triplets(), model_single, type="missing"
-)
-print_ssims(mci_ssims, "MCI")
-
-
 # ad_ssims = calculate_ssim_for_triplets(
-#     longitudinal_dataset.get_ad_image_triplets(), model_single, type="future"
+#     longitudinal_dataset.get_ad_image_triplets(), model_single, type="missing"
 # )
 # print_ssims(ad_ssims, "AD")
 # cn_ssims = calculate_ssim_for_triplets(
-#     longitudinal_dataset.get_cn_image_triplets(), model_single, type="future"
+#     longitudinal_dataset.get_cn_image_triplets(), model_single, type="missing"
 # )
 # print_ssims(cn_ssims, "CN")
 # mci_ssims = calculate_ssim_for_triplets(
-#     longitudinal_dataset.get_mci_image_triplets(), model_single, type="future"
+#     longitudinal_dataset.get_mci_image_triplets(), model_single, type="missing"
 # )
 # print_ssims(mci_ssims, "MCI")
+
+
+ad_ssims = calculate_ssim_for_triplets(
+    longitudinal_dataset.get_ad_image_triplets(), model_single, type="future"
+)
+print_ssims(ad_ssims, "AD")
+cn_ssims = calculate_ssim_for_triplets(
+    longitudinal_dataset.get_cn_image_triplets(), model_single, type="future"
+)
+print_ssims(cn_ssims, "CN")
+mci_ssims = calculate_ssim_for_triplets(
+    longitudinal_dataset.get_mci_image_triplets(), model_single, type="future"
+)
+print_ssims(mci_ssims, "MCI")
 
 
 # for data in longitudinal_dataset.get_ad_image_triplets():

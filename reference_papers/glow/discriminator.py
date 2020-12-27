@@ -54,12 +54,37 @@ class Discriminator(nn.Module):
 
 
 if __name__ == "__main__":
-    img = np.random.rand(1, 3, 64, 64)
+    from torchsummary import summary
+
+    from prettytable import PrettyTable
+
+    def count_parameters(model):
+        table = PrettyTable(["Modules", "Parameters"])
+        total_params = 0
+        for name, parameter in model.named_parameters():
+            if not parameter.requires_grad:
+                continue
+            param = parameter.numel()
+            table.add_row([name, param])
+            total_params += param
+        print(table)
+        print(f"Total Trainable Params: {total_params}")
+        return total_params
+
+    img = np.random.rand(7, 3, 64, 64)
     img_tensor = torch.from_numpy(img)
     img_tensor.to("cpu")
     print(img_tensor)
 
-    d = Discriminator(nc=3, ndf=128).to("cpu")
-    print(d)
-    outputs = d(img_tensor.float())
+    d_single = Discriminator(nc=3, ndf=128)
+    count_parameters(d_single)
+
+    summary(d_single, input_size=(3, 64, 64))
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # d = nn.DataParallel(d_single)
+    # d = d.to(device)
+    d_single = d_single.to(device)
+    outputs = d_single(img_tensor.float())
+    # outputs = d(img_tensor.float())
     print("outputs: ", outputs)
