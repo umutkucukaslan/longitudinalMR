@@ -215,8 +215,10 @@ def train(
                     model.load_state_dict(loaded_state_dict_model)
                 continue
 
-            with torch.no_grad():
-                predicted_imgs = generate_predictions(model, imgs, days)
+            # with torch.no_grad():
+            #     predicted_imgs = generate_predictions(model, imgs, days)
+
+            predicted_imgs = generate_predictions(model, imgs, days)
 
             # train generator
             label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
@@ -313,7 +315,7 @@ def train(
                     ),
                 )
                 torch.save(
-                    optimizer.state_dict(),
+                    discriminator_optimizer.state_dict(),
                     os.path.join(
                         args.save_dir, f"checkpoint/disc_optim_{str(i + 1).zfill(6)}.pt"
                     ),
