@@ -188,8 +188,6 @@ def train(
 
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
-            print("i is: ", i)
-            print(type(i))
 
             batch = next(dataset)
             imgs = [batch["img1"], batch["img2"], batch["img3"]]
@@ -229,10 +227,10 @@ def train(
             model.zero_grad()
             g_errs = []
             G = []
-            for i, pred in enumerate(predicted_imgs):
+            for idx, pred in enumerate(predicted_imgs):
                 output = discriminator(pred).view(-1)
                 err_pred = criterion(output, label)
-                if i < len(predicted_imgs) - 1:
+                if idx < len(predicted_imgs) - 1:
                     err_pred.backward(retain_graph=True)
                 else:
                     err_pred.backward(retain_graph=False)
@@ -285,9 +283,6 @@ def train(
             # )
             pbar.set_description(
                 f"Disc loss: {err.item():.5f}; Gen loss: {g_errs.item()}; D_x: {D_x:.4f}; D_G: {D_G:.4f}; G: {G}"
-            )
-            print(
-                f"i: {i}, save_interval: {args.save_interval}, q: {i % args.save_interval}"
             )
 
             if i % 100 == 0:
