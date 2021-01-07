@@ -189,8 +189,6 @@ def train(
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
 
-            print("i is ", i)
-
             batch = next(dataset)
             imgs = [batch["img1"], batch["img2"], batch["img3"]]
             days = batch["days"]
@@ -217,35 +215,34 @@ def train(
                     model.load_state_dict(loaded_state_dict_model)
                 continue
 
-            # with torch.no_grad():
-            #     predicted_imgs = generate_predictions(model, imgs, days)
+            with torch.no_grad():
+                predicted_imgs = generate_predictions(model, imgs, days)
 
-            predicted_imgs = generate_predictions(model, imgs, days)
+            # predicted_imgs = generate_predictions(model, imgs, days)
 
-            # train generator
             b_size = imgs[0].shape[0]
             label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
-            discriminator.zero_grad()
-            model.zero_grad()
-            g_errs = []
-            G = []
-            for idx, pred in enumerate(predicted_imgs):
-                output = discriminator(pred).view(-1)
-                err_pred = criterion(output, label)
-                if idx < len(predicted_imgs) - 1:
-                    err_pred.backward(retain_graph=True)
-                else:
-                    err_pred.backward(retain_graph=False)
-                G.append(output.mean().item())
-                g_errs.append(err_pred)
-            g_errs = sum(g_errs) / 3.0
-            G = sum(G) / 3.0
-            optimizer.step()
+
+            # # train generator
+            # discriminator.zero_grad()
+            # model.zero_grad()
+            # g_errs = []
+            # G = []
+            # for idx, pred in enumerate(predicted_imgs):
+            #     output = discriminator(pred).view(-1)
+            #     err_pred = criterion(output, label)
+            #     if idx < len(predicted_imgs) - 1:
+            #         err_pred.backward(retain_graph=True)
+            #     else:
+            #         err_pred.backward(retain_graph=False)
+            #     G.append(output.mean().item())
+            #     g_errs.append(err_pred)
+            # g_errs = sum(g_errs) / 3.0
+            # G = sum(G) / 3.0
+            # optimizer.step()
 
             # train discriminator
             discriminator.zero_grad()
-            # b_size = imgs[0].shape[0]
-            # label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
             D_x = []
             D_G = []
             errs = []
@@ -286,7 +283,6 @@ def train(
             pbar.set_description(
                 f"Disc loss: {err.item():.5f}; Gen loss: {g_errs.item()}; D_x: {D_x:.4f}; D_G: {D_G:.4f}; G: {G}"
             )
-            print("i is ", i)
 
             if i % 100 == 0:
                 with torch.no_grad():
