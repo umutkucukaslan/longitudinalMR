@@ -284,6 +284,9 @@ def train(
             pbar.set_description(
                 f"Disc loss: {err.item():.5f}; Gen loss: {g_errs.item()}; D_x: {D_x:.4f}; D_G: {D_G:.4f}; G: {G}"
             )
+            print(
+                f"i: {i}, save_interval: {args.save_interval}, q: {i % args.save_interval}"
+            )
 
             if i % 100 == 0:
                 with torch.no_grad():
