@@ -218,10 +218,26 @@ def train(
             with torch.no_grad():
                 predicted_imgs = generate_predictions(model, imgs, days)
 
+            # train generator
+            label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
+            discriminator.zero_grad()
+            model.zero_grad()
+            g_errs = []
+            G = []
+            for pred in predicted_imgs:
+                output = discriminator(pred).view(-1)
+                err_pred = criterion(output, label)
+                err_pred.backward()
+                G.append(output.mean().item())
+                g_errs.append(err_pred)
+            g_errs = sum(g_errs) / 3.0
+            G = sum(G) / 3.0
+            optimizer.step()
+
             # train discriminator
             discriminator.zero_grad()
             b_size = imgs[0].shape[0]
-            label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
+            # label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
             D_x = []
             D_G = []
             errs = []
@@ -260,7 +276,7 @@ def train(
             #     f"Loss: {loss.item():.5f}; logP: {log_p.item():.5f}; logdet: {log_det.item():.5f}; pair_loss: {pair_loss.item()}; lr: {warmup_lr:.7f}"
             # )
             pbar.set_description(
-                f"Disc loss: {err.item():.5f}; D_x: {D_x:.4f}; D_G: {D_G:.4f}"
+                f"Disc loss: {err.item():.5f}; Gen loss: {g_errs.item()}; D_x: {D_x:.4f}; D_G: {D_G:.4f}; G: {G}"
             )
 
             if i % 100 == 0:
