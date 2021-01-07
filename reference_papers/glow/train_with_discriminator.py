@@ -227,10 +227,13 @@ def train(
             model.zero_grad()
             g_errs = []
             G = []
-            for pred in predicted_imgs:
+            for i, pred in enumerate(predicted_imgs):
                 output = discriminator(pred).view(-1)
                 err_pred = criterion(output, label)
-                err_pred.backward(retain_graph=True)
+                if i < len(predicted_imgs) - 1:
+                    err_pred.backward(retain_graph=True)
+                else:
+                    err_pred.backward(retain_graph=False)
                 G.append(output.mean().item())
                 g_errs.append(err_pred)
             g_errs = sum(g_errs) / 3.0
