@@ -230,7 +230,7 @@ def train(
             for pred in predicted_imgs:
                 output = discriminator(pred).view(-1)
                 err_pred = criterion(output, label)
-                err_pred.backward()
+                err_pred.backward(retain_graph=True)
                 G.append(output.mean().item())
                 g_errs.append(err_pred)
             g_errs = sum(g_errs) / 3.0
