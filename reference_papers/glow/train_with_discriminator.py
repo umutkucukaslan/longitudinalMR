@@ -189,6 +189,8 @@ def train(
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
 
+            print("i is ", i)
+
             batch = next(dataset)
             imgs = [batch["img1"], batch["img2"], batch["img3"]]
             days = batch["days"]
@@ -284,6 +286,7 @@ def train(
             pbar.set_description(
                 f"Disc loss: {err.item():.5f}; Gen loss: {g_errs.item()}; D_x: {D_x:.4f}; D_G: {D_G:.4f}; G: {G}"
             )
+            print("i is ", i)
 
             if i % 100 == 0:
                 with torch.no_grad():
