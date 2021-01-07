@@ -221,6 +221,7 @@ def train(
             predicted_imgs = generate_predictions(model, imgs, days)
 
             # train generator
+            b_size = imgs[0].shape[0]
             label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
             discriminator.zero_grad()
             model.zero_grad()
@@ -238,7 +239,7 @@ def train(
 
             # train discriminator
             discriminator.zero_grad()
-            b_size = imgs[0].shape[0]
+            # b_size = imgs[0].shape[0]
             # label = torch.full((b_size,), real_label, dtype=torch.float, device=device)
             D_x = []
             D_G = []
