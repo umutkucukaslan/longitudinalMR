@@ -188,6 +188,8 @@ def train(
 
     with tqdm(range(initial_iter, args.iter)) as pbar:
         for i in pbar:
+            print("i is: ", i)
+            print(type(i))
 
             batch = next(dataset)
             imgs = [batch["img1"], batch["img2"], batch["img3"]]
