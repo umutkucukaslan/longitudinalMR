@@ -281,8 +281,11 @@ def train(
             #     f"Loss: {loss.item():.5f}; logP: {log_p.item():.5f}; logdet: {log_det.item():.5f}; pair_loss: {pair_loss.item()}; lr: {warmup_lr:.7f}"
             # )
             pbar.set_description(
-                f"Disc loss: {err.item():.5f}; Gen loss: {g_errs.item()}; D_x: {D_x:.4f}; D_G: {D_G:.4f}; G: {G}"
+                f"Disc loss: {err.item():.5f}; D_x: {D_x:.4f}; D_G: {D_G:.4f}"
             )
+            # pbar.set_description(
+            #     f"Disc loss: {err.item():.5f}; Gen loss: {g_errs.item()}; D_x: {D_x:.4f}; D_G: {D_G:.4f}; G: {G}"
+            # )
 
             if i % 100 == 0:
                 with torch.no_grad():
