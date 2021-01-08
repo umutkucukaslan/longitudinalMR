@@ -188,6 +188,8 @@ if __name__ == "__main__":
         return tf.reduce_mean(ssims)
 
     def get_predicted_states(states, days):
+        while tf.rank(days[0]) < tf.rank(states[0]):
+            days = [tf.expand_dims(x, axis=-1) for x in days]
         past = states[1] + (days[0] - days[2]) / (days[1] - days[2]) * (
             states[1] - states[2]
         )

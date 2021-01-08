@@ -79,6 +79,7 @@ class AE(tf.keras.Model):
         x = image_batch
         for layer in self.downsample_conv:
             x = layer(x)
+        x = tf.keras.layers.Flatten()(x)
         structure = self.structure_dense(x)
         longitudinal_state = self.longitudinal_dense(x)
         return structure, longitudinal_state
