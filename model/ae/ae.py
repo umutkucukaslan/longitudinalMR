@@ -41,7 +41,7 @@ class AE(tf.keras.Model):
                 strides=1,
                 activation=activation,
             )
-            for f in reversed(filters)[1:]
+            for f in reversed(filters[:-1])
         ]
         self.upsample_layers.append(
             tf.keras.layers.Conv2D(
