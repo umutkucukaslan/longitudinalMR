@@ -75,7 +75,11 @@ def get_adni_dataset(
 
 
 def get_triplets_adni_15t_dataset(
-    folder_name="training_data_15T_192x160_4slices", machine="none",
+    folder_name="training_data_15T_192x160_4slices",
+    machine="none",
+    target_shape=None,
+    channels=1,
+    augment=False,
 ):
     if machine == "colab":
         data_dir = os.path.join("/content", folder_name)
@@ -151,13 +155,20 @@ def get_triplets_adni_15t_dataset(
     def process_triplet(triplet):
         imgs, days = triplet["imgs"], triplet["days"]
         imgs = [tf.io.read_file(x) for x in imgs]
-        imgs = [decode_img(x) for x in imgs]
-        augmented_imgs = augment_images(imgs)
+        imgs = [decode_img(x, num_channel=channels) for x in imgs]
+        if target_shape:
+            imgs = [tf.image.resize(x, target_shape) for x in imgs]
+        # if augment:
+        #     augmented_imgs = augment_images(imgs)
         days = [tf.cast(x, tf.float32) for x in days]
+        # return {
+        #     "imgs": tuple(imgs),
+        #     "days": tuple(days),
+        #     "augmented_imgs": tuple(augmented_imgs),
+        # }
         return {
             "imgs": tuple(imgs),
             "days": tuple(days),
-            "augmented_imgs": tuple(augmented_imgs),
         }
 
     train_ds = train_list_ds.map(
