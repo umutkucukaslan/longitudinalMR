@@ -118,6 +118,13 @@ model = AE(
     longitudinal_vec_size=LONGITUDINAL_VEC_SIZE,
 )
 
+# model first call to initialize layers
+input_tensor = tf.convert_to_tensor(
+    np.zeros((BATCH_SIZE, INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL))
+)
+input_tensor = tf.cast(input_tensor, tf.float32)
+_ = model(input_tensor)
+
 # optimizers
 optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
 # optimizer = tf.optimizers.RMSprop(learning_rate=LR)
@@ -244,7 +251,7 @@ if __name__ == "__main__":
         structures = []
         states = []
         for image_batch in imgs:
-            structure, state = model.encode(image_batch, training=True)
+            structure, state = model.encode(image_batch, training=False)
             structures.append(structure)
             states.append(state)
         structure_sim_mse = [

@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 
 class AE(tf.keras.Model):
@@ -68,6 +69,7 @@ class AE(tf.keras.Model):
             self.filters[-1],
         ]
         self.num_features = num_features
+        print("num features: ", self.num_features)
         self.decode_structure_dense = tf.keras.layers.Dense(
             num_features, activation=None, use_bias=False
         )
@@ -76,11 +78,14 @@ class AE(tf.keras.Model):
         )
 
     def encode(self, image_batch, training=None):
+        print("shape of encode input: ", image_batch.shape)
         x = image_batch
         for layer in self.downsample_conv:
             x = layer(x)
         x = tf.keras.layers.Flatten()(x)
+        print("encode shape after flatter: ", tf.shape(x).numpy())
         structure = self.structure_dense(x)
+        print("encode shape of structure: ", tf.shape(structure).numpy())
         longitudinal_state = self.longitudinal_dense(x)
         return structure, longitudinal_state
 
@@ -98,3 +103,32 @@ class AE(tf.keras.Model):
         structure, state = self.encode(inputs, training=training)
         out = self.decode(structure, state, training=training)
         return out
+
+
+if __name__ == "__main__":
+    FILTERS = [64, 128, 256, 512]
+    KERNEL_SIZE = 3
+    ACTIVATION = tf.nn.silu
+    LAST_ACTIVATION = tf.nn.sigmoid
+    STRUCTURE_VEC_SIZE = 100
+    LONGITUDINAL_VEC_SIZE = 1
+
+    model = AE(
+        filters=FILTERS,
+        kernel_size=KERNEL_SIZE,
+        activation=ACTIVATION,
+        last_activation=LAST_ACTIVATION,
+        structure_vec_size=STRUCTURE_VEC_SIZE,
+        longitudinal_vec_size=LONGITUDINAL_VEC_SIZE,
+    )
+    print("model defined")
+    input_tensor = tf.convert_to_tensor(np.zeros((3, 64, 64, 1)))
+    input_tensor = tf.cast(input_tensor, tf.float32)
+    _ = model(input_tensor)
+    print("model first call")
+    structure, state = model.encode(input_tensor)
+    print("structure: ", tf.shape(structure))
+    print("state: ", tf.shape(state))
+    img = model.decode(structure, state)
+    print("res: ", tf.shape(img))
+    print("done")
