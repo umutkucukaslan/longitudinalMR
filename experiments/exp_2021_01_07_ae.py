@@ -328,29 +328,35 @@ if __name__ == "__main__":
             # training
             log_print("Training epoch {}".format(epoch), add_timestamp=True)
             losses = [[], [], [], []]
-            with tqdm() as pbar:
-                for n, inputs in train_ds.enumerate():
-                    imgs = inputs["imgs"]
-                    days = inputs["days"]
-                    (
-                        total_loss,
-                        image_similarity_loss,
-                        structure_vec_sim_loss,
-                        ssims,
-                        predicted_imgs,
-                    ) = train_step(imgs, days)
+            # with tqdm() as pbar:
+            pbar = tqdm()
+            for n, inputs in train_ds.enumerate():
+                imgs = inputs["imgs"]
+                days = inputs["days"]
+                (
+                    total_loss,
+                    image_similarity_loss,
+                    structure_vec_sim_loss,
+                    ssims,
+                    predicted_imgs,
+                ) = train_step(imgs, days)
 
-                    losses[0].append(total_loss.numpy())
-                    losses[1].append(image_similarity_loss.numpy())
-                    losses[2].append(structure_vec_sim_loss.numpy())
-                    losses[3].append(ssims.numpy())
-                    pbar.update(1)
-                    pbar.set_description(
-                        f"training.. Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
-                        + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
-                    )
+                losses[0].append(total_loss.numpy())
+                losses[1].append(image_similarity_loss.numpy())
+                losses[2].append(structure_vec_sim_loss.numpy())
+                losses[3].append(ssims.numpy())
+                pbar.update(1)
+                pbar.set_description(
+                    f"training..... Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
+                    + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
+                )
             generate_images(predicted_imgs, image_name_train)
             losses = [statistics.mean(x) for x in losses]
+            pbar.set_description(
+                f"training..... Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.5f}; "
+                + f"structure_vec_mse: {losses[2]:.5f}; ssim: {losses[3]:.5f}"
+            )
+            pbar.close()
             with summary_writer.as_default():
                 tf.summary.scalar("total_loss", losses[0], step=epoch)
                 tf.summary.scalar("image_similarity_loss", losses[1], step=epoch)
@@ -361,28 +367,34 @@ if __name__ == "__main__":
             # testing
             log_print("Calculating validation losses...")
             val_losses = [[], [], [], []]
-            with tqdm() as pbar:
-                for n, inputs in val_ds.enumerate():
-                    imgs = inputs["imgs"]
-                    days = inputs["days"]
-                    (
-                        total_loss,
-                        image_similarity_loss,
-                        structure_vec_sim_loss,
-                        ssims,
-                        predicted_imgs,
-                    ) = eval_step(imgs, days)
-                    val_losses[0].append(total_loss.numpy())
-                    val_losses[1].append(image_similarity_loss.numpy())
-                    val_losses[2].append(structure_vec_sim_loss.numpy())
-                    val_losses[3].append(ssims.numpy())
-                    pbar.update(1)
-                    pbar.set_description(
-                        f"validations.. Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
-                        + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
-                    )
+            # with tqdm() as pbar:
+            pbar = tqdm()
+            for n, inputs in val_ds.enumerate():
+                imgs = inputs["imgs"]
+                days = inputs["days"]
+                (
+                    total_loss,
+                    image_similarity_loss,
+                    structure_vec_sim_loss,
+                    ssims,
+                    predicted_imgs,
+                ) = eval_step(imgs, days)
+                val_losses[0].append(total_loss.numpy())
+                val_losses[1].append(image_similarity_loss.numpy())
+                val_losses[2].append(structure_vec_sim_loss.numpy())
+                val_losses[3].append(ssims.numpy())
+                pbar.update(1)
+                pbar.set_description(
+                    f"validations.. Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
+                    + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
+                )
             generate_images(predicted_imgs, image_name_val)
             val_losses = [statistics.mean(x) for x in val_losses]
+            pbar.set_description(
+                f"validations.. Total loss: {val_losses[0]:.5f}; image_sim_mse: {val_losses[1]:.5f}; "
+                + f"structure_vec_mse: {val_losses[2]:.5f}; ssim: {val_losses[3]:.5f}"
+            )
+            pbar.close()
             with summary_writer.as_default():
                 tf.summary.scalar("val_total_loss", val_losses[0], step=epoch)
                 tf.summary.scalar(
@@ -393,14 +405,14 @@ if __name__ == "__main__":
                 )
                 tf.summary.scalar("val_ssims", val_losses[3], step=epoch)
             summary_writer.flush()
-            print(
-                f"[TRAIN] Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.5f}; "
-                + f"structure_vec_mse: {losses[2]:.5f}; ssim: {losses[3]:.5f}"
-            )
-            print(
-                f"[VAL] Total loss: {val_losses[0]:.5f}; image_sim_mse: {val_losses[1]:.5f}; "
-                + f"structure_vec_mse: {val_losses[2]:.5f}; ssim: {val_losses[3]:.5f}"
-            )
+            # print(
+            #     f"[TRAIN] Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.5f}; "
+            #     + f"structure_vec_mse: {losses[2]:.5f}; ssim: {losses[3]:.5f}"
+            # )
+            # print(
+            #     f"[VAL] Total loss: {val_losses[0]:.5f}; image_sim_mse: {val_losses[1]:.5f}; "
+            #     + f"structure_vec_mse: {val_losses[2]:.5f}; ssim: {val_losses[3]:.5f}"
+            # )
 
             end_time = time.time()
             log_print(
