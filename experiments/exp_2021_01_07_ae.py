@@ -245,7 +245,13 @@ if __name__ == "__main__":
 
         ssims = calculate_ssim(imgs, predicted_imgs)
 
-        return total_loss, image_similarity_loss, structure_vec_sim_loss, ssims
+        return (
+            total_loss,
+            image_similarity_loss,
+            structure_vec_sim_loss,
+            ssims,
+            predicted_imgs,
+        )
 
     def eval_step(imgs, days):
         structures = []
@@ -278,30 +284,34 @@ if __name__ == "__main__":
 
         ssims = calculate_ssim(imgs, predicted_imgs)
 
-        return total_loss, image_similarity_loss, structure_vec_sim_loss, ssims
+        return (
+            total_loss,
+            image_similarity_loss,
+            structure_vec_sim_loss,
+            ssims,
+            predicted_imgs,
+        )
 
-    # def generate_images(z_list, path=None, show=False):
-    #     images = model.reverse(z_list, reconstruct=False)
-    #     num_images = tf.shape(images).numpy()[0]
-    #     images = tf.split(images, num_images, axis=0)
-    #     images = [x.numpy().squeeze() for x in images]
-    #     images = [np.clip(x + 0.5, 0, 1) for x in images]
-    #     images = [images[: num_images // 2], images[num_images // 2 :]]
-    #     images = [np.hstack(x) for x in images]
-    #     images = np.vstack(images)
-    #     images = np.clip(images * 255, 0, 255).astype(np.uint8)
-    #     if path is not None:
-    #         cv2.imwrite(path, images)
-    #         # plt.savefig(path)
-    #     if show:
-    #         plt.show()
+    def generate_images(predicted_imgs, image_name):
+        path = os.path.join(EXPERIMENT_FOLDER, "figures", image_name)
+        batch_size = tf.shape(predicted_imgs[0])[0]
+        hseq = []
+        for imgs in predicted_imgs:
+            imgs = imgs.numpy()
+            vseq = [imgs[i, ...] for i in range(batch_size)]
+            vseq = np.vstack(vseq)
+            vseq = np.clip(vseq * 255, 0, 255).astype(np.uint8)
+            hseq.append(vseq)
+        hseq = np.hstack(hseq)
+        cv2.imwrite(path, hseq)
 
     def fit(train_ds, val_ds, num_epochs, initial_epoch=0):
         assert initial_epoch < num_epochs
         for epoch in range(initial_epoch, num_epochs):
             print("Epoch: {}".format(epoch))
             start_time = time.time()
-            image_name = str(epoch) + "_train.png"
+            image_name_train = str(epoch) + "_train.png"
+            image_name_val = str(epoch) + "_val.png"
 
             # training
             log_print("Training epoch {}".format(epoch), add_timestamp=True)
@@ -315,6 +325,7 @@ if __name__ == "__main__":
                         image_similarity_loss,
                         structure_vec_sim_loss,
                         ssims,
+                        predicted_imgs,
                     ) = train_step(imgs, days)
 
                     losses[0].append(total_loss.numpy())
@@ -326,6 +337,7 @@ if __name__ == "__main__":
                         f"Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
                         + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
                     )
+            generate_images(predicted_imgs, image_name_train)
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
                 tf.summary.scalar("total_loss", losses[0], step=epoch)
@@ -346,6 +358,7 @@ if __name__ == "__main__":
                         image_similarity_loss,
                         structure_vec_sim_loss,
                         ssims,
+                        predicted_imgs,
                     ) = eval_step(imgs, days)
                     val_losses[0].append(total_loss.numpy())
                     val_losses[1].append(image_similarity_loss.numpy())
@@ -356,6 +369,7 @@ if __name__ == "__main__":
                         f"validations.. Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
                         + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
                     )
+            generate_images(predicted_imgs, image_name_val)
             val_losses = [statistics.mean(x) for x in val_losses]
             with summary_writer.as_default():
                 tf.summary.scalar("val_total_loss", val_losses[0], step=epoch)
