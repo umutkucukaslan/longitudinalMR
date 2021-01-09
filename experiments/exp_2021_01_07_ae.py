@@ -431,15 +431,6 @@ if __name__ == "__main__":
                         int(checkpoint.epoch), save_path
                     )
                 )
-            print(
-                "Epoch {} completed in {} seconds. Loss: {}, likelihood: {}, val_likelihood: {}".format(
-                    epoch,
-                    round(end_time - start_time),
-                    losses[0],
-                    losses[1],
-                    val_losses[0],
-                )
-            )
 
     try:
         log_print("Fitting to the data set", add_timestamp=True)
