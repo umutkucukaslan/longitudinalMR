@@ -357,7 +357,7 @@ if __name__ == "__main__":
                     val_losses[3].append(ssims.numpy())
                     pbar.update(1)
                     pbar.set_description(
-                        f"[VAL] Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
+                        f"validations.. Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
                         + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
                     )
             val_losses = [statistics.mean(x) for x in val_losses]
