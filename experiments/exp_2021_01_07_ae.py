@@ -323,8 +323,8 @@ if __name__ == "__main__":
                     losses[3].append(ssims.numpy())
                     pbar.update(1)
                     pbar.set_description(
-                        f"Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.2f}; "
-                        + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.2f}; ssim: {ssims.numpy():.3f}"
+                        f"Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
+                        + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
                     )
             losses = [statistics.mean(x) for x in losses]
             with summary_writer.as_default():
@@ -334,8 +334,8 @@ if __name__ == "__main__":
                 tf.summary.scalar("ssims", losses[3], step=epoch)
             summary_writer.flush()
             print(
-                f"[TRAIN] Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.2f}; "
-                + f"structure_vec_mse: {losses[2]:.2f}; ssim: {losses[3]:.3f}"
+                f"[TRAIN] Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.5f}; "
+                + f"structure_vec_mse: {losses[2]:.5f}; ssim: {losses[3]:.5f}"
             )
 
             # testing
@@ -357,8 +357,8 @@ if __name__ == "__main__":
                     val_losses[3].append(ssims.numpy())
                     pbar.update(1)
                     pbar.set_description(
-                        f"[VAL] Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.2f}; "
-                        + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.2f}; ssim: {ssims.numpy():.3f}"
+                        f"[VAL] Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
+                        + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
                     )
             val_losses = [statistics.mean(x) for x in val_losses]
             with summary_writer.as_default():
@@ -372,8 +372,8 @@ if __name__ == "__main__":
                 tf.summary.scalar("val_ssims", val_losses[3], step=epoch)
             summary_writer.flush()
             print(
-                f"[VAL] Total loss: {val_losses[0]:.5f}; image_sim_mse: {val_losses[1]:.2f}; "
-                + f"structure_vec_mse: {val_losses[2]:.2f}; ssim: {val_losses[3]:.3f}"
+                f"[VAL] Total loss: {val_losses[0]:.5f}; image_sim_mse: {val_losses[1]:.5f}; "
+                + f"structure_vec_mse: {val_losses[2]:.5f}; ssim: {val_losses[3]:.5f}"
             )
 
             end_time = time.time()
