@@ -69,7 +69,6 @@ class AE(tf.keras.Model):
             self.filters[-1],
         ]
         self.num_features = num_features
-        print("num features: ", self.num_features)
         self.decode_structure_dense = tf.keras.layers.Dense(
             num_features, activation=None, use_bias=False
         )
@@ -78,14 +77,11 @@ class AE(tf.keras.Model):
         )
 
     def encode(self, image_batch, training=None):
-        print("shape of encode input: ", image_batch.shape)
         x = image_batch
         for layer in self.downsample_conv:
             x = layer(x)
         x = tf.keras.layers.Flatten()(x)
-        print("encode shape after flatter: ", tf.shape(x).numpy())
         structure = self.structure_dense(x)
-        print("encode shape of structure: ", tf.shape(structure).numpy())
         longitudinal_state = self.longitudinal_dense(x)
         return structure, longitudinal_state
 
