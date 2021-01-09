@@ -187,7 +187,11 @@ if __name__ == "__main__":
         .batch(BATCH_SIZE)
         .prefetch(PREFETCH_BUFFER_SIZE)
     )
-    val_ds = val_ds.batch(BATCH_SIZE).prefetch(PREFETCH_BUFFER_SIZE)
+    val_ds = (
+        val_ds.shuffle(buffer_size=SHUFFLE_BUFFER_SIZE)
+        .batch(BATCH_SIZE)
+        .prefetch(PREFETCH_BUFFER_SIZE)
+    )
 
     def calculate_ssim(imgs, generated_imgs):
         ssims = [
