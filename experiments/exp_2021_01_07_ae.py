@@ -46,6 +46,8 @@ SHUFFLE_BUFFER_SIZE = 1000
 INPUT_HEIGHT = 64
 INPUT_WIDTH = 64
 INPUT_CHANNEL = 1
+STRUCTURE_VEC_SIMILARITY_LOSS_MULT = 100
+
 
 BATCH_SIZE = 32
 EPOCHS = 5000
@@ -238,7 +240,10 @@ if __name__ == "__main__":
             image_similarity_loss = tf.reduce_mean(
                 image_similarity_mse
             )  # sum(image_similarity_mse) / 3.0
-            total_loss = structure_vec_sim_loss + image_similarity_loss
+            total_loss = (
+                STRUCTURE_VEC_SIMILARITY_LOSS_MULT * structure_vec_sim_loss
+                + image_similarity_loss
+            )
 
         grads = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(grads, model.trainable_variables))
@@ -280,7 +285,10 @@ if __name__ == "__main__":
         image_similarity_loss = tf.reduce_mean(
             image_similarity_mse
         )  # sum(image_similarity_mse) / 3.0
-        total_loss = structure_vec_sim_loss + image_similarity_loss
+        total_loss = (
+            STRUCTURE_VEC_SIMILARITY_LOSS_MULT * structure_vec_sim_loss
+            + image_similarity_loss
+        )
 
         ssims = calculate_ssim(imgs, predicted_imgs)
 
@@ -334,7 +342,7 @@ if __name__ == "__main__":
                     losses[3].append(ssims.numpy())
                     pbar.update(1)
                     pbar.set_description(
-                        f"Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
+                        f"training.. Total loss: {total_loss.numpy():.5f}; image_sim_mse: {image_similarity_loss.numpy():.5f}; "
                         + f"structure_vec_mse: {structure_vec_sim_loss.numpy():.5f}; ssim: {ssims.numpy():.5f}"
                     )
             generate_images(predicted_imgs, image_name_train)
