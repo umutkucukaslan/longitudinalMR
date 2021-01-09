@@ -333,10 +333,6 @@ if __name__ == "__main__":
                 tf.summary.scalar("structure_vec_sim_loss", losses[2], step=epoch)
                 tf.summary.scalar("ssims", losses[3], step=epoch)
             summary_writer.flush()
-            print(
-                f"[TRAIN] Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.5f}; "
-                + f"structure_vec_mse: {losses[2]:.5f}; ssim: {losses[3]:.5f}"
-            )
 
             # testing
             log_print("Calculating validation losses...")
@@ -371,6 +367,10 @@ if __name__ == "__main__":
                 )
                 tf.summary.scalar("val_ssims", val_losses[3], step=epoch)
             summary_writer.flush()
+            print(
+                f"[TRAIN] Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.5f}; "
+                + f"structure_vec_mse: {losses[2]:.5f}; ssim: {losses[3]:.5f}"
+            )
             print(
                 f"[VAL] Total loss: {val_losses[0]:.5f}; image_sim_mse: {val_losses[1]:.5f}; "
                 + f"structure_vec_mse: {val_losses[2]:.5f}; ssim: {val_losses[3]:.5f}"
