@@ -217,6 +217,7 @@ if __name__ == "__main__":
     mse_loss_fn = tf.keras.losses.MeanSquaredError()
 
     def train_step(imgs, days):
+        predicted_imgs_for_vis = None
         with tf.GradientTape() as tape:
             structures = []
             states = []
@@ -238,6 +239,8 @@ if __name__ == "__main__":
                 model.decode(structure, state)
                 for structure, state in zip(structures, predicted_states)
             ]
+            if predicted_imgs_for_vis is None:
+                predicted_imgs_for_vis = predicted_imgs
             image_similarity_mse = [
                 mse_loss_fn(real, pred) for real, pred in zip(imgs, predicted_imgs)
             ]
@@ -259,10 +262,11 @@ if __name__ == "__main__":
             image_similarity_loss,
             structure_vec_sim_loss,
             ssims,
-            predicted_imgs,
+            predicted_imgs_for_vis,
         )
 
     def eval_step(imgs, days):
+        predicted_imgs_for_vis = None
         structures = []
         states = []
         for image_batch in imgs:
@@ -283,6 +287,8 @@ if __name__ == "__main__":
             model.decode(structure, state)
             for structure, state in zip(structures, predicted_states)
         ]
+        if predicted_imgs_for_vis is None:
+            predicted_imgs_for_vis = predicted_imgs
         image_similarity_mse = [
             mse_loss_fn(real, pred) for real, pred in zip(imgs, predicted_imgs)
         ]
@@ -301,7 +307,7 @@ if __name__ == "__main__":
             image_similarity_loss,
             structure_vec_sim_loss,
             ssims,
-            predicted_imgs,
+            predicted_imgs_for_vis,
         )
 
     def generate_images(predicted_imgs, image_name):
