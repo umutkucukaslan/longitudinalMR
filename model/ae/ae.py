@@ -1,3 +1,4 @@
+import cv2
 import tensorflow as tf
 import numpy as np
 
@@ -11,7 +12,7 @@ class AE(tf.keras.Model):
         last_activation=tf.nn.sigmoid,
         structure_vec_size=100,
         longitudinal_vec_size=1,
-        **kwargs
+        **kwargs,
     ):
         super(AE, self).__init__(**kwargs)
         self.filters = filters
@@ -99,6 +100,50 @@ class AE(tf.keras.Model):
         structure, state = self.encode(inputs, training=training)
         out = self.decode(structure, state, training=training)
         return out
+
+    def interpolate(
+        self,
+        inputs1,
+        inputs2,
+        sample_points,
+        structure_mix_type="mean",
+        return_as_image=False,
+    ):
+        structure1, state1 = self.encode(inputs1, training=False)
+        structure2, state2 = self.encode(inputs2, training=False)
+        if structure_mix_type == "first":
+            structure = structure1
+        elif structure_mix_type == "second":
+            structure = structure2
+        elif structure_mix_type == "mean":
+            structure = (structure1 + structure2) / 2.0
+        else:
+            raise ValueError(f"structure mix type {structure_mix_type} is unknown")
+        diff = state2 - state1
+        state_vecs = [state1 + diff * sample_point for sample_point in sample_points]
+        interpolations = [
+            self.decode(structure, state, training=False) for state in state_vecs
+        ]
+        if return_as_image:
+            interpolations = [
+                np.clip(x.numpy()[0, ...] * 255, 0, 255).astype(np.uint8)
+                for x in interpolations
+            ]
+            interpolations = [
+                cv2.putText(
+                    x, str(round(p, 2)), (0, 10), cv2.FONT_HERSHEY_PLAIN, 1, 255
+                )
+                for x, p in zip(interpolations, sample_points)
+            ]
+            interpolations = np.hstack(interpolations)
+        return interpolations
+
+    def train_for_patient(self, img1, img2):
+        pass
+
+    def reset_model(self):
+        # should load default variables
+        pass
 
 
 if __name__ == "__main__":

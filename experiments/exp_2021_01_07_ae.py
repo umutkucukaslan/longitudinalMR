@@ -422,11 +422,11 @@ if __name__ == "__main__":
 
             end_time = time.time()
             log_print(
-                f"Epoch {epoch} completed in {round(end_time - start_time)} seconds."
-                + f"[TRAIN] Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.2f}; "
-                + f"structure_vec_mse: {losses[2]:.2f}; ssim: {losses[3]:.3f}"
-                + f"[VAL] Total loss: {val_losses[0]:.5f}; image_sim_mse: {val_losses[1]:.2f}; "
-                + f"structure_vec_mse: {val_losses[2]:.2f}; ssim: {val_losses[3]:.3f}"
+                f"Epoch {epoch} completed in {round(end_time - start_time)} seconds.\n"
+                + f"[TRAIN] Total loss: {losses[0]:.5f}; image_sim_mse: {losses[1]:.5f}; "
+                + f"structure_vec_mse: {losses[2]:.5f}; ssim: {losses[3]:.5f}\n"
+                + f"[VAL] Total loss: {val_losses[0]:.5f}; image_sim_mse: {val_losses[1]:.5f}; "
+                + f"structure_vec_mse: {val_losses[2]:.5f}; ssim: {val_losses[3]:.5f}\n"
             )
 
             checkpoint.epoch.assign(epoch)
