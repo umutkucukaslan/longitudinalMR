@@ -8,7 +8,7 @@ from experiments.exp_2021_01_07_ae import get_model
 
 model, EXPERIMENT_FOLDER = get_model(return_experiment_folder=True)
 
-results_folder = os.path.join(EXPERIMENT_FOLDER, "testing/sequences/test")
+results_folder = os.path.join(EXPERIMENT_FOLDER, "testing/sequences/val")
 if not os.path.isdir(results_folder):
     os.makedirs(results_folder)
 
@@ -31,9 +31,11 @@ train_ds, val_ds, test_ds = get_triplets_adni_15t_dataset(
 
 test_ds = test_ds.batch(1).prefetch(2)
 train_ds = train_ds.batch(1).prefetch(2)
+val_ds = val_ds.batch(1).prefetch(2)
 
 # for n, sample in enumerate(train_ds):
-for n, sample in enumerate(test_ds):
+# for n, sample in enumerate(test_ds):
+for n, sample in enumerate(val_ds):
     imgs = sample["imgs"]
     days = sample["days"]
 
@@ -50,7 +52,7 @@ for n, sample in enumerate(test_ds):
     true_sequence = np.hstack(true_sequence)
 
     # extrapolate days
-    days += [days[-1] + i * (days[-1] - days[-2]) for i in range(1, 7)]
+    days += [days[-1] + i * (days[-1] - days[-2]) for i in range(1, 13)]
     # missing prediction
     sample_points = [(x - days[0]) / days[2] for x in days]
     missing_interpolation_image = model.interpolate(
@@ -71,7 +73,15 @@ for n, sample in enumerate(test_ds):
     )
 
     cv2.putText(true_sequence, "T", (0, 20), cv2.FONT_HERSHEY_PLAIN, 1, 255)
-    true_sequence = np.hstack([true_sequence, true_sequence * 0, true_sequence * 0])
+    true_sequence = np.hstack(
+        [
+            true_sequence,
+            true_sequence * 0,
+            true_sequence * 0,
+            true_sequence * 0,
+            true_sequence * 0,
+        ]
+    )
     cv2.putText(
         missing_interpolation_image, "M", (0, 20), cv2.FONT_HERSHEY_PLAIN, 1, 255
     )

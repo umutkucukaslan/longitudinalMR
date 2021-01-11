@@ -134,11 +134,29 @@ optimizer = tf.optimizers.Adam(LR, beta_1=0.5)
 # checkpoint writer
 checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "checkpoints")
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+epoch_var = tf.Variable(0)
+best_val_ssim_var = tf.Variable(0.0)
 checkpoint = tf.train.Checkpoint(
-    epoch=tf.Variable(0), model=model, optimizer=optimizer,
+    epoch=epoch_var,
+    best_val_ssim_var=best_val_ssim_var,
+    model=model,
+    optimizer=optimizer,
 )
 manager = tf.train.CheckpointManager(
     checkpoint, checkpoint_dir, max_to_keep=MAX_TO_KEEP
+)
+
+# best checkpoint writer
+best_checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "best_checkpoint")
+best_checkpoint_prefix = os.path.join(best_checkpoint_dir, "ckpt")
+best_checkpoint = tf.train.Checkpoint(
+    epoch=epoch_var,
+    best_val_ssim_var=best_val_ssim_var,
+    model=model,
+    optimizer=optimizer,
+)
+best_manager = tf.train.CheckpointManager(
+    best_checkpoint, best_checkpoint_dir, max_to_keep=1
 )
 
 if RESTORE_FROM_CHECKPOINT:
@@ -156,6 +174,7 @@ else:
     initialized_from_scratch = True
 
 initial_epoch = checkpoint.epoch.numpy() + 1
+best_val_ssim = best_val_ssim_var.numpy()
 
 
 def get_model(return_experiment_folder=True):
@@ -437,6 +456,11 @@ if __name__ == "__main__":
                         int(checkpoint.epoch), save_path
                     )
                 )
+            if val_losses[3] > best_val_ssim:
+                best_val_ssim = val_losses[3]
+                checkpoint.best_val_ssim_var.assign(best_val_ssim)
+                best_manager.save()
+                log_print(f"Saving best model, val ssim: {best_val_ssim}")
 
     try:
         log_print("Fitting to the data set", add_timestamp=True)
