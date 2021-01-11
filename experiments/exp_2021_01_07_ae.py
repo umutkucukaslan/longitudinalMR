@@ -342,7 +342,7 @@ if __name__ == "__main__":
         hseq = np.hstack(hseq)
         cv2.imwrite(path, hseq)
 
-    def fit(train_ds, val_ds, num_epochs, initial_epoch=0):
+    def fit(train_ds, val_ds, num_epochs, initial_epoch=0, best_val_ssim=0):
         assert initial_epoch < num_epochs
         for epoch in range(initial_epoch, num_epochs):
             print("Epoch: {}".format(epoch))
@@ -488,7 +488,11 @@ if __name__ == "__main__":
         log_print("Initial epoch: {}".format(initial_epoch))
 
         fit(
-            train_ds, val_ds, num_epochs=EPOCHS, initial_epoch=initial_epoch,
+            train_ds,
+            val_ds,
+            num_epochs=EPOCHS,
+            initial_epoch=initial_epoch,
+            best_val_ssim=best_val_ssim,
         )
         # fit(
         #     train_ds.take(5),
