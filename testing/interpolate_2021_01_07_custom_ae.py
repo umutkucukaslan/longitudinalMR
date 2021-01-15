@@ -1,8 +1,12 @@
 import os
+import time
+
 import cv2
 import numpy as np
 import tensorflow as tf
 import csv
+
+from tqdm import tqdm
 
 from datasets.adni_dataset import get_triplets_adni_15t_dataset
 
@@ -230,6 +234,7 @@ class Saver:
 saver = Saver(save_dir=results_folder)
 
 for sample_id, sample in enumerate(test_ds):
+    start_time = time.time()
     # if sample_id == 1:
     #     exit()
     imgs = sample["imgs"]
@@ -292,6 +297,7 @@ for sample_id, sample in enumerate(test_ds):
         )
 
     model.restore_model(checkpoint_dir)
+    print(f"sample id: {sample_id} - {1}/3 - f")
     model.train_for_patient(
         imgs[0],
         imgs[1],
@@ -344,6 +350,7 @@ for sample_id, sample in enumerate(test_ds):
         )
 
     model.restore_model(checkpoint_dir)
+    print(f"sample id: {sample_id} - {2}/3 - m")
     model.train_for_patient(
         imgs[0],
         imgs[2],
@@ -396,6 +403,7 @@ for sample_id, sample in enumerate(test_ds):
         )
 
     model.restore_model(checkpoint_dir)
+    print(f"sample id: {sample_id} - {3}/3 - p")
     model.train_for_patient(
         imgs[1],
         imgs[2],
@@ -409,3 +417,6 @@ for sample_id, sample in enumerate(test_ds):
         callback_fn_save_val_losses=callback_fn_save_val_losses,
         callback_fn_save_train_losses=callback_fn_save_train_losses,
     )
+
+    end_time = time.time()
+    print(f"sample id: {sample_id} took {round(end_time - start_time)} seconds")
