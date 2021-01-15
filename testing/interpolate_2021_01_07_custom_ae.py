@@ -140,7 +140,9 @@ class Saver:
     def __init__(self, save_dir):
         self.save_dir = save_dir
         self.progress_csv_handler = CSVHandler(
-            os.path.join(save_dir, "csv_progress.csv"), ["sample_id"],
+            os.path.join(save_dir, "csv_progress.csv"),
+            ["sample_id"],
+            read_existing=True,
         )
         self.interpolation_ssim_csv_handler = CSVHandler(
             os.path.join(save_dir, "csv_interpolation_ssims.csv"),
