@@ -146,8 +146,13 @@ class CSVHandler:
         self.queue.append(d)
 
     def flush(self):
-        for d in self.queue:
-            self.add_data(d)
+        with open(self.csv_path, mode="a") as file:
+            csv_writer = csv.writer(
+                file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
+            for d in self.queue:
+                row = [d[c] for c in self.columns]
+                csv_writer.writerow(row)
         self.queue = []
 
     def add_data(self, d):

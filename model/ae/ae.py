@@ -379,7 +379,7 @@ class AE(tf.keras.Model):
                     )
 
                 steps_counter += 1
-                if steps_counter == num_steps:
+                if steps_counter == num_steps + 1:
                     break
 
     def train_for_patient3(
