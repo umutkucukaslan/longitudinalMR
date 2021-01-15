@@ -215,6 +215,7 @@ class AE(tf.keras.Model):
         num_steps=1,
         period=10,
         val_period=100,
+        train_loss_period=100,
         lr=1e-4,
         callback_fn_generate_seq=None,
         callback_fn_save_pair_losses=None,
@@ -225,9 +226,8 @@ class AE(tf.keras.Model):
         sim_loss_fn = tf.keras.losses.MeanSquaredError()
         structure_vec_similarity_loss_mult = 100
 
-        pbar = tqdm(num_steps)
-        pbar.set_description(f"Training for patient..")
         steps_counter = 0
+        train_losses = [[], [], [], []]
         while steps_counter < num_steps:
             for n, inputs in train_ds.enumerate():
                 if steps_counter % val_period == 0 and callback_fn_save_val_losses:
@@ -279,16 +279,22 @@ class AE(tf.keras.Model):
                     sim_loss_fn=sim_loss_fn,
                     structure_vec_similarity_loss_mult=structure_vec_similarity_loss_mult,
                 )
-                train_ds_losses = {
-                    "total_loss": total_loss.numpy(),
-                    "image_similarity_loss": image_similarity_loss.numpy(),
-                    "structure_vec_sim_loss": structure_vec_sim_loss.numpy(),
-                    "ssim": ssims.numpy(),
-                }
-                if callback_fn_save_train_losses:
-                    callback_fn_save_train_losses(steps_counter, train_ds_losses)
+                train_losses[0].append(total_loss.numpy())
+                train_losses[1].append(image_similarity_loss.numpy())
+                train_losses[2].append(structure_vec_sim_loss.numpy())
+                train_losses[3].append(ssims.numpy())
+                if steps_counter % train_loss_period == 0:
+                    train_losses = [statistics.mean(x) for x in train_losses]
+                    train_ds_losses = {
+                        "total_loss": train_losses[0],
+                        "image_similarity_loss": train_losses[1],
+                        "structure_vec_sim_loss": train_losses[2],
+                        "ssim": train_losses[3],
+                    }
+                    train_losses = [[], [], [], []]
+                    if callback_fn_save_train_losses:
+                        callback_fn_save_train_losses(steps_counter, train_ds_losses)
 
-                pbar.update(1)
                 steps_counter += 1
                 if steps_counter == num_steps:
                     break
