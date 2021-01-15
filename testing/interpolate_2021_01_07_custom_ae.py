@@ -292,11 +292,11 @@ saver = Saver(save_dir=results_folder)
 for sample_id, sample in enumerate(test_ds):
     # check if tried this case before
     if saver.progress_csv_handler.rows:
-        print('progress csv file present!')
+        print("progress csv file present!")
         print(saver.progress_csv_handler.rows)
         matches = [sample_id == x for x in saver.progress_csv_handler.rows]
         if any(matches):
-            print(f'sample id {} is tried before')
+            print(f"sample id {sample_id} is tried before")
             continue
     start_time = time.time()
     # if sample_id == 1:
