@@ -177,7 +177,7 @@ initial_epoch = checkpoint.epoch.numpy() + 1
 best_val_ssim = best_val_ssim_var.numpy()
 
 
-def get_model(return_experiment_folder=True):
+def get_model(return_experiment_folder=True) -> (AE, str):
     """
     Returns the restored model
     :return: model, experiment_folder (optional)

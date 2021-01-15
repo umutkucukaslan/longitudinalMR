@@ -1,26 +1,84 @@
 import os
 import cv2
 import numpy as np
+import tensorflow as tf
+import csv
 
 from datasets.adni_dataset import get_triplets_adni_15t_dataset
-from experiments.exp_2021_01_07_ae import get_model
+
+from model.ae.ae import AE
+
+EXPERIMENT_NAME = "exp_2021_01_07_ae"
+CHECKPOINT_DIR_NAME = "checkpoints"
+
+# choose machine type
+if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
+    MACHINE = "none"
+    EXPERIMENT_FOLDER = os.path.join(
+        "/Users/umutkucukaslan/Desktop/thesis/experiments", EXPERIMENT_NAME
+    )
+elif __file__.startswith("/content/thesis"):
+    MACHINE = "colab"
+    EXPERIMENT_FOLDER = os.path.join(
+        "/content/drive/My Drive/experiments", EXPERIMENT_NAME
+    )
+else:
+    raise ValueError("Unknown machine type, no machine MACHINE")
+CHECKPOINT_DIR = os.path.join(EXPERIMENT_FOLDER, CHECKPOINT_DIR_NAME)
 
 
-model, EXPERIMENT_FOLDER = get_model(return_experiment_folder=True)
+FILTERS = [64, 128, 256, 512]
+KERNEL_SIZE = 3
+ACTIVATION = tf.nn.silu
+LAST_ACTIVATION = tf.nn.sigmoid
+STRUCTURE_VEC_SIZE = 100
+LONGITUDINAL_VEC_SIZE = 1
 
-results_folder = os.path.join(EXPERIMENT_FOLDER, "testing/sequences/val")
+BATCH_SIZE = 32
+EPOCHS = 5000
+CHECKPOINT_SAVE_INTERVAL = 5
+MAX_TO_KEEP = 5
+LR = 1e-4
+
+PREFETCH_BUFFER_SIZE = 3
+SHUFFLE_BUFFER_SIZE = 1000
+INPUT_HEIGHT = 64
+INPUT_WIDTH = 64
+INPUT_CHANNEL = 1
+STRUCTURE_VEC_SIMILARITY_LOSS_MULT = 100
+
+# _, EXPERIMENT_FOLDER = get_model(return_experiment_folder=True)
+
+
+model = AE(
+    filters=FILTERS,
+    kernel_size=KERNEL_SIZE,
+    activation=ACTIVATION,
+    last_activation=LAST_ACTIVATION,
+    structure_vec_size=STRUCTURE_VEC_SIZE,
+    longitudinal_vec_size=LONGITUDINAL_VEC_SIZE,
+)
+# model first call to initialize layers
+input_tensor = tf.convert_to_tensor(
+    np.zeros((BATCH_SIZE, INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL))
+)
+input_tensor = tf.cast(input_tensor, tf.float32)
+_ = model(input_tensor)
+
+
+print("restoring model")
+checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "checkpoints")  # latest checkpoint
+# checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "best_checkpoint")
+model.restore_model(checkpoint_dir)
+print("model restored")
+
+results_folder = os.path.join(EXPERIMENT_FOLDER, "testing/sequences/test_test")
 if not os.path.isdir(results_folder):
     os.makedirs(results_folder)
 
 
 INPUT_HEIGHT, INPUT_WIDTH, INPUT_CHANNEL = 64, 64, 1
-# choose machine type
-if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
-    MACHINE = "none"
-elif __file__.startswith("/content/thesis"):
-    MACHINE = "colab"
-else:
-    raise ValueError("Unknown machine type, no machine MACHINE")
+
 
 train_ds, val_ds, test_ds = get_triplets_adni_15t_dataset(
     folder_name="training_data_15T_192x160_4slices",
@@ -30,16 +88,160 @@ train_ds, val_ds, test_ds = get_triplets_adni_15t_dataset(
 )
 
 test_ds = test_ds.batch(1).prefetch(2)
-train_ds = train_ds.batch(1).prefetch(2)
-val_ds = val_ds.batch(1).prefetch(2)
+train_ds = train_ds.shuffle(1000).batch(32).prefetch(2)
+val_ds = val_ds.batch(32).prefetch(2)
 
-# for n, sample in enumerate(train_ds):
-# for n, sample in enumerate(test_ds):
-for n, sample in enumerate(val_ds):
+
+class CSVHandler:
+    def __init__(self, csv_path, columns):
+        self.csv_path = csv_path
+        self.columns = columns
+        if not os.path.isfile(csv_path):
+            with open(self.csv_path, mode="w") as file:
+                csv_writer = csv.writer(
+                    file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+                )
+                csv_writer.writerow(columns)
+
+    def add_data(self, d):
+        """
+        add data dict to csv file
+        :param d: {sample_id, identifier, train_step, ssim}
+        :return:
+        """
+        row = [d[c] for c in self.columns]
+        # row = [d["sample_id"], d["identifier"], d["train_step"], d["ssim"]]
+        with open(self.csv_path, mode="a") as file:
+            csv_writer = csv.writer(
+                file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
+            csv_writer.writerow(row)
+
+
+class Saver:
+    def __init__(self, save_dir):
+        self.save_dir = save_dir
+        self.interpolation_ssim_csv_handler = CSVHandler(
+            os.path.join(save_dir, "csv_interpolation_ssims.csv"),
+            ["sample_id", "identifier", "train_step", "ssim"],
+        )
+        self.pair_loss_csv_handler = CSVHandler(
+            os.path.join(save_dir, "csv_pair_loss.csv"),
+            [
+                "sample_id",
+                "identifier",
+                "train_step",
+                "total_loss",
+                "image_similarity_loss",
+                "structure_vec_sim_loss",
+                "ssim",
+            ],
+        )
+        self.val_loss_csv_handler = CSVHandler(
+            os.path.join(save_dir, "csv_val_loss.csv"),
+            [
+                "sample_id",
+                "identifier",
+                "train_step",
+                "total_loss",
+                "image_similarity_loss",
+                "structure_vec_sim_loss",
+                "ssim",
+            ],
+        )
+        self.train_loss_csv_handler = CSVHandler(
+            os.path.join(save_dir, "csv_train_loss.csv"),
+            [
+                "sample_id",
+                "identifier",
+                "train_step",
+                "total_loss",
+                "image_similarity_loss",
+                "structure_vec_sim_loss",
+                "ssim",
+            ],
+        )
+
+    def save_interpolations_and_ssim(
+        self,
+        sample_id: int,
+        identifier: str,
+        train_step: int,
+        interpolations: np.ndarray,
+        interpolation_ssim: float,
+    ) -> None:
+        image_name = f"sample_{int(sample_id):05d}_{str(identifier)}_step_{int(train_step):05d}.jpg"
+        image_path = os.path.join(self.save_dir, image_name)
+        cv2.imwrite(image_path, interpolations)
+        self.interpolation_ssim_csv_handler.add_data(
+            {
+                "sample_id": sample_id,
+                "identifier": identifier,
+                "train_step": train_step,
+                "ssim": interpolation_ssim,
+            }
+        )
+
+    def save_true_sequence(self, sample_id: int, image_sequence: np.ndarray) -> None:
+        image_name = f"sample_{int(sample_id):05d}_true.jpg"
+        image_path = os.path.join(self.save_dir, image_name)
+        cv2.imwrite(image_path, image_sequence)
+
+    def save_pair_losses(self, sample_id, identifier, train_step, pair_losses):
+        self.pair_loss_csv_handler.add_data(
+            {
+                "sample_id": sample_id,
+                "identifier": identifier,
+                "train_step": train_step,
+                "total_loss": pair_losses["total_loss"],
+                "image_similarity_loss": pair_losses["image_similarity_loss"],
+                "structure_vec_sim_loss": pair_losses["structure_vec_sim_loss"],
+                "ssim": pair_losses["ssim"],
+            }
+        )
+
+    def save_val_losses(self, sample_id, identifier, train_step, val_losses):
+        self.val_loss_csv_handler.add_data(
+            {
+                "sample_id": sample_id,
+                "identifier": identifier,
+                "train_step": train_step,
+                "total_loss": val_losses["total_loss"],
+                "image_similarity_loss": val_losses["image_similarity_loss"],
+                "structure_vec_sim_loss": val_losses["structure_vec_sim_loss"],
+                "ssim": val_losses["ssim"],
+            }
+        )
+
+    def save_train_losses(self, sample_id, identifier, train_step, train_losses):
+        self.train_loss_csv_handler.add_data(
+            {
+                "sample_id": sample_id,
+                "identifier": identifier,
+                "train_step": train_step,
+                "total_loss": train_losses["total_loss"],
+                "image_similarity_loss": train_losses["image_similarity_loss"],
+                "structure_vec_sim_loss": train_losses["structure_vec_sim_loss"],
+                "ssim": train_losses["ssim"],
+            }
+        )
+
+
+saver = Saver(save_dir=results_folder)
+
+for sample_id, sample in enumerate(test_ds):
+    # if sample_id == 1:
+    #     exit()
     imgs = sample["imgs"]
     days = sample["days"]
 
     days = [x.numpy()[0] for x in days]
+
+    # extrapolate days
+    days += [days[-1] + i * 90 for i in range(1, 13)]
+    months = [int(round(d / 30.0)) for d in days]
+    print(f"sample id: {sample_id}")
+    print("months: ", months)
 
     # true seq
     true_sequence = [
@@ -47,51 +249,163 @@ for n, sample in enumerate(val_ds):
     ]
     true_sequence = [
         cv2.putText(x, str(int(d)), (0, 10), cv2.FONT_HERSHEY_PLAIN, 1, 255)
-        for x, d in zip(true_sequence, days)
+        for x, d in zip(true_sequence, months[:3])
     ]
     true_sequence = np.hstack(true_sequence)
+    saver.save_true_sequence(sample_id=sample_id, image_sequence=true_sequence)
 
-    # extrapolate days
-    days += [days[-1] + i * (days[-1] - days[-2]) for i in range(1, 13)]
-    # missing prediction
-    sample_points = [(x - days[0]) / days[2] for x in days]
-    missing_interpolation_image = model.interpolate(
-        inputs1=imgs[0],
-        inputs2=imgs[2],
-        sample_points=sample_points,
-        structure_mix_type="mean",
-        return_as_image=True,
-    )
-    # future prediction
-    sample_points = [(x - days[0]) / days[1] for x in days]
-    future_interpolation_image = model.interpolate(
-        inputs1=imgs[0],
-        inputs2=imgs[1],
-        sample_points=sample_points,
-        structure_mix_type="mean",
-        return_as_image=True,
+    # =======================================================================================
+    # future slice extrapolation
+    sample_points = [(x - days[0]) / (days[1] - days[0]) for x in days]
+
+    def extrapolation_future_callback_fn(step):
+        future_interpolation_image, ssim = model.interpolate_and_calculate_ssim(
+            imgs[0],
+            imgs[1],
+            sample_points,
+            imgs[2],
+            ground_truth_index=2,
+            dates=months,
+            structure_mix_type="mean",
+        )
+        saver.save_interpolations_and_ssim(
+            sample_id=sample_id,
+            identifier="f",
+            train_step=step,
+            interpolations=future_interpolation_image,
+            interpolation_ssim=ssim,
+        )
+
+    def callback_fn_save_pair_losses(step, pair_losses):
+        saver.save_pair_losses(
+            sample_id, identifier="f", train_step=step, pair_losses=pair_losses
+        )
+
+    def callback_fn_save_val_losses(step, val_losses):
+        saver.save_val_losses(
+            sample_id, identifier="f", train_step=step, val_losses=val_losses
+        )
+
+    def callback_fn_save_train_losses(step, train_losses):
+        saver.save_train_losses(
+            sample_id, identifier="f", train_step=step, train_losses=train_losses
+        )
+
+    model.restore_model(checkpoint_dir)
+    model.train_for_patient(
+        imgs[0],
+        imgs[1],
+        train_ds,
+        val_ds,
+        num_steps=1000,
+        period=10,
+        lr=1e-4,
+        callback_fn_generate_seq=extrapolation_future_callback_fn,
+        callback_fn_save_pair_losses=callback_fn_save_pair_losses,
+        callback_fn_save_val_losses=callback_fn_save_val_losses,
+        callback_fn_save_train_losses=callback_fn_save_train_losses,
     )
 
-    cv2.putText(true_sequence, "T", (0, 20), cv2.FONT_HERSHEY_PLAIN, 1, 255)
-    true_sequence = np.hstack(
-        [
-            true_sequence,
-            true_sequence * 0,
-            true_sequence * 0,
-            true_sequence * 0,
-            true_sequence * 0,
-        ]
-    )
-    cv2.putText(
-        missing_interpolation_image, "M", (0, 20), cv2.FONT_HERSHEY_PLAIN, 1, 255
-    )
-    cv2.putText(
-        future_interpolation_image, "F", (0, 20), cv2.FONT_HERSHEY_PLAIN, 1, 255
-    )
-    image = np.vstack(
-        [true_sequence, missing_interpolation_image, future_interpolation_image]
-    )
-    image_path = os.path.join(results_folder, f"sample_{n:05d}.jpg")
-    cv2.imwrite(image_path, image)
+    # =======================================================================================
+    # missing slice interpolation
+    sample_points = [(x - days[0]) / (days[2] - days[0]) for x in days]
 
-    print(days)
+    def interpolation_missing_callback_fn(step):
+        missing_interpolation_image, ssim = model.interpolate_and_calculate_ssim(
+            imgs[0],
+            imgs[2],
+            sample_points,
+            imgs[1],
+            ground_truth_index=1,
+            dates=months,
+            structure_mix_type="mean",
+        )
+        saver.save_interpolations_and_ssim(
+            sample_id=sample_id,
+            identifier="m",
+            train_step=step,
+            interpolations=missing_interpolation_image,
+            interpolation_ssim=ssim,
+        )
+
+    def callback_fn_save_pair_losses(step, pair_losses):
+        saver.save_pair_losses(
+            sample_id, identifier="m", train_step=step, pair_losses=pair_losses
+        )
+
+    def callback_fn_save_val_losses(step, val_losses):
+        saver.save_val_losses(
+            sample_id, identifier="m", train_step=step, val_losses=val_losses
+        )
+
+    def callback_fn_save_train_losses(step, train_losses):
+        saver.save_train_losses(
+            sample_id, identifier="m", train_step=step, train_losses=train_losses
+        )
+
+    model.restore_model(checkpoint_dir)
+    model.train_for_patient(
+        imgs[0],
+        imgs[2],
+        train_ds,
+        val_ds,
+        num_steps=1000,
+        period=10,
+        lr=1e-4,
+        callback_fn_generate_seq=extrapolation_future_callback_fn,
+        callback_fn_save_pair_losses=callback_fn_save_pair_losses,
+        callback_fn_save_val_losses=callback_fn_save_val_losses,
+        callback_fn_save_train_losses=callback_fn_save_train_losses,
+    )
+
+    # =======================================================================================
+    # previous slice extrapolation
+    sample_points = [(x - days[1]) / (days[2] - days[1]) for x in days]
+
+    def extrapolation_previous_callback_fn(step):
+        future_interpolation_image, ssim = model.interpolate_and_calculate_ssim(
+            imgs[1],
+            imgs[2],
+            sample_points,
+            imgs[0],
+            ground_truth_index=0,
+            dates=months,
+            structure_mix_type="mean",
+        )
+        saver.save_interpolations_and_ssim(
+            sample_id=sample_id,
+            identifier="p",
+            train_step=step,
+            interpolations=future_interpolation_image,
+            interpolation_ssim=ssim,
+        )
+
+    def callback_fn_save_pair_losses(step, pair_losses):
+        saver.save_pair_losses(
+            sample_id, identifier="p", train_step=step, pair_losses=pair_losses
+        )
+
+    def callback_fn_save_val_losses(step, val_losses):
+        saver.save_val_losses(
+            sample_id, identifier="p", train_step=step, val_losses=val_losses
+        )
+
+    def callback_fn_save_train_losses(step, train_losses):
+        saver.save_train_losses(
+            sample_id, identifier="p", train_step=step, train_losses=train_losses
+        )
+
+    model.restore_model(checkpoint_dir)
+    model.train_for_patient(
+        imgs[1],
+        imgs[2],
+        train_ds,
+        val_ds,
+        num_steps=1000,
+        period=10,
+        lr=1e-4,
+        callback_fn_generate_seq=extrapolation_future_callback_fn,
+        callback_fn_save_pair_losses=callback_fn_save_pair_losses,
+        callback_fn_save_val_losses=callback_fn_save_val_losses,
+        callback_fn_save_train_losses=callback_fn_save_train_losses,
+    )
