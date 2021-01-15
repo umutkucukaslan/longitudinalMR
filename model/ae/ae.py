@@ -305,6 +305,89 @@ class AE(tf.keras.Model):
         img2,
         train_ds,
         val_ds,
+        num_steps=1,
+        period=10,
+        val_period=100,
+        train_loss_period=10,
+        lr=1e-4,
+        callback_fn_generate_seq=None,
+        callback_fn_save_val_losses=None,
+        callback_fn_save_train_and_pair_losses=None,
+    ):
+        optimizer = tf.optimizers.Adam(lr, beta_1=0.5)
+        sim_loss_fn = tf.keras.losses.MeanSquaredError()
+        structure_vec_similarity_loss_mult = 100
+
+        steps_counter = 0
+        train_losses = [[], [], [], []]
+        while steps_counter < num_steps:
+            for n, inputs in train_ds.enumerate():
+                if steps_counter % val_period == 0 and callback_fn_save_val_losses:
+                    losses = self.validate_on_dataset(
+                        val_ds,
+                        sim_loss_fn=tf.keras.losses.MeanSquaredError(),
+                        structure_vec_similarity_loss_mult=100,
+                        verbose=False,
+                    )
+                    val_ds_losses = {
+                        "total_loss": losses[0],
+                        "image_similarity_loss": losses[1],
+                        "structure_vec_sim_loss": losses[2],
+                        "ssim": losses[3],
+                    }
+                    callback_fn_save_val_losses(steps_counter, val_ds_losses)
+
+                if steps_counter % period == 0:
+                    if callback_fn_generate_seq:
+                        callback_fn_generate_seq(steps_counter)
+
+                imgs = inputs["imgs"]
+                days = inputs["days"]
+                (
+                    total_loss,
+                    image_similarity_loss,
+                    structure_vec_sim_loss,
+                    ssims,
+                    predicted_imgs_for_vis,
+                    image_similarity_loss_pair,
+                    structure_vec_sim_loss_pair,
+                    ssims_pair,
+                ) = self.train_using_triplet_and_pair(
+                    imgs,
+                    days,
+                    [img1, img2],
+                    optimizer,
+                    sim_loss_fn=sim_loss_fn,
+                    structure_vec_similarity_loss_mult=structure_vec_similarity_loss_mult,
+                )
+
+                if (
+                    steps_counter % train_loss_period == 0
+                    and callback_fn_save_train_and_pair_losses
+                ):
+                    train_and_pair_losses = {
+                        "total_loss": total_loss.numpy(),
+                        "image_similarity_loss": image_similarity_loss.numpy(),
+                        "structure_vec_sim_loss": structure_vec_sim_loss.numpy(),
+                        "ssim": ssims.numpy(),
+                        "image_similarity_loss_pair": image_similarity_loss_pair.numpy(),
+                        "structure_vec_sim_loss_pair": structure_vec_sim_loss_pair.numpy(),
+                        "ssim_pair": ssims_pair.numpy(),
+                    }
+                    callback_fn_save_train_and_pair_losses(
+                        steps_counter, train_and_pair_losses
+                    )
+
+                steps_counter += 1
+                if steps_counter == num_steps:
+                    break
+
+    def train_for_patient3(
+        self,
+        img1,
+        img2,
+        train_ds,
+        val_ds,
         num_repeat=1,
         period=10,
         lr=1e-4,
@@ -609,6 +692,86 @@ class AE(tf.keras.Model):
             for img1, img2 in zip(imgs, generated_imgs)
         ]
         return tf.reduce_mean(ssims)
+
+    def train_using_triplet_and_pair(
+        self,
+        imgs,
+        days,
+        pair,
+        optimizer,
+        sim_loss_fn=tf.keras.losses.MeanSquaredError(),
+        structure_vec_similarity_loss_mult=100,
+    ):
+        predicted_imgs_for_vis = None
+        with tf.GradientTape() as tape:
+            # using pair
+            structures = []
+            states = []
+            for image_batch in pair:
+                structure, state = self.encode(image_batch, training=True)
+                structures.append(structure)
+                states.append(state)
+            structure_sim_mse = [sim_loss_fn(structures[0], structures[1])]
+            structure_vec_sim_loss_pair = tf.reduce_mean(structure_sim_mse)
+            predicted_imgs_pair = [
+                self.decode(structure, state)
+                for structure, state in zip(structures, states)
+            ]
+            image_similarity_mse = [
+                sim_loss_fn(real, pred) for real, pred in zip(pair, predicted_imgs_pair)
+            ]
+            image_similarity_loss_pair = tf.reduce_mean(image_similarity_mse)
+
+            # using triplet
+            structures = []
+            states = []
+            for image_batch in imgs:
+                structure, state = self.encode(image_batch, training=True)
+                structures.append(structure)
+                states.append(state)
+            structure_sim_mse = [
+                sim_loss_fn(structures[0], structures[1]),
+                sim_loss_fn(structures[0], structures[2]),
+                sim_loss_fn(structures[1], structures[2]),
+            ]
+            structure_vec_sim_loss = tf.reduce_mean(structure_sim_mse)
+
+            predicted_states = self.get_predicted_states(states, days)
+            predicted_imgs = [
+                self.decode(structure, state)
+                for structure, state in zip(structures, predicted_states)
+            ]
+            if predicted_imgs_for_vis is None:
+                predicted_imgs_for_vis = predicted_imgs
+            image_similarity_mse = [
+                sim_loss_fn(real, pred) for real, pred in zip(imgs, predicted_imgs)
+            ]
+            image_similarity_loss = tf.reduce_mean(
+                image_similarity_mse
+            )  # sum(image_similarity_mse) / 3.0
+            total_loss = (
+                structure_vec_similarity_loss_mult
+                * (structure_vec_sim_loss + structure_vec_sim_loss_pair)
+                + image_similarity_loss
+                + image_similarity_loss_pair
+            )
+
+        grads = tape.gradient(total_loss, self.trainable_variables)
+        optimizer.apply_gradients(zip(grads, self.trainable_variables))
+
+        ssims = self.calculate_ssim(imgs, predicted_imgs)
+        ssims_pair = self.calculate_ssim(pair, predicted_imgs_pair)
+
+        return (
+            total_loss,
+            image_similarity_loss,
+            structure_vec_sim_loss,
+            ssims,
+            predicted_imgs_for_vis,
+            image_similarity_loss_pair,
+            structure_vec_sim_loss_pair,
+            ssims_pair,
+        )
 
     def train_using_triplet(
         self,

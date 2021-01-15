@@ -165,6 +165,21 @@ class Saver:
                 "ssim",
             ],
         )
+        self.train_and_pair_loss_csv_handler = CSVHandler(
+            os.path.join(save_dir, "csv_train_and_pair_loss.csv"),
+            [
+                "sample_id",
+                "identifier",
+                "train_step",
+                "total_loss",
+                "image_similarity_loss",
+                "structure_vec_sim_loss",
+                "ssim",
+                "image_similarity_loss_pair",
+                "structure_vec_sim_loss_pair",
+                "ssim_pair",
+            ],
+        )
 
     def save_interpolations_and_ssim(
         self,
@@ -227,6 +242,30 @@ class Saver:
                 "image_similarity_loss": train_losses["image_similarity_loss"],
                 "structure_vec_sim_loss": train_losses["structure_vec_sim_loss"],
                 "ssim": train_losses["ssim"],
+            }
+        )
+
+    def save_train_and_pair_losses(
+        self, sample_id, identifier, train_step, train_and_pair_losses
+    ):
+        self.train_and_pair_loss_csv_handler.add_data(
+            {
+                "sample_id": sample_id,
+                "identifier": identifier,
+                "train_step": train_step,
+                "total_loss": train_and_pair_losses["total_loss"],
+                "image_similarity_loss": train_and_pair_losses["image_similarity_loss"],
+                "structure_vec_sim_loss": train_and_pair_losses[
+                    "structure_vec_sim_loss"
+                ],
+                "ssim": train_and_pair_losses["ssim"],
+                "image_similarity_loss_pair": train_and_pair_losses[
+                    "image_similarity_loss_pair"
+                ],
+                "structure_vec_sim_loss_pair": train_and_pair_losses[
+                    "structure_vec_sim_loss_pair"
+                ],
+                "ssim_pair": train_and_pair_losses["ssim_pair"],
             }
         )
 
@@ -296,9 +335,30 @@ for sample_id, sample in enumerate(test_ds):
             sample_id, identifier="f", train_step=step, train_losses=train_losses
         )
 
+    def callback_fn_save_train_and_pair_losses(step, train_and_pair_losses):
+        saver.save_train_and_pair_losses(
+            sample_id,
+            identifier="f",
+            train_step=step,
+            train_and_pair_losses=train_and_pair_losses,
+        )
+
     model.restore_model(checkpoint_dir)
     print(f"sample id: {sample_id} - {1}/3 - f")
-    model.train_for_patient(
+    # model.train_for_patient(
+    #     imgs[0],
+    #     imgs[1],
+    #     train_ds,
+    #     val_ds,
+    #     num_steps=1000,
+    #     period=10,
+    #     lr=1e-4,
+    #     callback_fn_generate_seq=extrapolation_future_callback_fn,
+    #     callback_fn_save_pair_losses=callback_fn_save_pair_losses,
+    #     callback_fn_save_val_losses=callback_fn_save_val_losses,
+    #     callback_fn_save_train_losses=callback_fn_save_train_losses,
+    # )
+    model.train_for_patient2(
         imgs[0],
         imgs[1],
         train_ds,
@@ -307,9 +367,8 @@ for sample_id, sample in enumerate(test_ds):
         period=10,
         lr=1e-4,
         callback_fn_generate_seq=extrapolation_future_callback_fn,
-        callback_fn_save_pair_losses=callback_fn_save_pair_losses,
         callback_fn_save_val_losses=callback_fn_save_val_losses,
-        callback_fn_save_train_losses=callback_fn_save_train_losses,
+        callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
     )
 
     # =======================================================================================
@@ -349,9 +408,30 @@ for sample_id, sample in enumerate(test_ds):
             sample_id, identifier="m", train_step=step, train_losses=train_losses
         )
 
+    def callback_fn_save_train_and_pair_losses(step, train_and_pair_losses):
+        saver.save_train_and_pair_losses(
+            sample_id,
+            identifier="m",
+            train_step=step,
+            train_and_pair_losses=train_and_pair_losses,
+        )
+
     model.restore_model(checkpoint_dir)
     print(f"sample id: {sample_id} - {2}/3 - m")
-    model.train_for_patient(
+    # model.train_for_patient(
+    #     imgs[0],
+    #     imgs[2],
+    #     train_ds,
+    #     val_ds,
+    #     num_steps=1000,
+    #     period=10,
+    #     lr=1e-4,
+    #     callback_fn_generate_seq=interpolation_missing_callback_fn,
+    #     callback_fn_save_pair_losses=callback_fn_save_pair_losses,
+    #     callback_fn_save_val_losses=callback_fn_save_val_losses,
+    #     callback_fn_save_train_losses=callback_fn_save_train_losses,
+    # )
+    model.train_for_patient2(
         imgs[0],
         imgs[2],
         train_ds,
@@ -360,9 +440,8 @@ for sample_id, sample in enumerate(test_ds):
         period=10,
         lr=1e-4,
         callback_fn_generate_seq=extrapolation_future_callback_fn,
-        callback_fn_save_pair_losses=callback_fn_save_pair_losses,
         callback_fn_save_val_losses=callback_fn_save_val_losses,
-        callback_fn_save_train_losses=callback_fn_save_train_losses,
+        callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
     )
 
     # =======================================================================================
@@ -402,9 +481,30 @@ for sample_id, sample in enumerate(test_ds):
             sample_id, identifier="p", train_step=step, train_losses=train_losses
         )
 
+    def callback_fn_save_train_and_pair_losses(step, train_and_pair_losses):
+        saver.save_train_and_pair_losses(
+            sample_id,
+            identifier="p",
+            train_step=step,
+            train_and_pair_losses=train_and_pair_losses,
+        )
+
     model.restore_model(checkpoint_dir)
     print(f"sample id: {sample_id} - {3}/3 - p")
-    model.train_for_patient(
+    # model.train_for_patient(
+    #     imgs[1],
+    #     imgs[2],
+    #     train_ds,
+    #     val_ds,
+    #     num_steps=1000,
+    #     period=10,
+    #     lr=1e-4,
+    #     callback_fn_generate_seq=extrapolation_previous_callback_fn,
+    #     callback_fn_save_pair_losses=callback_fn_save_pair_losses,
+    #     callback_fn_save_val_losses=callback_fn_save_val_losses,
+    #     callback_fn_save_train_losses=callback_fn_save_train_losses,
+    # )
+    model.train_for_patient2(
         imgs[1],
         imgs[2],
         train_ds,
@@ -413,9 +513,8 @@ for sample_id, sample in enumerate(test_ds):
         period=10,
         lr=1e-4,
         callback_fn_generate_seq=extrapolation_future_callback_fn,
-        callback_fn_save_pair_losses=callback_fn_save_pair_losses,
         callback_fn_save_val_losses=callback_fn_save_val_losses,
-        callback_fn_save_train_losses=callback_fn_save_train_losses,
+        callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
     )
 
     end_time = time.time()
