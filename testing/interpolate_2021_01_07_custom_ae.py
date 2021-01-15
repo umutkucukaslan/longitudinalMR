@@ -296,7 +296,7 @@ for sample_id, sample in enumerate(test_ds):
     if saver.progress_csv_handler.rows:
         print("progress csv file present!")
         print(saver.progress_csv_handler.rows)
-        matches = [sample_id == x for x in saver.progress_csv_handler.rows]
+        matches = [sample_id == int(x[0]) for x in saver.progress_csv_handler.rows]
         if any(matches):
             print(f"sample id {sample_id} is tried before")
             continue
