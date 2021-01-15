@@ -76,7 +76,9 @@ checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "checkpoints")  # latest checkp
 model.restore_model(checkpoint_dir)
 print("model restored")
 
-results_folder = os.path.join(EXPERIMENT_FOLDER, "testing/sequences/test_test")
+results_folder = os.path.join(
+    EXPERIMENT_FOLDER, "testing/sequences/test_train_for_patient2"
+)
 if not os.path.isdir(results_folder):
     os.makedirs(results_folder)
 
