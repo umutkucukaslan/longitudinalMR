@@ -99,10 +99,22 @@ val_ds = val_ds.batch(32).prefetch(2)
 
 
 class CSVHandler:
-    def __init__(self, csv_path, columns):
+    def __init__(self, csv_path, columns, read_existing=False):
         self.csv_path = csv_path
         self.columns = columns
-        if not os.path.isfile(csv_path):
+        self.rows = None
+        if os.path.isfile(csv_path):
+            if read_existing:
+                self.rows = []
+                with open(self.csv_path) as csv_file:
+                    csv_reader = csv.reader(csv_file, delimiter=",")
+                    line_count = 0
+                    for row in csv_reader:
+                        if line_count == 0:
+                            line_count += 1
+                        else:
+                            self.rows.append(row)
+        else:
             with open(self.csv_path, mode="w") as file:
                 csv_writer = csv.writer(
                     file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
@@ -127,6 +139,9 @@ class CSVHandler:
 class Saver:
     def __init__(self, save_dir):
         self.save_dir = save_dir
+        self.progress_csv_handler = CSVHandler(
+            os.path.join(save_dir, "csv_progress.csv"), ["sample_id"],
+        )
         self.interpolation_ssim_csv_handler = CSVHandler(
             os.path.join(save_dir, "csv_interpolation_ssims.csv"),
             ["sample_id", "identifier", "train_step", "ssim"],
@@ -275,6 +290,14 @@ class Saver:
 saver = Saver(save_dir=results_folder)
 
 for sample_id, sample in enumerate(test_ds):
+    # check if tried this case before
+    if saver.progress_csv_handler.rows:
+        print('progress csv file present!')
+        print(saver.progress_csv_handler.rows)
+        matches = [sample_id == x for x in saver.progress_csv_handler.rows]
+        if any(matches):
+            print(f'sample id {} is tried before')
+            continue
     start_time = time.time()
     # if sample_id == 1:
     #     exit()
@@ -521,3 +544,4 @@ for sample_id, sample in enumerate(test_ds):
 
     end_time = time.time()
     print(f"sample id: {sample_id} took {round(end_time - start_time)} seconds")
+    saver.progress_csv_handler.add_data({"sample_id": sample_id})
