@@ -5,8 +5,7 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import csv
-
-from tqdm import tqdm
+import sys
 
 from datasets.adni_dataset import get_triplets_adni_15t_dataset
 
@@ -75,10 +74,31 @@ checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "checkpoints")  # latest checkp
 # checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "best_checkpoint")
 model.restore_model(checkpoint_dir)
 print("model restored")
+print("args:")
+print(sys.argv)
+
+
+check_interval = None
+interval = None
+if len(sys.argv) > 1:
+    interval = sys.argv[1]
+    if interval == "0":
+        check_interval = [0, 450]
+    elif interval == "1":
+        check_interval = [450, 900]
+    elif interval == "2":
+        check_interval = [900, 1350]
+    elif interval == "3":
+        check_interval = [1350, 2000]
+
+print("check interval is ", check_interval)
 
 results_folder = os.path.join(
     EXPERIMENT_FOLDER, "testing/sequences/test_train_for_patient2"
 )
+if interval:
+    results_folder = results_folder + f"_{interval}"
+
 if not os.path.isdir(results_folder):
     os.makedirs(results_folder)
 
@@ -291,14 +311,16 @@ class Saver:
 
 saver = Saver(save_dir=results_folder)
 
+
 for sample_id, sample in enumerate(test_ds):
+    if check_interval:
+        if sample_id < check_interval[0] or sample_id >= check_interval[1]:
+            continue
     # check if tried this case before
     if saver.progress_csv_handler.rows:
-        print("progress csv file present!")
-        print(saver.progress_csv_handler.rows)
         matches = [sample_id == int(x[0]) for x in saver.progress_csv_handler.rows]
         if any(matches):
-            print(f"sample id {sample_id} is tried before")
+            print(f"sample id {sample_id} tested before")
             continue
     start_time = time.time()
     # if sample_id == 1:
