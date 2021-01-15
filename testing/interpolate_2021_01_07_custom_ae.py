@@ -123,6 +123,7 @@ class CSVHandler:
         self.csv_path = csv_path
         self.columns = columns
         self.rows = None
+        self.queue = []
         if os.path.isfile(csv_path):
             if read_existing:
                 self.rows = []
@@ -140,6 +141,14 @@ class CSVHandler:
                     file, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
                 )
                 csv_writer.writerow(columns)
+
+    def add_queue(self, d):
+        self.queue.append(d)
+
+    def flush(self):
+        for d in self.queue:
+            self.add_data(d)
+        self.queue = []
 
     def add_data(self, d):
         """
@@ -220,6 +229,14 @@ class Saver:
             ],
         )
 
+    def flush(self):
+        self.progress_csv_handler.flush()
+        self.interpolation_ssim_csv_handler.flush()
+        self.pair_loss_csv_handler.flush()
+        self.val_loss_csv_handler.flush()
+        self.train_loss_csv_handler.flush()
+        self.train_and_pair_loss_csv_handler.flush()
+
     def save_interpolations_and_ssim(
         self,
         sample_id: int,
@@ -231,7 +248,8 @@ class Saver:
         image_name = f"sample_{int(sample_id):05d}_{str(identifier)}_step_{int(train_step):05d}.jpg"
         image_path = os.path.join(self.save_dir, image_name)
         cv2.imwrite(image_path, interpolations)
-        self.interpolation_ssim_csv_handler.add_data(
+        # self.interpolation_ssim_csv_handler.add_data(
+        self.interpolation_ssim_csv_handler.add_queue(
             {
                 "sample_id": sample_id,
                 "identifier": identifier,
@@ -246,7 +264,8 @@ class Saver:
         cv2.imwrite(image_path, image_sequence)
 
     def save_pair_losses(self, sample_id, identifier, train_step, pair_losses):
-        self.pair_loss_csv_handler.add_data(
+        # self.pair_loss_csv_handler.add_data(
+        self.pair_loss_csv_handler.add_queue(
             {
                 "sample_id": sample_id,
                 "identifier": identifier,
@@ -259,7 +278,8 @@ class Saver:
         )
 
     def save_val_losses(self, sample_id, identifier, train_step, val_losses):
-        self.val_loss_csv_handler.add_data(
+        # self.val_loss_csv_handler.add_data(
+        self.val_loss_csv_handler.add_queue(
             {
                 "sample_id": sample_id,
                 "identifier": identifier,
@@ -272,7 +292,8 @@ class Saver:
         )
 
     def save_train_losses(self, sample_id, identifier, train_step, train_losses):
-        self.train_loss_csv_handler.add_data(
+        # self.train_loss_csv_handler.add_data(
+        self.train_loss_csv_handler.add_queue(
             {
                 "sample_id": sample_id,
                 "identifier": identifier,
@@ -287,7 +308,8 @@ class Saver:
     def save_train_and_pair_losses(
         self, sample_id, identifier, train_step, train_and_pair_losses
     ):
-        self.train_and_pair_loss_csv_handler.add_data(
+        # self.train_and_pair_loss_csv_handler.add_data(
+        self.train_and_pair_loss_csv_handler.add_queue(
             {
                 "sample_id": sample_id,
                 "identifier": identifier,
@@ -569,3 +591,4 @@ for sample_id, sample in enumerate(test_ds):
     end_time = time.time()
     print(f"sample id: {sample_id} took {round(end_time - start_time)} seconds")
     saver.progress_csv_handler.add_data({"sample_id": sample_id})
+    saver.flush()
