@@ -226,12 +226,41 @@ class Patient:
 
 
 class LongitudinalDataset:
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, reduced_dataset=5.0):
+        """
+
+        :param data_dir:
+        :param reduced_dataset: If less than 1.0, that ratio of patients will be used seperately
+        for AD, MCI, CN
+        """
         self.data_dir = data_dir
 
         ad_patient_folder_paths = glob.glob(os.path.join(self.data_dir, "ad_*"))
         mci_patient_folder_paths = glob.glob(os.path.join(self.data_dir, "mci_*"))
         cn_patient_folder_paths = glob.glob(os.path.join(self.data_dir, "cn_*"))
+
+        if reduced_dataset < 1.0:
+            print("REDUCED TRAIN SET")
+            print(f"Original # AD patients: {len(ad_patient_folder_paths)}")
+            print(f"Original # MCI patients: {len(mci_patient_folder_paths)}")
+            print(f"Original # CN patients: {len(cn_patient_folder_paths)}")
+
+            ad_index = max(1, int(len(ad_patient_folder_paths) * reduced_dataset))
+            mci_index = max(1, int(len(mci_patient_folder_paths) * reduced_dataset))
+            cn_index = max(1, int(len(cn_patient_folder_paths) * reduced_dataset))
+
+            print(f"New # AD patients: {ad_index}")
+            print(f"New # MCI patients: {mci_index}")
+            print(f"New # CN patients: {cn_index}")
+            print(
+                f"True reduction ratio: {(ad_index+mci_index+cn_index)/(len(ad_patient_folder_paths)+len(mci_patient_folder_paths)+len(cn_patient_folder_paths))}"
+            )
+            random.shuffle(ad_patient_folder_paths)
+            random.shuffle(mci_patient_folder_paths)
+            random.shuffle(cn_patient_folder_paths)
+            ad_patient_folder_paths = ad_patient_folder_paths[:ad_index]
+            mci_patient_folder_paths = ad_patient_folder_paths[:mci_index]
+            cn_patient_folder_paths = ad_patient_folder_paths[:cn_index]
 
         self.ad_patients = [
             Patient(patient_folder_path=x, patient_type="ad")

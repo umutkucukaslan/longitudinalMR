@@ -80,7 +80,9 @@ def get_triplets_adni_15t_dataset(
     target_shape=None,
     channels=1,
     augment=False,
+    reduced_dataset=10,
 ):
+    # if reduced_dataset is less then 1.0, that portion of training patients will be used in train data set
     if machine == "colab":
         data_dir = os.path.join("/content", folder_name)
     elif machine == "cloud":
@@ -93,7 +95,9 @@ def get_triplets_adni_15t_dataset(
     val_data_dir = os.path.join(data_dir, "val")
     test_data_dir = os.path.join(data_dir, "test")
 
-    train_long = LongitudinalDataset(data_dir=train_data_dir)
+    train_long = LongitudinalDataset(
+        data_dir=train_data_dir, reduced_dataset=reduced_dataset
+    )
     val_long = LongitudinalDataset(data_dir=val_data_dir)
     test_long = LongitudinalDataset(data_dir=test_data_dir)
 

@@ -321,6 +321,20 @@ if __name__ == "__main__":
         collage = np.vstack([suffix, collage, suffix])
         return collage
 
+    class ImageSaver:
+        def __init__(self, dir_path="/Users/umutkucukaslan/Desktop/imgseq"):
+            if not os.path.isdir(dir_path):
+                os.makedirs(dir_path)
+            self.dir_path = dir_path
+            self.counter = 0
+
+        def save_image(self, image):
+            filename = f"image_{self.counter}.jpg"
+            self.counter += 1
+            path = os.path.join(self.dir_path, filename)
+            cv2.imwrite(path, image)
+
+    image_saver = ImageSaver()
     sample_id = 0
     identifier = "f"
     pressed_key = 0
@@ -344,3 +358,5 @@ if __name__ == "__main__":
             identifier = "m"
         elif pressed_key == ord("p"):
             identifier = "p"
+        elif pressed_key == ord("s"):
+            image_saver.save_image(img)

@@ -93,8 +93,9 @@ if len(sys.argv) > 1:
 
 print("check interval is ", check_interval)
 
+REDUCTION_RATIO = 0.5
 results_folder = os.path.join(
-    EXPERIMENT_FOLDER, "testing/sequences/test_train_for_patient2"
+    EXPERIMENT_FOLDER, "testing/sequences/reduced_trainset_50/test_train_for_patient2"
 )
 if interval:
     results_folder = results_folder + f"_{interval}"
@@ -111,6 +112,7 @@ train_ds, val_ds, test_ds = get_triplets_adni_15t_dataset(
     machine=MACHINE,
     target_shape=[INPUT_HEIGHT, INPUT_WIDTH],
     channels=INPUT_CHANNEL,
+    reduced_dataset=REDUCTION_RATIO,
 )
 
 test_ds = test_ds.batch(1).prefetch(2)
