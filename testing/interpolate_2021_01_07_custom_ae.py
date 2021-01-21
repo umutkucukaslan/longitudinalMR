@@ -93,9 +93,9 @@ if len(sys.argv) > 1:
 
 print("check interval is ", check_interval)
 
-REDUCTION_RATIO = 0.25
+REDUCTION_RATIO = 0.125
 results_folder = os.path.join(
-    EXPERIMENT_FOLDER, "testing/sequences/reduced_trainset_25/test_train_for_patient2"
+    EXPERIMENT_FOLDER, "testing/sequences/reduced_trainset_125/test_train_for_patient2"
 )
 if interval:
     results_folder = results_folder + f"_{interval}"

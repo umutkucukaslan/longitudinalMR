@@ -157,10 +157,12 @@ if __name__ == "__main__":
 
     results_folders = [
         os.path.join(
-            EXPERIMENT_FOLDER, f"testing/sequences/test_train_for_patient2_{i}"
+            EXPERIMENT_FOLDER,
+            f"testing/sequences/reduced_trainset_12/test_train_for_patient2_{i}",
         )
         for i in range(NUM_SUBFOLDERS)
     ]
+    results_folder = os.path.dirname(results_folders[0])
 
     statistics = [Statistics(save_dir=dir_path) for dir_path in results_folders]
     interpolation_statistics = []
@@ -252,7 +254,7 @@ if __name__ == "__main__":
     ax0.set_xlabel("Train steps")
     ax0.set_ylabel("SSIM")
     ax0.grid()
-    plt.savefig(os.path.join(EXPERIMENT_FOLDER, "fig3.png"), dpi=300)
+    plt.savefig(os.path.join(results_folder, "ssim_vs_finetuning.png"), dpi=300)
     print("plot saved")
     # plt.show()
 
@@ -322,7 +324,7 @@ if __name__ == "__main__":
         return collage
 
     class ImageSaver:
-        def __init__(self, dir_path="/Users/umutkucukaslan/Desktop/imgseq"):
+        def __init__(self, dir_path="/Users/umutkucukaslan/Desktop/imgseq_reduced_50"):
             if not os.path.isdir(dir_path):
                 os.makedirs(dir_path)
             self.dir_path = dir_path
