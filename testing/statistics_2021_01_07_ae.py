@@ -158,7 +158,7 @@ if __name__ == "__main__":
     results_folders = [
         os.path.join(
             EXPERIMENT_FOLDER,
-            f"testing/sequences/reduced_trainset_12/test_train_for_patient2_{i}",
+            f"testing/sequences/reduced_trainset_25/test_train_for_patient2_{i}",
         )
         for i in range(NUM_SUBFOLDERS)
     ]
@@ -324,7 +324,7 @@ if __name__ == "__main__":
         return collage
 
     class ImageSaver:
-        def __init__(self, dir_path="/Users/umutkucukaslan/Desktop/imgseq_reduced_50"):
+        def __init__(self, dir_path="/Users/umutkucukaslan/Desktop/imgseq_reduced_25"):
             if not os.path.isdir(dir_path):
                 os.makedirs(dir_path)
             self.dir_path = dir_path
