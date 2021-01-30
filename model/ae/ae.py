@@ -307,13 +307,31 @@ class AE(tf.keras.Model):
         val_ds,
         num_steps=1,
         period=10,
-        val_period=100,
+        val_period=20,
         train_loss_period=10,
         lr=1e-4,
         callback_fn_generate_seq=None,
         callback_fn_save_val_losses=None,
         callback_fn_save_train_and_pair_losses=None,
+        use_training_set=True,
     ):
+        """
+        finetuning function
+
+        :param img1:
+        :param img2:
+        :param train_ds:
+        :param val_ds:
+        :param num_steps:
+        :param period:
+        :param val_period:
+        :param train_loss_period:
+        :param lr:
+        :param callback_fn_generate_seq:
+        :param callback_fn_save_val_losses:
+        :param callback_fn_save_train_and_pair_losses:
+        :return:
+        """
         optimizer = tf.optimizers.Adam(lr, beta_1=0.5)
         sim_loss_fn = tf.keras.losses.MeanSquaredError()
         structure_vec_similarity_loss_mult = 100
@@ -323,6 +341,7 @@ class AE(tf.keras.Model):
         while steps_counter < num_steps:
             for n, inputs in train_ds.enumerate():
                 if steps_counter % val_period == 0 and callback_fn_save_val_losses:
+                    # if steps_counter == val_period and callback_fn_save_val_losses:
                     losses = self.validate_on_dataset(
                         val_ds,
                         sim_loss_fn=tf.keras.losses.MeanSquaredError(),
@@ -359,6 +378,7 @@ class AE(tf.keras.Model):
                     optimizer,
                     sim_loss_fn=sim_loss_fn,
                     structure_vec_similarity_loss_mult=structure_vec_similarity_loss_mult,
+                    use_training_set=use_training_set,
                 )
 
                 if (
@@ -701,6 +721,7 @@ class AE(tf.keras.Model):
         optimizer,
         sim_loss_fn=tf.keras.losses.MeanSquaredError(),
         structure_vec_similarity_loss_mult=100,
+        use_training_set=True,
     ):
         predicted_imgs_for_vis = None
         with tf.GradientTape() as tape:
@@ -722,33 +743,37 @@ class AE(tf.keras.Model):
             ]
             image_similarity_loss_pair = tf.reduce_mean(image_similarity_mse)
 
-            # using triplet
-            structures = []
-            states = []
-            for image_batch in imgs:
-                structure, state = self.encode(image_batch, training=True)
-                structures.append(structure)
-                states.append(state)
-            structure_sim_mse = [
-                sim_loss_fn(structures[0], structures[1]),
-                sim_loss_fn(structures[0], structures[2]),
-                sim_loss_fn(structures[1], structures[2]),
-            ]
-            structure_vec_sim_loss = tf.reduce_mean(structure_sim_mse)
+            if use_training_set:
+                # using triplet
+                structures = []
+                states = []
+                for image_batch in imgs:
+                    structure, state = self.encode(image_batch, training=True)
+                    structures.append(structure)
+                    states.append(state)
+                structure_sim_mse = [
+                    sim_loss_fn(structures[0], structures[1]),
+                    sim_loss_fn(structures[0], structures[2]),
+                    sim_loss_fn(structures[1], structures[2]),
+                ]
+                structure_vec_sim_loss = tf.reduce_mean(structure_sim_mse)
 
-            predicted_states = self.get_predicted_states(states, days)
-            predicted_imgs = [
-                self.decode(structure, state)
-                for structure, state in zip(structures, predicted_states)
-            ]
-            if predicted_imgs_for_vis is None:
-                predicted_imgs_for_vis = predicted_imgs
-            image_similarity_mse = [
-                sim_loss_fn(real, pred) for real, pred in zip(imgs, predicted_imgs)
-            ]
-            image_similarity_loss = tf.reduce_mean(
-                image_similarity_mse
-            )  # sum(image_similarity_mse) / 3.0
+                predicted_states = self.get_predicted_states(states, days)
+                predicted_imgs = [
+                    self.decode(structure, state)
+                    for structure, state in zip(structures, predicted_states)
+                ]
+                if predicted_imgs_for_vis is None:
+                    predicted_imgs_for_vis = predicted_imgs
+                image_similarity_mse = [
+                    sim_loss_fn(real, pred) for real, pred in zip(imgs, predicted_imgs)
+                ]
+                image_similarity_loss = tf.reduce_mean(
+                    image_similarity_mse
+                )  # sum(image_similarity_mse) / 3.0
+            else:
+                structure_vec_sim_loss = 0.0
+                image_similarity_loss = 0.0
             total_loss = (
                 structure_vec_similarity_loss_mult
                 * (structure_vec_sim_loss + structure_vec_sim_loss_pair)
@@ -759,7 +784,10 @@ class AE(tf.keras.Model):
         grads = tape.gradient(total_loss, self.trainable_variables)
         optimizer.apply_gradients(zip(grads, self.trainable_variables))
 
-        ssims = self.calculate_ssim(imgs, predicted_imgs)
+        if use_training_set:
+            ssims = self.calculate_ssim(imgs, predicted_imgs)
+        else:
+            ssims = tf.convert_to_tensor(0.0, dtype=tf.float32)
         ssims_pair = self.calculate_ssim(pair, predicted_imgs_pair)
 
         return (

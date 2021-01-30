@@ -93,9 +93,10 @@ if len(sys.argv) > 1:
 
 print("check interval is ", check_interval)
 
+USE_TRAINING_SET = False
 REDUCTION_RATIO = 0.125
 results_folder = os.path.join(
-    EXPERIMENT_FOLDER, "testing/sequences/reduced_trainset_125/test_train_for_patient2"
+    EXPERIMENT_FOLDER, "testing/sequences/reduced_trainset_no/test_train_for_patient2"
 )
 if interval:
     results_folder = results_folder + f"_{interval}"
@@ -449,6 +450,7 @@ for sample_id, sample in enumerate(test_ds):
         callback_fn_generate_seq=extrapolation_future_callback_fn,
         callback_fn_save_val_losses=callback_fn_save_val_losses,
         callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
+        use_training_set=USE_TRAINING_SET,
     )
 
     # =======================================================================================
@@ -522,6 +524,7 @@ for sample_id, sample in enumerate(test_ds):
         callback_fn_generate_seq=interpolation_missing_callback_fn,
         callback_fn_save_val_losses=callback_fn_save_val_losses,
         callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
+        use_training_set=USE_TRAINING_SET,
     )
 
     # =======================================================================================
@@ -595,6 +598,7 @@ for sample_id, sample in enumerate(test_ds):
         callback_fn_generate_seq=extrapolation_previous_callback_fn,
         callback_fn_save_val_losses=callback_fn_save_val_losses,
         callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
+        use_training_set=USE_TRAINING_SET,
     )
 
     end_time = time.time()
