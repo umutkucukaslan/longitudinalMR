@@ -103,7 +103,7 @@ if interval:
 
 if not os.path.isdir(results_folder):
     print("thinks that the dir is not there: ", results_folder)
-    exit()
+    # exit()
     os.makedirs(results_folder)
 
 
