@@ -772,8 +772,8 @@ class AE(tf.keras.Model):
                     image_similarity_mse
                 )  # sum(image_similarity_mse) / 3.0
             else:
-                structure_vec_sim_loss = 0.0
-                image_similarity_loss = 0.0
+                structure_vec_sim_loss = tf.convert_to_tensor(0.0, dtype=tf.float32)
+                image_similarity_loss = tf.convert_to_tensor(0.0, dtype=tf.float32)
             total_loss = (
                 structure_vec_similarity_loss_mult
                 * (structure_vec_sim_loss + structure_vec_sim_loss_pair)
