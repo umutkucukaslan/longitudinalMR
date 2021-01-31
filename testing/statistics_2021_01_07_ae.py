@@ -158,7 +158,7 @@ if __name__ == "__main__":
     results_folders = [
         os.path.join(
             EXPERIMENT_FOLDER,
-            f"testing/sequences/reduced_trainset_50/test_train_for_patient2_{i}",
+            f"testing/sequences/reduced_trainset_no/test_train_for_patient2_{i}",
         )
         for i in range(NUM_SUBFOLDERS)
     ]
@@ -324,7 +324,7 @@ if __name__ == "__main__":
         return collage
 
     class ImageSaver:
-        def __init__(self, dir_path="/Users/umutkucukaslan/Desktop/imgseq_reduced_50"):
+        def __init__(self, dir_path="/Users/umutkucukaslan/Desktop/imgseq_reduced_no"):
             if not os.path.isdir(dir_path):
                 os.makedirs(dir_path)
             self.dir_path = dir_path
@@ -336,7 +336,8 @@ if __name__ == "__main__":
             path = os.path.join(self.dir_path, filename)
             cv2.imwrite(path, image)
 
-    image_saver = ImageSaver()
+    image_save_dir = "/Users/umutkucukaslan/Desktop/imgseq_reduced_no"
+    image_saver = ImageSaver(dir_path=image_save_dir)
     sample_id = 0
     identifier = "f"
     pressed_key = 0
