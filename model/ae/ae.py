@@ -307,7 +307,7 @@ class AE(tf.keras.Model):
         val_ds,
         num_steps=1,
         period=10,
-        val_period=20,
+        val_period=100,
         train_loss_period=10,
         lr=1e-4,
         callback_fn_generate_seq=None,
@@ -340,8 +340,8 @@ class AE(tf.keras.Model):
         train_losses = [[], [], [], []]
         while steps_counter < num_steps:
             for n, inputs in train_ds.enumerate():
-                if steps_counter % val_period == 0 and callback_fn_save_val_losses:
-                    # if steps_counter == val_period and callback_fn_save_val_losses:
+                # if steps_counter % val_period == 0 and callback_fn_save_val_losses:
+                if steps_counter == val_period and callback_fn_save_val_losses:
                     losses = self.validate_on_dataset(
                         val_ds,
                         sim_loss_fn=tf.keras.losses.MeanSquaredError(),
