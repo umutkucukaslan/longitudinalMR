@@ -94,11 +94,11 @@ if len(sys.argv) > 1:
 print("check interval is ", check_interval)
 
 # SET RESULT FOLDER AND TRAINING DATA REDUCTION
-USE_TRAINING_SET = False
-REDUCTION_RATIO = 0.125
+USE_TRAINING_SET = True
+REDUCTION_RATIO = 1.0
 results_folder = os.path.join(
     EXPERIMENT_FOLDER,
-    "testing/sequences/long_state_only/reduced_trainset_no/test_train_for_patient2",
+    "testing/sequences/long_state_only/reduced_trainset_full/test_train_for_patient2",
 )
 if interval:
     results_folder = results_folder + f"_{interval}"
