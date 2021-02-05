@@ -12,7 +12,7 @@ from datasets.adni_dataset import get_triplets_adni_15t_dataset
 from model.ae.ae import AE
 from model.ae.ae_basic import AEBasic
 
-EXPERIMENT_NAME = "exp_2021_02_05_ae_basic_imageonly"
+EXPERIMENT_NAME = "exp_2021_02_05_ae_basic_sequence"
 CHECKPOINT_DIR_NAME = "best_checkpoint"
 
 # choose machine type
