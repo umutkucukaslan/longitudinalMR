@@ -93,8 +93,6 @@ class AEBasic(tf.keras.Model):
         out = self.decode(latent, training=training)
         return out
 
-    # todo: fix the rest of the code
-
     def interpolate_and_calculate_ssim(
         self,
         inputs1,
@@ -103,19 +101,13 @@ class AEBasic(tf.keras.Model):
         ground_truth,
         ground_truth_index,
         dates=None,
-        structure_mix_type="mean",
     ):
         if dates is None:
             dates = [round(p, 2) for p in sample_points]
         dates = [str(x) for x in dates]
 
         interpolations = self.interpolate(
-            inputs1,
-            inputs2,
-            sample_points,
-            dates=dates,
-            structure_mix_type=structure_mix_type,
-            return_as_image=False,
+            inputs1, inputs2, sample_points, dates=dates, return_as_image=False,
         )
         ssim = self.calculate_ssim([ground_truth], [interpolations[ground_truth_index]])
         interpolations = [
@@ -139,25 +131,18 @@ class AEBasic(tf.keras.Model):
         inputs2,
         sample_points,
         dates=None,
-        structure_mix_type="mean",
         return_as_image=False,
+        training=False,
     ):
         if dates is None:
             dates = [round(p, 2) for p in sample_points]
-        structure1, state1 = self.encode(inputs1, training=False)
-        structure2, state2 = self.encode(inputs2, training=False)
-        if structure_mix_type == "first":
-            structure = structure1
-        elif structure_mix_type == "second":
-            structure = structure2
-        elif structure_mix_type == "mean":
-            structure = (structure1 + structure2) / 2.0
-        else:
-            raise ValueError(f"structure mix type {structure_mix_type} is unknown")
-        diff = state2 - state1
-        state_vecs = [state1 + diff * sample_point for sample_point in sample_points]
+        latent1 = self.encode(inputs1, training=training)
+        latent2 = self.encode(inputs2, training=training)
+
+        diff = latent2 - latent1
+        latent_vecs = [latent1 + diff * sample_point for sample_point in sample_points]
         interpolations = [
-            self.decode(structure, state, training=False) for state in state_vecs
+            self.decode(latent, training=training) for latent in latent_vecs
         ]
         if return_as_image:
             interpolations = [
@@ -171,31 +156,7 @@ class AEBasic(tf.keras.Model):
             interpolations = np.hstack(interpolations)
         return interpolations
 
-    def interpolate_and_ssim(
-        self,
-        inputs1,
-        inputs2,
-        sample_point,
-        ground_truth,
-        structure_mix_type="mean",
-        return_as_image=False,
-    ):
-        interpolations = self.interpolate(
-            inputs1,
-            inputs2,
-            [sample_point],
-            structure_mix_type=structure_mix_type,
-            return_as_image=False,
-        )
-        ssim = self.calculate_ssim([ground_truth], interpolations)
-        if return_as_image:
-            grth = np.clip(ground_truth.numpy()[0, ...] * 255, 0, 255).astype(np.uint8)
-            pred = np.clip(interpolations[0].numpy()[0, ...] * 255, 0, 255).astype(
-                np.uint8
-            )
-            img = np.hstack([grth, pred])
-            return ssim, img
-        return ssim
+    # todo: fix the rest of the code
 
     def train_for_patient(
         self,
