@@ -13,7 +13,7 @@ from model.ae.ae import AE
 from model.ae.ae_basic import AEBasic
 
 EXPERIMENT_NAME = "exp_2021_02_05_ae_basic_sequence"
-CHECKPOINT_DIR_NAME = "best_checkpoint"
+CHECKPOINT_DIR_NAME = "checkpoints"
 
 # choose machine type
 if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
@@ -96,7 +96,8 @@ print("check interval is ", check_interval)
 USE_TRAINING_SET = False
 REDUCTION_RATIO = 0.125
 results_folder = os.path.join(
-    EXPERIMENT_FOLDER, "testing/sequences/reduced_trainset_full/test_train_for_patient2"
+    EXPERIMENT_FOLDER,
+    "testing/sequences/reduced_trainset_overfitted/test_train_for_patient2",
 )
 if interval:
     results_folder = results_folder + f"_{interval}"
