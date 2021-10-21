@@ -1,41 +1,34 @@
 
-# Deep Generative Model for Patient Specific Longitudinal Analysis
+# Longitudinal Brain MR Image Modeling using Personalized Memory for Alzheimer's Disease
 
-Codes for my thesis
+This repository contains the code for model definition, training and testing for reproducing the results in the article.
 
-## Requirements
-* Tensorflow 2
-* nibabel
+https://ieeexplore.ieee.org/document/9580859
 
-## How to Run
-* Open a Google Colab notebook. 
-* Download and extract PASCAL VOC dataset. (Replace with actual dataset later)
+## Install Requirements
+```shell
+pip3 install tensorflow opencv-python nibabel imageio pandas
 ```
-! curl -O http://host.robots.ox.ac.uk/pascal/VOC/voc2012/VOCtrainval_11-May-2012.tar  
-print("Dataset downloaded.")
-! tar -xf VOCtrainval_11-May-2012.tar
-print("Dataset extracted.")
-! rm VOCtrainval_11-May-2012.tar
-print("'.tar' file removed.")
+
+## Running on Google Colab
+
+Upload the training data to Google Drive under My Drive folder. Open a colab instance with GPU runtime.
+
+Mount Google Drive, unzip the training data to local disk and clone the repository.
 ```
-* To mount Google Drive
-```python
 from google.colab import drive
 drive.mount('/content/drive')
+!unzip -q /content/drive/My\ Drive/training_data_15T_192x160_4slices.zip -d /content
+! cd /content && git clone https://github.com/umutkucukaslan/longitudinalMR.git
 ```
-* Clone this repository inside `/content` folder.
+Pull recent changes, and run the module.
 ```
-! cd /content && git clone https://github.com/umutkucukaslan/pmsd-project.git
-```
-* Run the module main
-```
-! cd /content/pmsd-project && git pull -q
+! cd /content/longitudinalMR && git pull -q
 print('Pulled recent changes from the repository.')
-print('Running module main...')
-! cd /content/pmsd-project && python3 -m main
+print('Running module...')
+# run module for training
+! cd /content/longitudinalMR && python3 -m experiments.exp_2020_12_22_glow 32
+# run module for testing
+! cd /content/longitudinalMR && python3 -m testing.interpolate_2021_01_31_custom_ae 1
 ```
-
-## Useful Links
-* [Tensorflow GPU Support Installation Guide](https://www.tensorflow.org/install/gpu)
-* [Tensorflow GPU Version Compatilibity Page](https://www.tensorflow.org/install/source#linux)
-* [CUDA 10.1 installation on Ubuntu 18.04](https://medium.com/@exesse/cuda-10-1-installation-on-ubuntu-18-04-lts-d04f89287130)
+The experiment results and checkpoints will be saved to Google Drive under `My Drive/experiments` folder.

@@ -20,7 +20,7 @@ from model.ae.ae import AE
 """
 autoencoder simple training
 
-has the same structure in my thesis, but trained using only images (not longitudinal sequences)
+has the same structure, but trained using only images (not longitudinal sequences)
 
 (image) -> encode -> (latent vectors) -> decode -> (reconst. image)
 
@@ -33,7 +33,7 @@ state vector is used for interpolation in time
 
 sampling mechanism should be
 1) interpolate both structure and long. state vector using time information
-2) interpolate only long.state vector and use mean structure vector as explained in my thesis
+2) interpolate only long.state vector and use mean structure vector as explained in longitudinalMR
 
 filters: 64, 128, 256, 512
 image shape: (64, 64, 1)
@@ -69,9 +69,9 @@ LR = 1e-4
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 # choose machine type
-if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
+if __file__.startswith("/Users/umutkucukaslan/Desktop/longitudinalMR"):
     MACHINE = "none"
-elif __file__.startswith("/content/thesis"):
+elif __file__.startswith("/content/longitudinalMR"):
     MACHINE = "colab"
 else:
     raise ValueError("Unknown machine type, no machine MACHINE")
@@ -96,7 +96,7 @@ elif MACHINE == "cloud":
     )
 else:
     EXPERIMENT_FOLDER = os.path.join(
-        "/Users/umutkucukaslan/Desktop/thesis/experiments", EXPERIMENT_NAME
+        "/Users/umutkucukaslan/Desktop/longitudinalMR/experiments", EXPERIMENT_NAME
     )
 
 # create experiment folder

@@ -15,12 +15,12 @@ EXPERIMENT_NAME = "exp_2021_01_31_ae_simple_training"
 CHECKPOINT_DIR_NAME = "checkpoints"
 
 # choose machine type
-if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
+if __file__.startswith("/Users/umutkucukaslan/Desktop/longitudinalMR"):
     MACHINE = "none"
     EXPERIMENT_FOLDER = os.path.join(
-        "/Users/umutkucukaslan/Desktop/thesis/experiments", EXPERIMENT_NAME
+        "/Users/umutkucukaslan/Desktop/longitudinalMR/experiments", EXPERIMENT_NAME
     )
-elif __file__.startswith("/content/thesis"):
+elif __file__.startswith("/content/longitudinalMR"):
     MACHINE = "colab"
     EXPERIMENT_FOLDER = os.path.join(
         "/content/drive/My Drive/experiments", EXPERIMENT_NAME

@@ -16,7 +16,6 @@ from datasets.adni_dataset import (
     get_images_adni_15t_dataset,
 )
 from model.ae.ae import AE
-from model.glow.model import Glow
 
 """
 autoencoder
@@ -59,9 +58,9 @@ LR = 1e-4
 EXPERIMENT_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 # choose machine type
-if __file__.startswith("/Users/umutkucukaslan/Desktop/thesis"):
+if __file__.startswith("/Users/umutkucukaslan/Desktop/longitudinalMR"):
     MACHINE = "none"
-elif __file__.startswith("/content/thesis"):
+elif __file__.startswith("/content/longitudinalMR"):
     MACHINE = "colab"
 else:
     raise ValueError("Unknown machine type, no machine MACHINE")
@@ -86,7 +85,7 @@ elif MACHINE == "cloud":
     )
 else:
     EXPERIMENT_FOLDER = os.path.join(
-        "/Users/umutkucukaslan/Desktop/thesis/experiments", EXPERIMENT_NAME
+        "/Users/umutkucukaslan/Desktop/longitudinalMR/experiments", EXPERIMENT_NAME
     )
 
 # create experiment folder
