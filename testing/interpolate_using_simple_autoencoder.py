@@ -10,8 +10,9 @@ import sys
 from datasets.adni_dataset import get_triplets_adni_15t_dataset
 
 from model.ae.ae import AE
+from model.ae.ae_basic import AEBasic
 
-EXPERIMENT_NAME = "exp_2021_01_31_ae_simple_training"
+EXPERIMENT_NAME = "simple_autoencoder"
 CHECKPOINT_DIR_NAME = "checkpoints"
 
 # choose machine type
@@ -34,8 +35,9 @@ FILTERS = [64, 128, 256, 512]
 KERNEL_SIZE = 3
 ACTIVATION = tf.nn.silu
 LAST_ACTIVATION = tf.nn.sigmoid
-STRUCTURE_VEC_SIZE = 100
-LONGITUDINAL_VEC_SIZE = 1
+# STRUCTURE_VEC_SIZE = 100
+# LONGITUDINAL_VEC_SIZE = 1
+LATENT_VEC_SIZE = 101
 
 BATCH_SIZE = 32
 EPOCHS = 5000
@@ -53,13 +55,12 @@ STRUCTURE_VEC_SIMILARITY_LOSS_MULT = 100
 # _, EXPERIMENT_FOLDER = get_model(return_experiment_folder=True)
 
 
-model = AE(
+model = AEBasic(
     filters=FILTERS,
     kernel_size=KERNEL_SIZE,
     activation=ACTIVATION,
     last_activation=LAST_ACTIVATION,
-    structure_vec_size=STRUCTURE_VEC_SIZE,
-    longitudinal_vec_size=LONGITUDINAL_VEC_SIZE,
+    latent_vec_size=LATENT_VEC_SIZE,
 )
 # model first call to initialize layers
 input_tensor = tf.convert_to_tensor(
@@ -70,8 +71,7 @@ _ = model(input_tensor)
 
 
 print("restoring model")
-checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "checkpoints")  # latest checkpoint
-# checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, "best_checkpoint")
+checkpoint_dir = os.path.join(EXPERIMENT_FOLDER, CHECKPOINT_DIR_NAME)
 model.restore_model(checkpoint_dir)
 print("model restored")
 print("args:")
@@ -93,12 +93,11 @@ if len(sys.argv) > 1:
 
 print("check interval is ", check_interval)
 
-# SET RESULT FOLDER AND TRAINING DATA REDUCTION
-USE_TRAINING_SET = True
-REDUCTION_RATIO = 1.0
+USE_TRAINING_SET = False
+REDUCTION_RATIO = 0.125
 results_folder = os.path.join(
     EXPERIMENT_FOLDER,
-    "testing/sequences/long_state_only/reduced_trainset_full/test_train_for_patient2",
+    "testing/sequences/reduced_trainset_overfitted/test_train_for_patient2",
 )
 if interval:
     results_folder = results_folder + f"_{interval}"
@@ -393,7 +392,6 @@ for sample_id, sample in enumerate(test_ds):
             imgs[2],
             ground_truth_index=2,
             dates=months,
-            structure_mix_type="mean",
         )
         saver.save_interpolations_and_ssim(
             sample_id=sample_id,
@@ -403,57 +401,9 @@ for sample_id, sample in enumerate(test_ds):
             interpolation_ssim=ssim,
         )
 
-    def callback_fn_save_pair_losses(step, pair_losses):
-        saver.save_pair_losses(
-            sample_id, identifier="f", train_step=step, pair_losses=pair_losses
-        )
-
-    def callback_fn_save_val_losses(step, val_losses):
-        saver.save_val_losses(
-            sample_id, identifier="f", train_step=step, val_losses=val_losses
-        )
-
-    def callback_fn_save_train_losses(step, train_losses):
-        saver.save_train_losses(
-            sample_id, identifier="f", train_step=step, train_losses=train_losses
-        )
-
-    def callback_fn_save_train_and_pair_losses(step, train_and_pair_losses):
-        saver.save_train_and_pair_losses(
-            sample_id,
-            identifier="f",
-            train_step=step,
-            train_and_pair_losses=train_and_pair_losses,
-        )
-
-    model.restore_model(checkpoint_dir)
+    # model.restore_model(checkpoint_dir)
     print(f"sample id: {sample_id} - {1}/3 - f")
-    # model.train_for_patient(
-    #     imgs[0],
-    #     imgs[1],
-    #     train_ds,
-    #     val_ds,
-    #     num_steps=1000,
-    #     period=10,
-    #     lr=1e-4,
-    #     callback_fn_generate_seq=extrapolation_future_callback_fn,
-    #     callback_fn_save_pair_losses=callback_fn_save_pair_losses,
-    #     callback_fn_save_val_losses=callback_fn_save_val_losses,
-    #     callback_fn_save_train_losses=callback_fn_save_train_losses,
-    # )
-    model.train_for_patient2(
-        imgs[0],
-        imgs[1],
-        train_ds,
-        val_ds,
-        num_steps=120,
-        period=10,
-        lr=1e-4,
-        callback_fn_generate_seq=extrapolation_future_callback_fn,
-        callback_fn_save_val_losses=callback_fn_save_val_losses,
-        callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
-        use_training_set=USE_TRAINING_SET,
-    )
+    extrapolation_future_callback_fn(step=0)
 
     # =======================================================================================
     # missing slice interpolation
@@ -467,7 +417,6 @@ for sample_id, sample in enumerate(test_ds):
             imgs[1],
             ground_truth_index=1,
             dates=months,
-            structure_mix_type="mean",
         )
         saver.save_interpolations_and_ssim(
             sample_id=sample_id,
@@ -477,57 +426,9 @@ for sample_id, sample in enumerate(test_ds):
             interpolation_ssim=ssim,
         )
 
-    def callback_fn_save_pair_losses(step, pair_losses):
-        saver.save_pair_losses(
-            sample_id, identifier="m", train_step=step, pair_losses=pair_losses
-        )
-
-    def callback_fn_save_val_losses(step, val_losses):
-        saver.save_val_losses(
-            sample_id, identifier="m", train_step=step, val_losses=val_losses
-        )
-
-    def callback_fn_save_train_losses(step, train_losses):
-        saver.save_train_losses(
-            sample_id, identifier="m", train_step=step, train_losses=train_losses
-        )
-
-    def callback_fn_save_train_and_pair_losses(step, train_and_pair_losses):
-        saver.save_train_and_pair_losses(
-            sample_id,
-            identifier="m",
-            train_step=step,
-            train_and_pair_losses=train_and_pair_losses,
-        )
-
-    model.restore_model(checkpoint_dir)
+    # model.restore_model(checkpoint_dir)
     print(f"sample id: {sample_id} - {2}/3 - m")
-    # model.train_for_patient(
-    #     imgs[0],
-    #     imgs[2],
-    #     train_ds,
-    #     val_ds,
-    #     num_steps=1000,
-    #     period=10,
-    #     lr=1e-4,
-    #     callback_fn_generate_seq=interpolation_missing_callback_fn,
-    #     callback_fn_save_pair_losses=callback_fn_save_pair_losses,
-    #     callback_fn_save_val_losses=callback_fn_save_val_losses,
-    #     callback_fn_save_train_losses=callback_fn_save_train_losses,
-    # )
-    model.train_for_patient2(
-        imgs[0],
-        imgs[2],
-        train_ds,
-        val_ds,
-        num_steps=120,
-        period=10,
-        lr=1e-4,
-        callback_fn_generate_seq=interpolation_missing_callback_fn,
-        callback_fn_save_val_losses=callback_fn_save_val_losses,
-        callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
-        use_training_set=USE_TRAINING_SET,
-    )
+    interpolation_missing_callback_fn(step=0)
 
     # =======================================================================================
     # previous slice extrapolation
@@ -541,7 +442,6 @@ for sample_id, sample in enumerate(test_ds):
             imgs[0],
             ground_truth_index=0,
             dates=months,
-            structure_mix_type="mean",
         )
         saver.save_interpolations_and_ssim(
             sample_id=sample_id,
@@ -551,57 +451,9 @@ for sample_id, sample in enumerate(test_ds):
             interpolation_ssim=ssim,
         )
 
-    def callback_fn_save_pair_losses(step, pair_losses):
-        saver.save_pair_losses(
-            sample_id, identifier="p", train_step=step, pair_losses=pair_losses
-        )
-
-    def callback_fn_save_val_losses(step, val_losses):
-        saver.save_val_losses(
-            sample_id, identifier="p", train_step=step, val_losses=val_losses
-        )
-
-    def callback_fn_save_train_losses(step, train_losses):
-        saver.save_train_losses(
-            sample_id, identifier="p", train_step=step, train_losses=train_losses
-        )
-
-    def callback_fn_save_train_and_pair_losses(step, train_and_pair_losses):
-        saver.save_train_and_pair_losses(
-            sample_id,
-            identifier="p",
-            train_step=step,
-            train_and_pair_losses=train_and_pair_losses,
-        )
-
-    model.restore_model(checkpoint_dir)
+    # model.restore_model(checkpoint_dir)
     print(f"sample id: {sample_id} - {3}/3 - p")
-    # model.train_for_patient(
-    #     imgs[1],
-    #     imgs[2],
-    #     train_ds,
-    #     val_ds,
-    #     num_steps=1000,
-    #     period=10,
-    #     lr=1e-4,
-    #     callback_fn_generate_seq=extrapolation_previous_callback_fn,
-    #     callback_fn_save_pair_losses=callback_fn_save_pair_losses,
-    #     callback_fn_save_val_losses=callback_fn_save_val_losses,
-    #     callback_fn_save_train_losses=callback_fn_save_train_losses,
-    # )
-    model.train_for_patient2(
-        imgs[1],
-        imgs[2],
-        train_ds,
-        val_ds,
-        num_steps=120,
-        period=10,
-        lr=1e-4,
-        callback_fn_generate_seq=extrapolation_previous_callback_fn,
-        callback_fn_save_val_losses=callback_fn_save_val_losses,
-        callback_fn_save_train_and_pair_losses=callback_fn_save_train_and_pair_losses,
-        use_training_set=USE_TRAINING_SET,
-    )
+    extrapolation_previous_callback_fn(step=0)
 
     end_time = time.time()
     print(f"sample id: {sample_id} took {round(end_time - start_time)} seconds")
