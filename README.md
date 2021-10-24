@@ -31,7 +31,7 @@ The inference scripts can be found in testing folder.
 * `visualize_statistics` visualizes some of the results saved in csv files during inference/testing
 
 
-## Model files
+## Model Definitions
 
 * `ae.ae` contains the definition of the proposed architecture
 
