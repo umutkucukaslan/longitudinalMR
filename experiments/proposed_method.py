@@ -9,15 +9,45 @@ from tqdm import tqdm
 import cv2
 import tensorflow as tf
 import numpy as np
-import matplotlib.pyplot as plt
 
 from datasets.adni_dataset import (
     get_triplets_adni_15t_dataset,
-    get_images_adni_15t_dataset,
 )
 from model.ae.ae import AE
 
 """
+The network consists of encoder and decoder parts.
+Encoder is responsible for transforming input images into two latent vectors.
+Decoder is to transform two latent vectors into output image.
+
+       encoder                     decoder 
+Image ---------- structure vector -------- output image
+      \_________ state vector ___________/
+
+For a patient, the model needs at least two time point slice images, 
+both of which is transformed into latent space, where the structure vector should be the same
+for images coming from the same patient, and the state vector should encode the changes
+over time between the two input images. 
+
+The assumed condition that both input's structure vectors, when encoded, should be the same
+is enforced using a MSE error between these vectors.
+
+The new time point image is sampled in latent space using the time information of input images 
+and the target time point. The state vector is interpolated using the time differences as in the paper.
+The mean structure vector is used as "the same" vector.
+
+The decoder is used to generate the output image.
+
+The total loss is 
+(the MSE error between predicted and ground truth output image)
++ 
+(MSE error between input images' structure vectors)
+
+Note:
+The personalization is obtained during inference phase 
+using the training function defined as a method of the model class.
+
+Short description:
 autoencoder
 
 encodes images to structure vector and state vector

@@ -7,7 +7,7 @@ https://ieeexplore.ieee.org/document/9580859
 
 ## Install Requirements
 ```shell
-pip3 install tensorflow opencv-python nibabel imageio pandas
+pip3 install tensorflow opencv-python nibabel imageio pandas tqdm
 ```
 
 ## Running on Google Colab

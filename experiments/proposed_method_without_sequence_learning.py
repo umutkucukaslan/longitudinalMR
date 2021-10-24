@@ -9,10 +9,8 @@ from tqdm import tqdm
 import cv2
 import tensorflow as tf
 import numpy as np
-import matplotlib.pyplot as plt
 
 from datasets.adni_dataset import (
-    get_triplets_adni_15t_dataset,
     get_images_adni_15t_dataset,
 )
 from model.ae.ae import AE
